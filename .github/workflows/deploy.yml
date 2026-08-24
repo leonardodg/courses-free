@@ -260,6 +260,24 @@ jobs:
             # O bind mount esconde o config.php da imagem: ele tem que existir aqui.
             cp .devcontainer/config/config-docker.php config.php
 
+            # Certificado do CONTAINER.
+            # Quem termina TLS aqui e o nginx, com o cert Let's Encrypt; o
+            # container so serve HTTP na porta interna. Mas base.yml declara
+            # ssl_cert/ssl_key como secrets, e o compose nao permite secret
+            # opcional nem remover secret por override (o merge e aditivo).
+            # Sem os arquivos o docker falha o bind antes do container nascer.
+            # Por isso geramos um par descartavel: ele nunca e apresentado a
+            # ninguem, so satisfaz o mount.
+            if [ ! -f .devcontainer/certs/develop-local.crt ]; then
+              openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+                -keyout .devcontainer/certs/develop-local.key \
+                -out    .devcontainer/certs/develop-local.crt \
+                -subj "/CN=courses-free-internal" 2>/dev/null
+              chmod 644 .devcontainer/certs/develop-local.crt
+              chmod 600 .devcontainer/certs/develop-local.key
+              echo ">> cert interno do container gerado"
+            fi
+
             # --- subir ---
             # build-dev.yml NAO entra: na VPS a imagem vem do Docker Hub.
             export COMPOSE_FILE=.devcontainer/compose/base.yml:.devcontainer/compose/db.yml:.devcontainer/compose/dev.yml
