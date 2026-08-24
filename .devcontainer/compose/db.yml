@@ -1,0 +1,52 @@
+services:
+  # =========================================================================
+  #                    SERVICE: db (MySQL/MariaDB)
+  # =========================================================================
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    command: >
+          --character-set-server=utf8mb4
+          --collation-server=utf8mb4_bin
+          --innodb_file_per_table=On
+          --wait-timeout=28800
+          --skip-log-bin
+    env_file:
+      - ../env/db.env
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MARIADB_USER_FILE:          /run/secrets/db_user
+      MARIADB_PASSWORD_FILE:      /run/secrets/db_password
+      MARIADB_DATABASE:      ${MOODLE_DBNAME:-moodle}
+      MARIADB_ROOT_HOST:     "%"  # opcional: allow connection from any host
+    volumes:
+      # Bind mount em pasta conhecida do host (nao volume nomeado), para o dado
+      # do banco ficar num caminho previsivel na VPS e o backup ser um tar da pasta.
+      # Definido em DB_HOST_DATA no .env da raiz do repo.
+      - "${DB_HOST_DATA:?defina DB_HOST_DATA no .env}:/var/lib/mysql"
+      - ../config/mysql-dev.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    ports:
+      # Na VPS BIND_ADDR=127.0.0.1: banco nunca exposto na internet.
+      - "${BIND_ADDR:-0.0.0.0}:${DB_PORT:-3306}:3306/tcp"
+    networks:
+      - moodle_network
+
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+        reservations:
+          memory: 128M
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    secrets:
+      - db_root_password
+      - db_user
+      - db_password
+

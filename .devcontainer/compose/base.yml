@@ -1,0 +1,42 @@
+
+# =============================================================================
+# BASE COMPOSE - Shared configuration between all environments
+# =============================================================================
+# Usage:
+#   docker compose -f .devcontainer/compose/base.yml \
+#                  -f .devcontainer/compose/db.yml \
+#                  -f .devcontainer/compose/dev.yml up -d
+#
+# Projeto tem um unico ambiente (development), rodando na VPS Oracle.
+# =============================================================================
+
+name: courses-free
+
+# =============================================================================
+#                           SHARED RESOURCES
+# =============================================================================
+volumes:
+  # dbdata e moodledata NAO sao volumes nomeados: ambos usam bind mount em
+  # pasta conhecida do host (DB_HOST_DATA / MOODLE_HOST_DATA no .env), para o
+  # dado ficar num caminho previsivel na VPS e o backup ser um tar da pasta.
+  composer_cache:
+
+secrets:
+  db_root_password:
+    file: ../secrets/db_root_password
+  db_password:
+    file: ../secrets/db_password
+  db_user:
+    file: ../secrets/db_user
+  ssl_cert:
+    file: ../certs/develop-local.crt
+  ssl_key:
+    file: ../certs/develop-local.key
+
+networks:
+  moodle_network:
+    driver: bridge
+    # Sem "name:" fixo de proposito: o compose prefixa com o nome do projeto
+    # (courses-free_moodle_network). Um nome global faria este stack entrar na
+    # mesma rede do ivana-academy, que tambem tem servicos "db" e "moodle" -
+    # o DNS interno ficaria ambiguo.
