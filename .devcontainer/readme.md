@@ -28,8 +28,9 @@ aponta para `/var/www/html/public`.
 ├── compose/
 │   ├── base.yml              # nome do projeto, rede, secrets, volumes
 │   ├── db.yml                # MariaDB (bind mount em DB_HOST_DATA)
-│   ├── dev.yml               # o ambiente
-│   └── build-dev.yml         # override para buildar local em vez de puxar do Hub
+│   ├── dev.yml               # o ambiente (usado local E na VPS)
+│   ├── local-tls.yml         # SO LOCAL: TLS no container + porta 443
+│   └── build-dev.yml         # SO LOCAL: builda em vez de puxar do Hub
 ├── env/
 │   ├── defaults.env          # não-sensível, versionado
 │   ├── db.env                # gitignored
@@ -87,24 +88,43 @@ mkdir -p "$MOODLE_HOST_DATA" "$DB_HOST_DATA"
 ## Uso
 
 ```bash
-export COMPOSE_FILE=.devcontainer/compose/base.yml:.devcontainer/compose/db.yml:.devcontainer/compose/dev.yml
+# LOCAL — inclui local-tls.yml (o container serve HTTPS) e build-dev.yml
+export COMPOSE_FILE=.devcontainer/compose/base.yml:.devcontainer/compose/db.yml:.devcontainer/compose/dev.yml:.devcontainer/compose/local-tls.yml:.devcontainer/compose/build-dev.yml
 export COMPOSE_ENV_FILE=.env
 
-docker compose up -d
+docker compose up --build -d
 docker compose logs -f moodle
 docker compose ps
 docker compose down
 ```
 
+```bash
+# VPS — sem local-tls.yml e sem build-dev.yml.
+# Quem termina TLS é o nginx (certbot); a imagem vem do Docker Hub.
+export COMPOSE_FILE=.devcontainer/compose/base.yml:.devcontainer/compose/db.yml:.devcontainer/compose/dev.yml
+export COMPOSE_ENV_FILE=.env
+```
+
 `COMPOSE_ENV_FILE` **não é opcional**: sem ele o compose procura o `.env` no
 diretório do primeiro arquivo compose (`.devcontainer/compose/`), não na raiz.
 
-### Buildando a imagem localmente
+### Por que o TLS do container é um arquivo separado
+
+Local não há nginx na frente, então o próprio Apache do container precisa servir
+HTTPS — e com certificado **confiável**, não qualquer um: `.dev` é um TLD
+HSTS-preloaded e o navegador não oferece botão de "prosseguir" para certificado
+desconhecido. Por isso o par vem do `mkcert`:
 
 ```bash
-export COMPOSE_FILE=$COMPOSE_FILE:.devcontainer/compose/build-dev.yml
-docker compose up --build -d
+cd .devcontainer/certs
+mkcert -cert-file develop-local.crt -key-file develop-local.key \
+       courses.leodg.dev localhost 127.0.0.1
 ```
+
+Na VPS esses arquivos não existem — `certs/` está no `EXCLUDE` do rsync. Se os
+secrets `ssl_cert`/`ssl_key` estivessem no `dev.yml`, o Docker falharia o bind
+antes do container nascer, e o Compose **não permite secret opcional nem
+remover secret por override** (o merge é aditivo). Daí o arquivo à parte.
 
 ### Instalar o Moodle
 

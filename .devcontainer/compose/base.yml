@@ -28,10 +28,9 @@ secrets:
     file: ../secrets/db_password
   db_user:
     file: ../secrets/db_user
-  ssl_cert:
-    file: ../certs/develop-local.crt
-  ssl_key:
-    file: ../certs/develop-local.key
+  # ssl_cert/ssl_key vivem em local-tls.yml: sao arquivos que so existem na
+  # maquina de desenvolvimento. Declarados aqui, o compose falharia na VPS
+  # tentando fazer bind de um caminho inexistente.
 
 networks:
   moodle_network:
