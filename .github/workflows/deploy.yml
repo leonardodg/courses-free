@@ -260,6 +260,10 @@ jobs:
             # O bind mount esconde o config.php da imagem: ele tem que existir aqui.
             cp .devcontainer/config/config-docker.php config.php
 
+            # Nao ha certificado a gerar aqui: quem termina TLS e o nginx, com
+            # o certificado do certbot para courses.leodg.dev. O container so
+            # serve HTTP, e o compose da VPS nao inclui local-tls.yml.
+
             # --- subir ---
             # build-dev.yml NAO entra: na VPS a imagem vem do Docker Hub.
             export COMPOSE_FILE=.devcontainer/compose/base.yml:.devcontainer/compose/db.yml:.devcontainer/compose/dev.yml
