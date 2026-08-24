@@ -310,7 +310,7 @@ jobs:
             # upgrade.php num banco vazio falha, entao o estado precisa ser
             # detectado antes. A checagem vai direto no MariaDB porque carregar
             # o config.php do Moodle sem a tabela "config" tambem quebra.
-            # TODO "docker compose exec" ABAIXO PRECISA DE "< /dev/null".
+            # NAO REMOVA o "< /dev/null" dos "docker compose exec" abaixo.
             # O ssh-action entrega este script pelo STDIN do bash. "exec -T" le
             # o stdin ate EOF, entao engole o resto do proprio script: o bash
             # chega em EOF e encerra em silencio, sem mensagem de erro.
