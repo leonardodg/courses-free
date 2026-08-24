@@ -1,0 +1,4 @@
+SHELL=/bin/bash
+BASH_ENV=/container.env
+*/5 * * * * /usr/local/bin/php /var/www/html/admin/cli/cron.php >> /var/log/moodle-cron.log 2>&1
+0 0 1 * * truncate -s 0 /var/log/moodle-cron.log

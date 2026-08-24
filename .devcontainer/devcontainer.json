@@ -1,0 +1,100 @@
+// See https://containers.dev/implementors/json_reference/ for configuration reference
+{
+    "name": "Moodle 4.5.1+ for Ivana Academy By LeoDG",
+    "dockerComposeFile": [
+        "./compose/base.yml",
+        "./compose/db.yml",
+        "./compose/dev.yml",
+        "./compose/build-dev.yml"
+    ],
+    "service": "moodle",
+    "runServices": [
+        "moodle",
+        "db"
+    ],
+    "workspaceFolder": "/var/www/html",
+    "remoteUser": "www-data",
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/common-utils:2": {},
+        "ghcr.io/stuartleeks/dev-container-features/shell-history:0": {}
+    },
+    // Mounts are used to share configuration files and SSH keys between the host and the container.
+    "mounts": [
+        {
+            "source": "${localEnv:HOME}/.gitconfig",
+            "target": "/home/www-data/.gitconfig",
+            "type": "bind"
+        },
+        {
+            "source": "${localEnv:HOME}/.ssh",
+            "target": "/home/www-data/.ssh",
+            "type": "bind"
+        },
+        {
+            "source": "${localEnv:HOME}/.ssh/known_hosts",
+            "target": "/home/www-data/.ssh/known_hosts",
+            "type": "bind"
+        },
+        {
+            "source": "../../moodle-academy-bashhistory",
+            "target": "/commandhistory",
+            "type": "bind"
+        },
+        {
+            "source": "../../moodledata-academy",
+            "target": "/var/www/moodledata-academy",
+            "type": "bind"
+        }
+    ],
+    // Use 'postCreateCommand' to run commands after the container is created.
+    "postCreateCommand": {
+        "Fix Volume Permissions": "sudo chown -R $(whoami): /commandhistory"
+    },
+    // Configure tool-specific properties.
+    "customizations": {
+        "vscode": {
+            // Add the IDs of extensions you want to install.
+            "extensions": [
+                "ms-vscode-remote.remote-containers",
+                "LMSCloud.mdlcode",
+                "shardulm94.trailing-spaces",
+                "shuworks.vscode-table-formatter",
+                "stevejpurves.cucumber",
+                "shevaua.phpcs",
+                "DEVSENSE.profiler-php-vscode",
+                "MehediDracula.php-namespace-resolver",
+                "xdebug.php-pack",
+                "xdebug.php-debug",
+                "DEVSENSE.phptools-vscode",
+                "imgildev.vscode-mustache-snippets",
+                "imgildev.vscode-moodle-snippets",
+                "eamodio.gitlens",
+                "dbaeumer.vscode-eslint",
+                "cweijan.dbclient-jdbc",
+                "cweijan.vscode-database-client2",
+                "ms-azuretools.vscode-containers",
+                "DEVSENSE.composer-php-vscode",
+                "neilbrayfield.php-docblocker",
+                "ms-vscode-remote.vscode-remote-extensionpack"
+            ],
+            // Add custom VS Code settings.
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "terminal.integrated.profiles.linux": {
+                    "bash": {
+                        "path": "/bin/bash",
+                        "icon": "terminal-bash"
+                    }
+                },
+                "php.suggest.basic": false,
+                "php.validate.enable": false
+            }
+        }
+    },
+    "containerEnv": {
+        "GIT_CONFIG_PARAMETERS": "'core.filemode=false'",
+        "COMPOSER_ALLOW_PLUGINS": "dealerdirect/phpcodesniffer-composer-installer:true"
+    }
+}

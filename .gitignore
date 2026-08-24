@@ -61,3 +61,20 @@ jsconfig.json
 UPGRADING-CURRENT.md
 .phpunit.cache
 tsconfig.aliases.json
+
+# Segredos e certificados locais de dev - nunca versionar.
+# Os arquivos .example ao lado servem de template.
+.devcontainer/secrets/
+.devcontainer/certs/*.key
+.devcontainer/certs/*.crt
+!.devcontainer/certs/*.example
+
+.devcontainer/env/db.env
+.devcontainer/env/dev.env
+.devcontainer/env/prod.env
+
+# .env da raiz: variaveis de interpolacao do compose, com caminhos da maquina.
+/.env
+
+# Mapa de dominios por vendedor, gerado pelo local_marketplace em runtime.
+.devcontainer/marketplace_domains.php
