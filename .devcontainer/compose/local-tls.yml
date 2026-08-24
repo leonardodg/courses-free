@@ -1,0 +1,39 @@
+# =============================================================================
+# TLS NO CONTAINER - APENAS DESENVOLVIMENTO LOCAL
+# =============================================================================
+# Uso (some ao COMPOSE_FILE, so na sua maquina):
+#     .devcontainer/compose/base.yml:...:dev.yml:local-tls.yml
+#
+# NAO use na VPS. La quem termina TLS e o nginx, com o certificado emitido
+# pelo certbot para courses.leodg.dev, e o proxy conversa HTTP com o container.
+#
+# Por que isto existe:
+#   Local nao ha nginx na frente, entao o proprio Apache do container precisa
+#   servir HTTPS. E precisa ser um certificado CONFIAVEL, nao qualquer um:
+#   ".dev" e um TLD HSTS-preloaded, e o navegador se recusa a abrir excecao
+#   para certificado desconhecido - nao existe botao de "prosseguir".
+#   Por isso o par vem do mkcert, cuja CA ja esta nos stores do sistema,
+#   do Chrome (NSS) e dos perfis do Firefox.
+#
+#   Gerar assim:
+#     cd .devcontainer/certs
+#     mkcert -cert-file develop-local.crt -key-file develop-local.key \
+#            courses.leodg.dev localhost 127.0.0.1
+#
+#   Sem estes arquivos o entrypoint gera um auto-assinado dentro do container
+#   e o site sobe do mesmo jeito - so nao abre no navegador em dominio .dev.
+# =============================================================================
+
+services:
+  moodle:
+    secrets:
+      - ssl_cert
+      - ssl_key
+    ports:
+      - "${BIND_ADDR:-0.0.0.0}:${MOODLE_HTTPS_PORT:-443}:443"
+
+secrets:
+  ssl_cert:
+    file: ../certs/develop-local.crt
+  ssl_key:
+    file: ../certs/develop-local.key
