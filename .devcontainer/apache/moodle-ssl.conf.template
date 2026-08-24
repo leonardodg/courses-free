@@ -1,0 +1,36 @@
+<VirtualHost *:443>
+    ServerAdmin callme@leodg.dev
+
+    ServerName localhost
+    ServerAlias ${MOODLE_URL_CLEAN}
+
+    DocumentRoot ${APACHE_DOCUMENT_ROOT}
+
+    SSLEngine on
+    SSLCertificateFile    ${CERT_PATH}
+    SSLCertificateKeyFile ${KEY_PATH}
+
+	<FilesMatch "\.(?:cgi|shtml|phtml|php)$">
+		SSLOptions +StdEnvVars
+	</FilesMatch>
+	<Directory /usr/lib/cgi-bin>
+		SSLOptions +StdEnvVars
+	</Directory>
+
+	<Directory "${APACHE_DOCUMENT_ROOT}">
+		Options FollowSymLinks
+		AllowOverride All
+		Require all granted
+	</Directory>
+
+	<DirectoryMatch "/(vendor|node_modules|tests/behat|\.git|\.devcontainer|\.github)(/|$)">
+		Require all denied
+	</DirectoryMatch>
+
+	<FilesMatch "^(composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml(\.dist)?|environment\.xml|install\.xml|README(\.txt|\.md)?|UPGRADING\.md|CHANGES\.md|\.env.*)$">
+		Require all denied
+	</FilesMatch>
+
+    ErrorLog ${APACHE_LOG_DIR}/moodle_error.log
+    CustomLog ${APACHE_LOG_DIR}/moodle_access.log combined
+</VirtualHost>

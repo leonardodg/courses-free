@@ -1,0 +1,28 @@
+# Plugins proprios/customizados validados pelo moodle-plugin-ci.
+# Formato: um path por linha, relativo a raiz do repo, sem barra inicial.
+# Linhas vazias e comecadas por # sao ignoradas.
+#
+# ATENCAO: no Moodle 5.x os plugins ficam sob public/.
+
+# --- Fase 1 ---
+# public/local/marketplace
+
+# --- Fase 2 ---
+# public/payment/gateway/mercadopago
+
+# --- Fase 4 ---
+# public/theme/coursesfree
+
+# --- Plugins de terceiros (releases oficiais 5.2, nao validados aqui) --------
+# Instalados mas NAO passam pelo moodle-plugin-ci: sao codigo de upstream.
+#   public/mod/customcert
+#   public/blocks/completion_progress
+#   public/blocks/configurable_reports
+#   public/enrol/coursecompleted
+#   public/theme/boost_union
+#   public/theme/moove
+#
+# Sem release 5.2 ate 2026-08-24, fora do MVP:
+#   mod_attendance      (suporta ate 5.1)
+#   format_onetopic     (suporta ate 5.1)
+#   format_tiles        (suporta ate 5.1)

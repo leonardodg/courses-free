@@ -1,0 +1,200 @@
+#!/bin/bash
+# entrypoint: This script is an example of entrypoint for a Docker container Moodle.
+
+# Site: https://leodg.dev
+# Author: LeoDG
+# Issue: #1 - Initial version
+
+# ----------------------------------------------------
+# This script print status and information and load secrets from Docker secrets if available,
+# if all secrets are loaded correctly,
+# then it configures Apache and starts the main entrypoint for Moodle.
+# The result output in default STDOUT.
+#
+# USE IN DOCKERFILE:
+#    FROM moodlehq/moodle-php-apache:8.2
+#    COPY .devcontainer/bin/moodle-entrypoint /usr/local/bin/moodle-entrypoint
+#    RUN chmod +x /usr/local/bin/moodle-entrypoint
+#    ENTRYPOINT ["moodle-entrypoint"]
+# ----------------------------------------------------
+#
+# History:
+#   2026-22-04: Initial version
+#
+# License: MIT License
+
+set -euo pipefail
+
+echo ""
+echo "🚀 Moodle Docker Container Starting..."
+echo "🥷 Current User: $(whoami) (whoami)"
+echo "🌍 Environment: ${ENVIRONMENT:-development}"
+
+# ======================== FUNCTION: LOAD + FALLBACK ========================
+load_secret() {
+    local var_name=$1
+    local secret_path=$2
+    local default_value=$3
+
+    if [ -f "$secret_path" ]; then
+        export "$var_name=$(cat "$secret_path")"
+        echo "✅ 🔑 Loaded Secret : $var_name "
+    else
+        export "$var_name=${!var_name:-$default_value}"
+        echo "⚠ 🔑 Secret NOT FOUND, using value Default for: $var_name"
+    fi
+}
+
+# ======================== LOAD SECRETS ========================
+load_secret "MOODLE_DBUSER"     "/run/secrets/db_user"      "moodle"
+load_secret "MOODLE_DBPASS"     "/run/secrets/db_password"  "moodle"
+
+if [ -f "/run/secrets/ssl_cert" ] && [ -f "/run/secrets/ssl_key" ]; then
+    CERT_PATH="/run/secrets/ssl_cert"
+    KEY_PATH="/run/secrets/ssl_key"
+else
+    CERT_PATH="/etc/ssl/certs/develop-local.crt"
+    KEY_PATH="/etc/ssl/certs/develop-local.key"
+fi
+
+# ======================== CLEAN MOODLE_URL ========================
+MOODLE_URL_CLEAN="${MOODLE_URL#http://}"
+MOODLE_URL_CLEAN="${MOODLE_URL_CLEAN#https://}"
+MOODLE_URL_CLEAN="${MOODLE_URL_CLEAN%%/*}"
+
+# ======================== DEVELOPMENT MODE ========================
+# Check if SSL certs exist, if not generate self-signed certs for development
+if [[ "${ENVIRONMENT}" =~ ^(development|dev)$ ]]; then
+    if [ ! -f "${CERT_PATH}" ] || [ ! -f "${KEY_PATH}" ]; then
+        echo "🔐 Generating self-signed SSL certificate for development..."
+
+        mkdir -p /etc/ssl/certs
+        chown www-data:www-data /etc/ssl/certs 2>/dev/null || true
+        chmod 755 /etc/ssl/certs
+
+    openssl req -x509 \
+        -out "$CERT_PATH" \
+        -keyout "$KEY_PATH" \
+        -days 1024 \
+        -newkey rsa:2048 \
+        -nodes \
+        -sha256 \
+        -subj "/CN=${MOODLE_URL_CLEAN}" \
+        -extensions EXT \
+        -config <(printf "[dn]\nCN=${MOODLE_URL_CLEAN}\n[req]\ndistinguished_name=dn\n[EXT]\nsubjectAltName=DNS:${MOODLE_URL_CLEAN}\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth") \
+        2>/dev/null
+        chmod 644 "${CERT_PATH}"
+        chmod 600 "${KEY_PATH}"
+        chown www-data:www-data "${CERT_PATH}" "${KEY_PATH}" 2>/dev/null || true
+
+        echo "✅ Self-signed certificate generated for ${MOODLE_URL_CLEAN}"
+    else
+        echo "✅ SSL certificate found: ${CERT_PATH} and ${KEY_PATH}"
+    fi
+fi
+
+# ======================== EXPORT ENVIRONMENT VARIABLES ========================
+echo "🔧 Configuring Environment Variables..."
+
+export MOODLE_URL MOODLE_URL_CLEAN CERT_PATH KEY_PATH
+# Moodle 5.x serve a partir de public/; config.php continua na raiz, fora do webroot.
+export APACHE_DOCUMENT_ROOT="${APACHE_DOCUMENT_ROOT:-/var/www/html/public}"
+
+# ======================== SETUP APACHE ========================
+echo "🔧 Configuring Apache virtual hosts..."
+envsubst '${MOODLE_URL},${MOODLE_URL_CLEAN},${CERT_PATH},${KEY_PATH},${APACHE_DOCUMENT_ROOT}' \
+    < /etc/apache2/sites-available/moodle.conf.template \
+    > /etc/apache2/sites-available/moodle.conf
+
+envsubst '${MOODLE_URL},${MOODLE_URL_CLEAN},${CERT_PATH},${KEY_PATH},${APACHE_DOCUMENT_ROOT}' \
+    < /etc/apache2/sites-available/moodle-ssl.conf.template \
+    > /etc/apache2/sites-available/moodle-ssl.conf
+
+if [ -f "${CERT_PATH}" ] && [ -f "${KEY_PATH}" ]; then
+    echo "🔐 Enabling SSL"
+    a2enmod ssl 2>/dev/null || true
+    a2ensite moodle-ssl 2>/dev/null || true
+    echo "✅ Apache moodle-ssl enabled"
+else
+    echo "❌ SSL Failed - File certificates NOT FOUND!"
+fi
+
+a2enmod headers 2>/dev/null || true
+a2enmod rewrite 2>/dev/null || true
+a2ensite moodle 2>/dev/null || true
+
+echo "✅ Apache configuration: MOD rewrite enabled, moodle site enabled"
+
+# ======================== SETUP CRONTAB (production) ========================
+if [[ "${ENVIRONMENT:-production}" =~ ^(production|prod)$ || "${CRON_ENABLED}" =~ ^(TRUE|True|true)$ ]]; then
+    echo "⏰ Setting up Cron (Production only)"
+
+    touch /var/log/moodle-cron.log
+    chmod 0666 /var/log/moodle-cron.log
+    echo "📄 Cron log file created"
+
+    declare -p | grep -Ev 'BASHOPTS|BASH_VERSINFO|EUID|PPID|SHELLOPTS|UID' > /container.env 2>/dev/null || true
+
+    if [ -f "/var/www/html/moodle-cron" ] && command -v crontab >/dev/null 2>&1; then
+        crontab /var/www/html/moodle-cron
+        service cron restart 2>/dev/null || true
+        echo "✅ Service Cron Configured"
+    else
+        [ ! -f "/var/www/html/moodle-cron" ] && echo "⚠ File moodle-cron NOT FOUND!"
+        command -v crontab >/dev/null 2>&1 || echo "⚠ Command CRONTAB binary NOT FOUND!"
+    fi
+else
+    echo "⏭  Skipping Cron (Development mode)"
+fi
+
+# ======================== PERMISSIONS ========================
+echo "🔧 Adjusting file permissions..."
+
+CURRENT_PERM=$(stat -c "%a" /var/www/moodledata)
+if [ "$CURRENT_PERM" != "755" ]; then
+    find /var/www/moodledata -type d -exec chmod 755 {} + 2>/dev/null || true
+    find /var/www/moodledata -type f -exec chmod 644 {} + 2>/dev/null || true
+    echo "✅ Adjusted permissions CHMOD!"
+fi
+
+# Só o moodledata é chowneado. /var/www/html NÃO entra aqui de propósito:
+# em desenvolvimento ele é um bind mount do repo do host, e um chown -R ali
+# reescreve o dono dos arquivos do usuário (inclusive .git) para www-data,
+# quebrando o git com "dubious ownership". O Moodle só escreve no dataroot;
+# o diretório de código ele apenas lê, e 644/755 já bastam para o Apache.
+if [ "$(stat -c '%U' /var/www/moodledata)" != "www-data" ]; then
+    chown -R www-data:www-data /var/www/moodledata 2>/dev/null || true
+    echo "✅ Adjusted permissions CHOWN!"
+fi
+
+
+# ======================== PRINT INFO ========================
+if [[ "${ENVIRONMENT}" =~ ^(development|dev)$ ]]; then
+    echo "+-============================================================-+"
+    echo "|           🚀 Running in DEVELOPMENT mode                     |"
+    echo "+-============================================================-+"
+    echo "🔗 MOODLE_URL          = ${MOODLE_URL}"
+    echo "🔗 ServerName          = ${MOODLE_URL_CLEAN}"
+    echo "🗄  MOODLE_DBHOST       = ${MOODLE_DBHOST:-db}"
+    echo "📦 MOODLE_DBNAME       = ${MOODLE_DBNAME:-moodle}"
+    echo "👤 MOODLE_DBUSER       = ${MOODLE_DBUSER}"
+    echo "🔐 CERT_PATH           = ${CERT_PATH}"
+    echo "🔑 KEY_PATH            = ${KEY_PATH}"
+    echo "================================================================"
+else
+    echo "+-============================================================-+"
+    echo "|           🚀 Running in PRODUCTION mode                     |"
+    echo "+-============================================================-+"
+    echo "🔗 MOODLE_URL          = ${MOODLE_URL}"
+    echo "🔗 ServerName          = ${MOODLE_URL_CLEAN}"
+    echo "🔐 CERT_PATH           = ${CERT_PATH}"
+    echo "🔑 KEY_PATH            = ${KEY_PATH}"
+    echo "================================================================"
+fi
+
+# ======================== START APACHE ========================
+echo "✅ Handing off to moodle-docker-php-entrypoint..."
+echo ""
+
+
+exec moodle-docker-php-entrypoint "$@"
