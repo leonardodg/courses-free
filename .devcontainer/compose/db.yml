@@ -34,9 +34,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 350M
+          memory: 1G   # buffer pool de 512M mais conexoes e buffers por sessao
         reservations:
-          memory: 128M
+          memory: 256M
 
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
