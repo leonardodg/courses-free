@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Entrada do marketplace na administracao do site.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082515;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+if ($hassiteconfig) {
+    $ADMIN->add('root', new admin_category(
+        'local_marketplace_cat',
+        get_string('pluginname', 'local_marketplace')
+    ), 'users');
+
+    $ADMIN->add('local_marketplace_cat', new admin_externalpage(
+        'local_marketplace_companies',
+        get_string('companies', 'local_marketplace'),
+        new moodle_url('/local/marketplace/admin/companies.php'),
+        'local/marketplace:createcompany'
+    ));
+}

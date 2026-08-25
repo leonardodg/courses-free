@@ -110,4 +110,29 @@ $string['statusarchived'] = 'Archived';
 $string['free'] = 'Free';
 $string['nocompany'] = 'You do not belong to any company.';
 
+// Admin: companies.
+$string['createcompany'] = 'Create company';
+$string['createcompanyintro'] = 'Creating a company provisions a course category, assigns the seller role to the owner in that category and creates a payment account. Close the partnership first — this screen only carries it out.';
+$string['companycreated'] = 'Company {$a} created. Add the other sellers below.';
+$string['companyowner'] = 'Owner';
+$string['companyowner_help'] = 'The person who manages the company and links its Mercado Pago account. Must already have an account on the platform.';
+$string['nocompanies'] = 'No companies yet.';
+$string['cansell'] = 'Selling';
+$string['cannotsell'] = 'Free courses only';
+$string['managemembers'] = 'Sellers';
+$string['defaultthemename'] = 'Site default theme';
+
+// Admin: members.
+$string['membersof'] = 'Sellers of {$a}';
+$string['addmember'] = 'Add seller';
+$string['addmember_help'] = 'Links an existing platform user to this company and grants them the seller role in the company category. The person must already have an account.';
+$string['memberadded'] = 'Seller added.';
+$string['memberremoved'] = 'Seller removed.';
+$string['memberrolechanged'] = 'Role changed.';
+$string['makeowner'] = 'Make owner';
+$string['makeseller'] = 'Make seller';
+$string['nomembers'] = 'This company has no sellers.';
+$string['erroralreadymember'] = 'This person is already a seller of this company.';
+$string['errorcannotremoveowner'] = 'The owner cannot be removed. Make someone else the owner first — a company without an owner has nobody responsible for its payment account.';
+
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';

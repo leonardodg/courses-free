@@ -37,12 +37,19 @@ defined('MOODLE_INTERNAL') || die();
 $capabilities = [
 
     // Criar a propria empresa. Self-service: todo usuario autenticado pode.
+    // Criar empresa. NAO e concedida a ninguem por padrao.
+    //
+    // Criar empresa cria uma CATEGORIA, que e objeto global: aparece na arvore
+    // que todos os usuarios veem. Dar isso a quem acabou de se cadastrar seria
+    // entregar a estrutura do site a desconhecidos.
+    //
+    // A parceria e fechada fora do sistema e o administrador provisiona a
+    // empresa. O site admin passa por aqui de qualquer forma.
     'local/marketplace:createcompany' => [
+        'riskbitmask' => RISK_CONFIG | RISK_SPAM,
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'user' => CAP_ALLOW,
-        ],
+        'archetypes' => [],
     ],
 
     // Administrar a empresa: dados cadastrais, membros, tema, dominio.
