@@ -107,4 +107,25 @@ $CFG->phpunit_dataroot  = '/var/www/phpunitdata';
 $CFG->phpunit_prefix = 't_';
 define('PHPUNIT_LONGTEST', true);
 
+// -----------------------------------------------------------------------------
+// Ajuste local da maquina.
+//
+// ESTE ARQUIVO E GERADO. O deploy sobrescreve config.php a cada execucao, entao
+// editar aqui nao sobrevive ao proximo deploy. Ajuste especifico de uma maquina
+// vai em config-local.php, ao lado deste arquivo.
+//
+// A separacao existe porque o desenho anterior preservava o config.php da VPS
+// para nao perder ajuste manual - e o efeito colateral era que mudanca no
+// template nunca chegava sozinha. Uma correcao de cachejs ficou semanas sem
+// efeito por isso, e recria-lo a mao derrubou o site uma vez.
+//
+// Vem DEPOIS de todo o resto e ANTES do setup.php: pode sobrescrever qualquer
+// $CFG definido acima, e ainda esta a tempo de valer.
+//
+// O config-local.php fica no EXCLUDE do rsync, como o .env - o deploy nunca o
+// toca, nem para criar nem para apagar.
+if (file_exists(__DIR__ . '/config-local.php')) {
+    require_once(__DIR__ . '/config-local.php');
+}
+
 require_once(__DIR__ . '/lib/setup.php');
