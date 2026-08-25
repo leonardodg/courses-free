@@ -313,29 +313,22 @@ jobs:
 
             # --- espaco em disco ---
             #
-            # Cada deploy baixa uma imagem nova e deixa a anterior para tras. A
-            # imagem do Moodle passa de 1 GB, entao um dia de iteracao enche o
-            # disco da VPS - e o sintoma nao diz "disco cheio" de cara: o pull
-            # falha no meio da extracao, com "no space left on device" no meio
-            # de um caminho de arquivo qualquer.
+            # NAO limpe imagens daqui. Esta VPS hospeda outros servicos, e
+            # "docker image prune -a" apaga a imagem de qualquer container que
+            # esteja parado no momento - inclusive de projetos que nao sao
+            # deste repositorio. Imagem buildada localmente, sem registry, nao
+            # volta.
             #
-            # E o site continua NO AR com o container antigo, entao "o site
-            # responde" nao prova que o deploy aplicou. Em 2026-08-25 o job
-            # falhou aqui e mesmo assim courses.leodg.dev devolvia HTTP 200,
-            # servindo o codigo da versao anterior.
+            # A limpeza e manual, feita por quem sabe o que mais roda aqui.
             #
-            # A limpeza vem ANTES do pull, senao nao ha espaco para a imagem
-            # nova. "prune -a" so remove imagem que nenhum container usa - as
-            # dos servicos em execucao ficam.
-            #
-            # Volumes NAO entram: dbdata e moodledata sao bind mounts nesta VPS,
-            # mas basta alguem trocar por volume nomeado para "prune --volumes"
-            # apagar o banco. O risco nao compensa o espaco que liberaria.
-            echo ">> disco antes da limpeza:"
-            df -h / | tail -1
-            docker image prune -af || true
-            docker builder prune -af || true
-            echo ">> disco depois da limpeza:"
+            # O log abaixo existe porque a falha por disco cheio engana duas
+            # vezes: nao diz "disco cheio" de cara - aparece como "no space
+            # left on device" no meio de um caminho de arquivo qualquer, dentro
+            # da extracao da imagem - e o site continua NO AR com o container
+            # antigo, entao "o site responde" nao prova que o deploy aplicou.
+            # Em 2026-08-25 o job falhou e courses.leodg.dev seguia em 200,
+            # servindo a versao anterior.
+            echo ">> espaco em disco:"
             df -h / | tail -1
 
             docker compose pull
