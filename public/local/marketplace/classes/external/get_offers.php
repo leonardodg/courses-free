@@ -46,6 +46,18 @@ class get_offers extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'company' => new external_value(PARAM_ALPHANUMEXT, 'Nome curto da empresa'),
+            'sort' => new external_value(
+                PARAM_ALPHA,
+                'manual, newest, name, price ou pricedesc',
+                VALUE_DEFAULT,
+                offer::SORT_MANUAL
+            ),
+            'categoryid' => new external_value(
+                PARAM_INT,
+                'Filtrar por subcategoria. 0 nao filtra.',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
@@ -59,15 +71,24 @@ class get_offers extends external_api {
      * identificado.
      *
      * @param string $companyname
+     * @param string $sort
+     * @param int $categoryid
      * @return array
      */
-    public static function execute(string $companyname): array {
+    public static function execute(string $companyname, string $sort = offer::SORT_MANUAL, int $categoryid = 0): array {
         global $USER, $OUTPUT;
 
-        [$companyname] = array_values(self::validate_parameters(
+        ['company' => $companyname, 'sort' => $sort, 'categoryid' => $categoryid] = self::validate_parameters(
             self::execute_parameters(),
-            ['company' => $companyname]
-        ));
+            ['company' => $companyname, 'sort' => $sort, 'categoryid' => $categoryid]
+        );
+
+        // Valor invalido cai no padrao em vez de dar erro: a pagina externa e
+        // do vendedor, e derrubar a vitrine dele por um parametro digitado
+        // errado seria desproporcional.
+        if (!in_array($sort, offer::sort_options(), true)) {
+            $sort = offer::SORT_MANUAL;
+        }
 
         $company = company::get_record(['shortname' => $companyname]);
         if (!$company || $company->get('status') !== company::STATUS_ACTIVE) {
@@ -88,7 +109,10 @@ class get_offers extends external_api {
         }
 
         $result = [];
-        foreach (offer::get_published((int) $company->get('id')) as $o) {
+        foreach (offer::get_published((int) $company->get('id'), $sort) as $o) {
+            if ($categoryid > 0 && !in_array($categoryid, $o->get_category_ids(), true)) {
+                continue;
+            }
             $offerid = (int) $o->get('id');
             $courses = [];
             foreach ($o->get_course_ids() as $courseid) {

@@ -38,6 +38,13 @@ $shortname = required_param('company', PARAM_ALPHANUMEXT);
 // isto o aluno cai numa lista e tem que adivinhar qual das ofertas destrava o
 // conteudo que ele estava vendo.
 $highlight = optional_param('highlight', 0, PARAM_INT);
+$sort = optional_param('sort', offer::SORT_MANUAL, PARAM_ALPHA);
+$filtercat = optional_param('cat', 0, PARAM_INT);
+$filtertype = optional_param('type', '', PARAM_ALPHA);
+
+if (!in_array($sort, offer::sort_options(), true)) {
+    $sort = offer::SORT_MANUAL;
+}
 
 require_login();
 
@@ -99,7 +106,29 @@ if (trim($intro) !== '') {
     );
 }
 
-$offers = offer::get_published((int) $company->get('id'));
+$offers = offer::get_published((int) $company->get('id'), $sort);
+
+// Subcategorias que de fato tem oferta publicada. Listar toda subcategoria da
+// empresa mostraria filtro que nao filtra nada - a que existe mas ainda nao tem
+// curso a venda.
+$subcats = [];
+foreach ($offers as $o) {
+    foreach ($o->get_category_ids() as $catid) {
+        if ($catid !== (int) $company->get('categoryid')) {
+            $subcats[$catid] = true;
+        }
+    }
+}
+$subcats = array_keys($subcats);
+
+// Aplica os filtros DEPOIS de levantar as subcategorias, senao a lista de
+// filtros encolheria a cada filtro aplicado e o aluno ficaria sem como voltar.
+if ($filtercat > 0) {
+    $offers = array_filter($offers, fn($o) => in_array($filtercat, $o->get_category_ids(), true));
+}
+if ($filtertype !== '') {
+    $offers = array_filter($offers, fn($o) => $o->get('offertype') === $filtertype);
+}
 
 if (!$offers) {
     echo $OUTPUT->notification(get_string('nooffers', 'local_marketplace'), 'info');
@@ -112,6 +141,95 @@ if (!$offers) {
 $cansell = $company->can_sell();
 if (!$cansell) {
     echo $OUTPUT->notification(get_string('nopaymentaccount', 'local_marketplace'), 'warning');
+}
+
+// Controles so aparecem quando ha o que ordenar ou filtrar. Uma empresa com
+// duas ofertas nao precisa de barra de filtro ocupando o topo da vitrine.
+$total = count(offer::get_published((int) $company->get('id')));
+if ($total > 2 || $subcats) {
+    $baseurl = new moodle_url('/local/marketplace/offers.php', ['company' => $shortname]);
+
+    echo html_writer::start_div('local-marketplace-controls d-flex flex-wrap gap-3 align-items-end mb-4');
+
+    // Ordenacao.
+    $sortlabels = [];
+    foreach (offer::sort_options() as $opt) {
+        $sortlabels[$opt] = get_string('sort' . $opt, 'local_marketplace');
+    }
+    echo html_writer::div(
+        html_writer::tag('label', get_string('sortby', 'local_marketplace'), [
+            'for' => 'mp-sort',
+            'class' => 'form-label small text-muted mb-1',
+        ]) .
+        $OUTPUT->single_select(
+            new moodle_url($baseurl, array_filter(['cat' => $filtercat, 'type' => $filtertype])),
+            'sort',
+            $sortlabels,
+            $sort,
+            null,
+            'mp-sort'
+        )
+    );
+
+    // Subcategorias.
+    if ($subcats) {
+        $catlabels = [0 => get_string('filterallcategories', 'local_marketplace')];
+        foreach ($subcats as $catid) {
+            $cat = core_course_category::get($catid, IGNORE_MISSING, true);
+            if ($cat) {
+                $catlabels[$catid] = $cat->get_formatted_name();
+            }
+        }
+        echo html_writer::div(
+            html_writer::tag('label', get_string('filtercategory', 'local_marketplace'), [
+                'for' => 'mp-cat',
+                'class' => 'form-label small text-muted mb-1',
+            ]) .
+            $OUTPUT->single_select(
+                new moodle_url($baseurl, array_filter(['sort' => $sort, 'type' => $filtertype])),
+                'cat',
+                $catlabels,
+                $filtercat,
+                null,
+                'mp-cat'
+            )
+        );
+    }
+
+    // Tipo de oferta.
+    $typelabels = [
+        '' => get_string('filteralltypes', 'local_marketplace'),
+        offer::TYPE_SINGLE => get_string('typesingle', 'local_marketplace'),
+        offer::TYPE_BUNDLE => get_string('typebundle', 'local_marketplace'),
+        offer::TYPE_CATALOG => get_string('typecatalog', 'local_marketplace'),
+    ];
+    echo html_writer::div(
+        html_writer::tag('label', get_string('filtertype', 'local_marketplace'), [
+            'for' => 'mp-type',
+            'class' => 'form-label small text-muted mb-1',
+        ]) .
+        $OUTPUT->single_select(
+            new moodle_url($baseurl, array_filter(['sort' => $sort, 'cat' => $filtercat])),
+            'type',
+            $typelabels,
+            $filtertype,
+            null,
+            'mp-type'
+        )
+    );
+
+    echo html_writer::end_div();
+
+    // Sem resultado apos filtrar e diferente de empresa sem oferta: aqui o
+    // aluno precisa saber que basta limpar o filtro.
+    if (!$offers) {
+        echo $OUTPUT->notification(get_string('nooffersfiltered', 'local_marketplace'), 'info');
+        echo html_writer::link($baseurl, get_string('filterclear', 'local_marketplace'), [
+            'class' => 'btn btn-secondary',
+        ]);
+        echo $OUTPUT->footer();
+        exit;
+    }
 }
 
 echo html_writer::start_div('local-marketplace-offers');

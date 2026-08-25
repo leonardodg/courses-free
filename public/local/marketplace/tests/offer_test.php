@@ -163,6 +163,47 @@ final class offer_test extends \advanced_testcase {
     }
 
     /**
+     * Cada opcao de ordenacao vira uma clausula SQL propria.
+     *
+     * @return void
+     */
+    public function test_sort_clause_per_option(): void {
+        $this->assertSame('sortorder, name', offer::sort_clause(offer::SORT_MANUAL));
+        $this->assertSame('name', offer::sort_clause(offer::SORT_NAME));
+        $this->assertSame('price, name', offer::sort_clause(offer::SORT_PRICE));
+        $this->assertSame('price DESC, name', offer::sort_clause(offer::SORT_PRICEDESC));
+        $this->assertStringStartsWith('timecreated DESC', offer::sort_clause(offer::SORT_NEWEST));
+    }
+
+    /**
+     * Opcao desconhecida cai na ordem do vendedor.
+     *
+     * A vitrine e publica: o parametro vem da URL e qualquer um digita o que
+     * quiser. Cair no padrao e melhor que devolver erro ou, pior, montar SQL
+     * com o que chegou.
+     *
+     * @return void
+     */
+    public function test_unknown_sort_falls_back_to_manual(): void {
+        $this->assertSame('sortorder, name', offer::sort_clause('lixo'));
+        $this->assertSame('sortorder, name', offer::sort_clause(''));
+        $this->assertSame('sortorder, name', offer::sort_clause('price; DROP TABLE'));
+    }
+
+    /**
+     * Lancamentos desempata por id.
+     *
+     * Ofertas criadas no mesmo segundo - o que acontece no seed e em importacao
+     * - sairiam em ordem aleatoria sem isto, e a vitrine mudaria de ordem a
+     * cada carregamento.
+     *
+     * @return void
+     */
+    public function test_newest_breaks_ties_by_id(): void {
+        $this->assertSame('timecreated DESC, id DESC', offer::sort_clause(offer::SORT_NEWEST));
+    }
+
+    /**
      * Preco zero e gratuito; qualquer valor positivo nao e.
      *
      * @return void
