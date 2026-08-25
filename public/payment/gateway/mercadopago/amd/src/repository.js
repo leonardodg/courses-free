@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,17 +14,30 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Gateway do Mercado Pago (Checkout Pro) com split de pagamento.
+ * Chamadas ao servidor.
  *
- * @package    paygw_mercadopago
+ * @module     paygw_mercadopago/repository
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+import Ajax from 'core/ajax';
 
-$plugin->component = 'paygw_mercadopago';
-$plugin->version   = 2026082501;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+/**
+ * Pede ao servidor a criacao da preferencia.
+ *
+ * O valor NAO e enviado daqui: quem o resolve e o servidor, a partir do item.
+ *
+ * @param {String} component
+ * @param {String} paymentArea
+ * @param {Number} itemId
+ * @returns {Promise<{success: Boolean, redirecturl: String, message: String}>}
+ */
+export const createPreference = (component, paymentArea, itemId) => Ajax.call([{
+    methodname: 'paygw_mercadopago_create_preference',
+    args: {
+        component,
+        paymentarea: paymentArea,
+        itemid: itemId,
+    },
+}])[0];

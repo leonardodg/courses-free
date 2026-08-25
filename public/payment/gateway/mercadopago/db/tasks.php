@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Gateway do Mercado Pago (Checkout Pro) com split de pagamento.
+ * Tarefas agendadas.
  *
  * @package    paygw_mercadopago
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'paygw_mercadopago';
-$plugin->version   = 2026082501;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$tasks = [
+    [
+        // Diaria basta: o token vale ~6 meses e renovamos com 15 dias de
+        // antecedencia. Rodar de hora em hora so gastaria chamada a API.
+        'classname' => 'paygw_mercadopago\task\refresh_tokens',
+        'blocking' => 0,
+        'minute' => '23',
+        'hour' => '4',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*',
+    ],
+];
