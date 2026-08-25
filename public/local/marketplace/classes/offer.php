@@ -131,6 +131,22 @@ class offer extends persistent {
     }
 
     /**
+     * Duracao do acesso em segundos, ou 0 para vitalicio.
+     *
+     * Separado de calculate_expiry() porque a renovacao precisa somar a
+     * duracao ao vencimento ATUAL, nao calcular uma data a partir de agora -
+     * senao renovar antes do vencimento encurtaria o que ja foi pago.
+     *
+     * @return int
+     */
+    public function get_access_duration(): int {
+        if ($this->get('accessmode') === self::ACCESS_LIFETIME) {
+            return 0;
+        }
+        return max(0, (int) $this->get('accessdays')) * DAYSECS;
+    }
+
+    /**
      * Cursos que esta oferta libera.
      *
      * Em catalog a lista NAO vem de offer_course: vem da categoria da empresa,
