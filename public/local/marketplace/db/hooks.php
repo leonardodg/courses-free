@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Ganchos do marketplace.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082531;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$callbacks = [
+    [
+        // Prioridade alta: precisa correr antes de qualquer outro plugin
+        // comecar a montar pagina no dominio de uma empresa suspensa.
+        'hook' => \core\hook\after_config::class,
+        'callback' => \local_marketplace\hook_callbacks::class . '::after_config',
+        'priority' => 1000,
+    ],
+];

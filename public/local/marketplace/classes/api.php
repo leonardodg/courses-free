@@ -77,6 +77,13 @@ class api {
             $transaction->rollback($e);
         }
 
+        // Fora da transacao de proposito: escrever arquivo nao tem rollback.
+        // Gerar antes do commit deixaria o mapa anunciando um dominio de
+        // empresa que nao chegou a existir.
+        if ($company->get('hostname')) {
+            self::regenerate_domain_map();
+        }
+
         return $company;
     }
 
@@ -176,6 +183,8 @@ class api {
 
         $transaction = $DB->start_delegated_transaction();
 
+        $hostbefore = $company->get('hostname');
+
         try {
             $renamed = ($company->get('name') !== $data->name);
 
@@ -202,7 +211,79 @@ class api {
             $transaction->rollback($e);
         }
 
+        // Regenera quando o dominio ENTROU, SAIU ou mudou. Comparar com o
+        // valor anterior evita reescrever o arquivo a cada troca de nome ou
+        // de tema, que nao afetam o mapa. Suspender tambem nao afeta: o mapa
+        // lista dominio existente, e a situacao e conferida no banco.
+        if ($hostbefore !== $company->get('hostname')) {
+            self::regenerate_domain_map();
+        }
+
         return $company;
+    }
+
+    /**
+     * Regenera o mapa Host -> empresa lido pelo config.php.
+     *
+     * O config.php roda ANTES do lib/setup.php, entao $DB ainda nao existe e
+     * consultar o banco ali e impossivel. Por isso o mapa e um arquivo PHP
+     * gerado: escrito quando um dominio muda, lido a cada requisicao.
+     *
+     * Escrito num temporario e movido por rename(), que e atomico no mesmo
+     * sistema de arquivos. Escrever direto no destino deixaria uma janela em
+     * que o config.php poderia incluir um arquivo pela metade - e um
+     * $CFG->wwwroot truncado derruba o site inteiro, nao so a empresa.
+     *
+     * @return int Quantos dominios entraram no mapa.
+     */
+    public static function regenerate_domain_map(): int {
+        global $CFG, $DB;
+
+        // TODA empresa com dominio entra, inclusive a suspensa. O arquivo
+        // responde "este dominio existe?", que e fronteira de SEGURANCA: sem
+        // ele, o Host da requisicao definiria o wwwroot, e um atacante mandando
+        // "Host: evil.com" faria o Moodle gerar todo link apontando para la -
+        // inclusive o de redefinicao de senha, que sai por e-mail.
+        //
+        // "Esta suspensa?" e outra pergunta, respondida no banco pelo
+        // after_config, onde da para mostrar uma pagina explicando. Deixar a
+        // suspensao aqui faria o dominio cair no site padrao em silencio, e
+        // acoplaria suspender a regenerar arquivo: se a regeneracao falhasse, a
+        // suspensao nao surtiria efeito.
+        $rows = $DB->get_records_select(
+            company::TABLE,
+            "hostname IS NOT NULL AND hostname <> ''",
+            [],
+            'hostname',
+            'id, shortname, hostname'
+        );
+
+        $map = [];
+        foreach ($rows as $row) {
+            // O host e a chave e vem do cadastro; normalizar aqui evita que
+            // "Meu.Site.com" no formulario nunca case com o Host do navegador,
+            // que chega sempre em minusculas.
+            $map[strtolower($row->hostname)] = [
+                'wwwroot' => 'https://' . strtolower($row->hostname),
+                'company' => $row->shortname,
+            ];
+        }
+
+        $file = $CFG->dataroot . '/marketplace_domains.php';
+        $tmp = $file . '.' . getmypid() . '.tmp';
+
+        $php = "<?php\n"
+            . "// GERADO por local_marketplace. Nao edite: sera sobrescrito.\n"
+            . "// Ultima geracao: " . date('c') . "\n"
+            . "return " . var_export($map, true) . ";\n";
+
+        if (file_put_contents($tmp, $php, LOCK_EX) === false) {
+            throw new moodle_exception('errordomainmap', 'local_marketplace');
+        }
+        @chmod($tmp, $CFG->filepermissions ?? 0666);
+        rename($tmp, $file);
+
+        return count($map);
     }
 
     /**

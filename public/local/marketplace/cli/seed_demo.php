@@ -46,10 +46,11 @@ use local_marketplace\offer;
         'help' => false,
         'company' => 'teste',
         'seller' => 'vendedor1',
+        'password' => '',
         'courses' => 3,
         'clean' => false,
     ],
-    ['h' => 'help', 'c' => 'company', 's' => 'seller']
+    ['h' => 'help', 'c' => 'company', 's' => 'seller', 'p' => 'password']
 );
 
 if ($options['help']) {
@@ -59,6 +60,7 @@ Opcoes:
   -h, --help              Esta ajuda
   -c, --company=NOME      Nome curto da empresa (padrao: teste)
   -s, --seller=USUARIO    Username do vendedor (padrao: vendedor1)
+  -p, --password=SENHA    Senha do vendedor. Sem ela, uma e sorteada e exibida
       --courses=N         Quantos cursos criar (padrao: 3)
       --clean             Remove o cenario em vez de criar
 ");
@@ -122,9 +124,18 @@ if (!$seller) {
         'confirmed' => 1,
         'mnethostid' => $CFG->mnet_localhost_id,
     ];
-    $new->id = user_create_user($new, false, false);
+    // A senha e obrigatoria aqui. user_create_user() sem senha produz um
+    // usuario que ninguem consegue usar - e o vendedor precisa entrar para
+    // vincular a conta Mercado Pago dele.
+    $new->password = $options['password'] !== ''
+        ? $options['password']
+        : 'Teste@' . random_int(100000, 999999);
+    $plain = $new->password;
+
+    $new->id = user_create_user($new, true, false);
     $seller = $DB->get_record('user', ['id' => $new->id]);
     cli_writeln("Vendedor criado: {$seller->username} (id {$seller->id})");
+    cli_writeln("  senha: {$plain}");
 } else {
     cli_writeln("Vendedor existente: {$seller->username} (id {$seller->id})");
 }
