@@ -15,17 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Strings do block_marketplace.
  *
- * @package    local_marketplace
+ * @package    block_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082524;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$string['blockcancelled'] = 'Cancelada';
+$string['blockendson'] = 'Termina em {$a}';
+$string['blockhistory'] = 'Todas as assinaturas e pagamentos';
+$string['blockpaynow'] = 'Pagar agora — faltam {$a} dia(s)';
+$string['blockrenewson'] = 'Renova até {$a}';
+$string['marketplace:addinstance'] = 'Adicionar um bloco de assinaturas';
+$string['marketplace:myaddinstance'] = 'Adicionar um bloco de assinaturas ao Painel';
+$string['pluginname'] = 'Minhas assinaturas';
+$string['privacy:metadata'] = 'O bloco Minhas assinaturas exibe direitos guardados pelo local_marketplace e nao guarda dado nenhum.';
