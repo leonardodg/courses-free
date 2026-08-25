@@ -180,7 +180,14 @@ echo html_writer::div(
         new moodle_url('/course/index.php', ['categoryid' => $company->get('categoryid')]),
         get_string('managecourses', 'local_marketplace'),
         ['class' => 'btn btn-secondary']
-    ),
+    ) . ' ' .
+    (has_capability('local/marketplace:viewreport', $context)
+        ? html_writer::link(
+            new moodle_url('/local/marketplace/report.php', ['company' => $shortname]),
+            get_string('reportsection', 'local_marketplace'),
+            ['class' => 'btn btn-secondary']
+        )
+        : ''),
     'mb-4'
 );
 
