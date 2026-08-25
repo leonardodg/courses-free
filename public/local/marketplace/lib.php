@@ -68,4 +68,18 @@ function local_marketplace_extend_navigation_category_settings($categorynode, $c
         'local_marketplace_offers',
         new pix_icon('i/courseevent', '')
     );
+
+    // Capability propria: ver quanto a empresa faturou nao acompanha
+    // administrar a empresa. Um vendedor pode publicar curso sem ter acesso ao
+    // financeiro dela.
+    if (has_capability('local/marketplace:viewreport', $catcontext)) {
+        $categorynode->add(
+            get_string('reportsection', 'local_marketplace'),
+            new moodle_url('/local/marketplace/report.php', ['company' => $company->get('shortname')]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'local_marketplace_report',
+            new pix_icon('i/report', '')
+        );
+    }
 }

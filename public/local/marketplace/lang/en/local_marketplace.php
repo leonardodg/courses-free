@@ -135,4 +135,16 @@ $string['nomembers'] = 'This company has no sellers.';
 $string['erroralreadymember'] = 'This person is already a seller of this company.';
 $string['errorcannotremoveowner'] = 'The owner cannot be removed. Make someone else the owner first — a company without an owner has nobody responsible for its payment account.';
 
+// Financial report.
+$string['reportsection'] = 'Sales';
+$string['reportall'] = 'All time';
+$string['reportdays'] = 'Last {$a} days';
+$string['reportnosales'] = 'No approved sales in this period.';
+$string['reportsales'] = 'Approved sales';
+$string['reportgross'] = 'Gross';
+$string['reportcommission'] = 'Platform commission';
+$string['reportentries'] = 'Sales';
+$string['reportmppayment'] = 'Mercado Pago payment';
+$string['reportnetnotice'] = 'The Mercado Pago fee is not shown here because it is not reported back to us: it varies by payment method and payout term, and is deducted on their side before the platform commission. Your net amount is the one in your Mercado Pago statement.';
+
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';
