@@ -85,4 +85,23 @@ $string['alreadyowned'] = 'Você já tem acesso a esta oferta.';
 $string['unavailable'] = 'Ainda não disponível para compra.';
 $string['accessgranted'] = 'Acesso liberado. Bom curso!';
 
+// Painel da empresa.
+$string['paymentsection'] = 'Meio de pagamento';
+$string['offerssection'] = 'Ofertas';
+$string['configurepayment'] = 'Configurar Mercado Pago';
+$string['cansellyes'] = 'Pronta para vender. Gateway ativo: {$a}';
+$string['errornoaccount'] = 'Esta empresa não tem conta de pagamento. Reinstale ou recrie a empresa.';
+$string['viewstorefront'] = 'Ver vitrine';
+$string['managecourses'] = 'Gerenciar cursos';
+$string['offername'] = 'Oferta';
+$string['offertype'] = 'Tipo';
+$string['typesingle'] = 'Curso avulso';
+$string['typebundle'] = 'Combo';
+$string['typecatalog'] = 'Catálogo inteiro';
+$string['statusdraft'] = 'Rascunho';
+$string['statuspublished'] = 'Publicada';
+$string['statusarchived'] = 'Arquivada';
+$string['free'] = 'Gratuito';
+$string['nocompany'] = 'Você não pertence a nenhuma empresa.';
+
 $string['privacy:metadata'] = 'O plugin Marketplace armazena empresas, seus vendedores e credenciais de pagamento.';

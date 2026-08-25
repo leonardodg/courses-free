@@ -108,16 +108,29 @@ class gateway extends \core_payment\gateway {
      * @return string
      */
     protected static function describe_oauth_status(\core_payment\form\account_gateway $form): string {
-        global $OUTPUT;
-
         $gateway = $form->get_gateway_persistent();
         $config = $gateway && $gateway->get('id') ? $gateway->get_configuration() : [];
 
         if (empty($config['accesstoken'])) {
-            $url = new \moodle_url('/payment/gateway/mercadopago/oauth_start.php', [
-                'accountid' => $gateway && $gateway->get('id') ? $gateway->get('accountid') : 0,
+            $accountid = $gateway ? (int) $gateway->get('accountid') : 0;
+            if (!$accountid) {
+                // A conta ainda nao existe: o gateway precisa ser salvo antes,
+                // senao nao ha accountid para levar ao fluxo OAuth.
+                return get_string('savebeforelinking', 'paygw_mercadopago');
+            }
+
+            $url = new \moodle_url('/payment/gateway/mercadopago/oauth_start.php', ['accountid' => $accountid]);
+
+            // Link, NAO single_button. single_button renderiza um <form>, e
+            // este texto vai DENTRO do formulario de configuracao do gateway.
+            // Formulario aninhado e HTML invalido: o navegador descarta o
+            // interno, e o clique submete o externo - que aponta para
+            // manage_gateway.php sem accountid nem gateway, produzindo
+            // "Gateway not found".
+            return \html_writer::link($url, get_string('linkaccount', 'paygw_mercadopago'), [
+                'class' => 'btn btn-secondary',
+                'target' => '_self',
             ]);
-            return $OUTPUT->render(new \single_button($url, get_string('linkaccount', 'paygw_mercadopago'), 'get'));
         }
 
         $expires = (int) ($config['tokenexpires'] ?? 0);
