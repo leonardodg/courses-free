@@ -77,7 +77,8 @@ class payment_processor {
         $record->id = $DB->insert_record(self::TABLE, $record);
 
         $client = new mp_client($config['accesstoken']);
-        $preference = $client->create_preference([
+
+        $preferencebody = [
             'items' => [[
                 'title' => helper::get_cost_as_string($amount, $currency),
                 'quantity' => 1,
@@ -98,7 +99,24 @@ class payment_processor {
             // depois do redirecionamento.
             'notification_url' => $CFG->wwwroot . '/payment/gateway/mercadopago/webhook.php',
             'auto_return' => 'approved',
-        ]);
+        ];
+
+        // Em teste, exige que o comprador entre na conta dele.
+        //
+        // Sem isto o Checkout Pro oferece pagar como visitante, e o pagador
+        // fica sem identidade - o Mercado Pago recusa a compra com "uma das
+        // partes e de teste", porque um visitante nao e usuario de teste. Nao
+        // existe forma de o comprador se identificar como conta de teste sem
+        // fazer login.
+        //
+        // Fica preso ao modo de teste de proposito. Em producao, wallet_purchase
+        // elimina pagamento sem cadastro, boleto e dinheiro - ou seja, corta
+        // conversao real para resolver um problema que so existe no sandbox.
+        if (!empty($appconfig->testmode)) {
+            $preferencebody['purpose'] = 'wallet_purchase';
+        }
+
+        $preference = $client->create_preference($preferencebody);
 
         $record->preferenceid = (string) ($preference['id'] ?? '');
         $record->timemodified = time();
