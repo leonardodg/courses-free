@@ -86,6 +86,7 @@ $string['unavailable'] = 'Not available for purchase yet.';
 $string['accessgranted'] = 'Access granted. Enjoy your course!';
 
 // Company dashboard.
+$string['companypanel'] = 'Marketplace: company panel';
 $string['paymentsection'] = 'Payment method';
 $string['offerssection'] = 'Offers';
 $string['configurepayment'] = 'Configure Mercado Pago';
