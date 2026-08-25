@@ -25,14 +25,6 @@ on:
   pull_request:
     branches: [main, dev]
   workflow_dispatch:
-    inputs:
-      recreate_config:
-        description: >-
-          Recriar o config.php da VPS a partir do template. Use quando o template
-          mudou: o deploy PRESERVA o config.php existente, entao mudanca no
-          template nao se aplica sozinha.
-        type: boolean
-        default: false
 
 concurrency:
   # Um deploy por vez: dois rodando juntos corrompem o upgrade.php.
@@ -386,7 +378,7 @@ jobs:
           # excluiria public/cache/classes/config.php, public/theme/boost/config.php
           # e outros 6 arquivos do proprio Moodle, e a instalacao morre com
           # 'Class "core_cache\config" not found'.
-          EXCLUDE: ".git/, .github/, node_modules/, .devcontainer/secrets/, .devcontainer/certs/, /.env, /config.php"
+          EXCLUDE: ".git/, .github/, node_modules/, .devcontainer/secrets/, .devcontainer/certs/, /.env, /config.php, /config-local.php"
 
       - name: Configurar e subir
         uses: appleboy/ssh-action@v1.2.0
@@ -458,26 +450,25 @@ jobs:
             EOF
 
             # O bind mount esconde o config.php da imagem: ele tem que existir aqui.
-            # So cria se NAO existir. Sobrescrever a cada deploy apagaria
-            # qualquer ajuste feito direto na VPS - e o config.php e onde vai
-            # morar o mapa Host->wwwroot dos dominios de vendedor (Fase 3).
+            # O config.php e GERADO a cada deploy, e nao preservado.
             #
-            # Para aplicar uma mudanca do template, rode o workflow a mao com
-            # recreate_config marcado. Guarda uma copia com data antes, porque
-            # este arquivo pode ter ajuste feito direto na VPS que ninguem
-            # lembra - e recria-lo sem copia perderia isso em silencio.
-            if [ "${{ inputs.recreate_config }}" = "true" ] && [ -f config.php ]; then
-              BACKUP="config.php.bak-$(date +%Y%m%d-%H%M%S)"
-              cp config.php "$BACKUP"
-              rm config.php
-              echo ">> config.php removido a pedido; copia em $BACKUP"
-            fi
+            # Preservar parecia prudente - protegia ajuste feito direto na
+            # maquina - mas o efeito era que mudanca no template nunca chegava
+            # sozinha. Uma correcao de cachejs ficou semanas sem efeito, e
+            # recria-lo a mao derrubou o site em 2026-08-25.
+            #
+            # Ajuste especifico da maquina vai em config-local.php, que o
+            # proprio template inclui se existir e que esta no EXCLUDE do rsync.
+            # O deploy nunca toca nele.
+            # Escreve ao lado e move: rename() e atomico no mesmo sistema de
+            # arquivos. Um cp interrompido deixaria o config.php pela metade, e
+            # config.php truncado derruba o site inteiro - nao uma pagina.
+            cp .devcontainer/config/config-docker.php config.php.novo
+            mv -f config.php.novo config.php
+            echo ">> config.php gerado do template"
 
-            if [ -f config.php ]; then
-              echo ">> config.php ja existe - preservado"
-            else
-              cp .devcontainer/config/config-docker.php config.php
-              echo ">> config.php criado a partir do template"
+            if [ -f config-local.php ]; then
+              echo ">> config-local.php encontrado - ajustes locais preservados"
             fi
 
             # Nao ha certificado a gerar aqui: quem termina TLS e o nginx, com

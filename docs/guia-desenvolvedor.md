@@ -342,6 +342,36 @@ php local/marketplace/cli/domains.php --rebuild  # regenera do banco
 **Sem `$CFG->sessioncookiedomain`**, por decisão: a sessão passa a ser por domínio.
 Quem entra em `meuscursos.joao.com` não está logado em `courses.leodg.dev`.
 
+## config.php: template versionado, ajuste local separado
+
+O `config.php` da VPS é **gerado** a cada deploy, a partir de
+`.devcontainer/config/config-docker.php`. Editar direto lá não sobrevive ao
+próximo deploy.
+
+Ajuste específico de uma máquina vai em **`config-local.php`**, na raiz do site.
+O template o inclui se existir, depois de todo o resto e antes do
+`lib/setup.php` — então ele sobrescreve qualquer `$CFG` e ainda vale a tempo.
+
+```bash
+cp .devcontainer/config/config-local.php.example config-local.php
+```
+
+Ele está no `EXCLUDE` do rsync e no `.gitignore`: o deploy nunca o cria nem o
+apaga, e ele nunca é versionado.
+
+> **Por que não preservar o `config.php`, como antes.** Preservar protegia o
+> ajuste manual, mas fazia mudança no template nunca chegar sozinha. Uma correção
+> de `cachejs` ficou semanas sem efeito por isso, e recriá-lo à mão derrubou o
+> site em 25/08/2026 — o arquivo foi removido e o script morreu antes de gerar o
+> novo, deixando o instalador do Moodle exposto.
+>
+> A separação resolve os dois lados: o template chega sempre, o ajuste local
+> nunca se perde.
+
+A escrita é atômica — grava ao lado e move. Um `cp` interrompido deixaria o
+`config.php` pela metade, e `config.php` truncado derruba o site inteiro, não uma
+página.
+
 ## Armadilhas que já custaram tempo
 
 | Sintoma | Causa |
@@ -350,7 +380,7 @@ Quem entra em `meuscursos.joao.com` não está logado em `courses.leodg.dev`.
 | `No define call` | `requirejs.php` serve `amd/src` quando não há `.map`. Não há transpilador: o `src` precisa ser AMD de verdade. |
 | Dois cliques para comprar | `cachejs` desligado faz cada módulo AMD virar uma requisição. |
 | `Uma das partes é de teste` | São três: comprador, vendedor e a aplicação. `test_token` coloca a aplicação do lado certo. |
-| Mudança no `config.php` não aplica | O deploy **preserva** o `config.php` da VPS. Apague uma vez para recriar do template. |
+| Ajuste no `config.php` da VPS some | Ele é **gerado** a cada deploy. Ajuste de máquina vai em `config-local.php`, que o deploy nunca toca. |
 | Empresa sem meio de pagamento | `account::is_available()` exige o gateway habilitado, não só o token guardado. |
 | Pix não aparece | A conta do vendedor precisa de chave Pix registrada. Conta de teste não tem. |
 | Upgrade quebra em `messages.php` | `MESSAGE_DEFAULT_LOGGEDIN` e `LOGGEDOFF` não existem no 5.2. Use `MESSAGE_DEFAULT_ENABLED`. |

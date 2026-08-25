@@ -20,6 +20,9 @@
 *~
 #
 /config.php
+# Ajuste local da maquina. Nunca versionado: e por definicao o que vale
+# numa maquina so, e costuma conter credencial de teste ou chave de debug.
+/config-local.php
 /tags
 /TAGS
 /cscope.*
