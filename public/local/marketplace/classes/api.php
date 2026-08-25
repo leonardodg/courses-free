@@ -204,4 +204,67 @@ class api {
 
         return $member;
     }
+
+    /**
+     * Remove um vendedor da empresa.
+     *
+     * Tira o papel no contexto da categoria junto com o vinculo. Apagar so a
+     * linha da tabela deixaria a pessoa com as capabilities do vendedor -
+     * criando curso na categoria de uma empresa da qual nao faz mais parte.
+     *
+     * NAO mexe em direitos de acesso nem em vendas: quem comprou continua com
+     * o que comprou, e o historico financeiro da empresa nao se altera porque
+     * um vendedor saiu.
+     *
+     * @param company $company
+     * @param int $userid
+     * @return bool Falso se a pessoa nao era membro.
+     */
+    public static function remove_member(company $company, int $userid): bool {
+        global $DB;
+
+        $member = member::get_membership($company->get('id'), $userid);
+        if (!$member) {
+            return false;
+        }
+
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'marketplaceseller']);
+
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $member->delete();
+            if ($roleid) {
+                role_unassign($roleid, $userid, $company->get_context()->id);
+            }
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Troca o papel de um membro entre dono e vendedor.
+     *
+     * As capabilities sao as mesmas: o papel do Moodle nao muda, so o registro
+     * de quem responde pela empresa. A distincao existe para a tela saber quem
+     * nao pode ser removido - uma empresa sem dono fica sem responsavel pela
+     * conta de pagamento.
+     *
+     * @param company $company
+     * @param int $userid
+     * @param string $memberrole
+     * @return bool
+     */
+    public static function set_member_role(company $company, int $userid, string $memberrole): bool {
+        $member = member::get_membership($company->get('id'), $userid);
+        if (!$member) {
+            return false;
+        }
+        $member->set('memberrole', $memberrole);
+        $member->update();
+
+        return true;
+    }
 }

@@ -34,6 +34,11 @@ use local_marketplace\offer;
 
 $shortname = required_param('company', PARAM_ALPHANUMEXT);
 
+// Oferta a destacar. Chega de quem clicou no botao de um topico bloqueado: sem
+// isto o aluno cai numa lista e tem que adivinhar qual das ofertas destrava o
+// conteudo que ele estava vendo.
+$highlight = optional_param('highlight', 0, PARAM_INT);
+
 require_login();
 
 $company = company::get_record(['shortname' => $shortname]);
@@ -81,8 +86,14 @@ foreach ($offers as $offer) {
         }
     }
 
-    echo html_writer::start_div('card mb-3');
+    $wanted = ($highlight === $offerid);
+
+    echo html_writer::start_div('card mb-3' . ($wanted ? ' border-primary' : ''), $wanted ? ['id' => 'offer-wanted'] : []);
     echo html_writer::start_div('card-body');
+
+    if ($wanted) {
+        echo $OUTPUT->notification(get_string('offerunlocks', 'local_marketplace'), 'info');
+    }
 
     echo html_writer::tag('h3', format_string($offer->get('name')), ['class' => 'card-title h5']);
 

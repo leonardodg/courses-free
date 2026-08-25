@@ -15,20 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Condicao de disponibilidade por direito de acesso do marketplace.
+ * Entrada do marketplace na administracao do site.
  *
- * @package    availability_marketplace
+ * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'availability_marketplace';
-$plugin->version   = 2026082501;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
-$plugin->dependencies = [
-    'local_marketplace' => 2026082401,
-];
+if ($hassiteconfig) {
+    $ADMIN->add('root', new admin_category(
+        'local_marketplace_cat',
+        get_string('pluginname', 'local_marketplace')
+    ), 'users');
+
+    $ADMIN->add('local_marketplace_cat', new admin_externalpage(
+        'local_marketplace_companies',
+        get_string('companies', 'local_marketplace'),
+        new moodle_url('/local/marketplace/admin/companies.php'),
+        'local/marketplace:createcompany'
+    ));
+}

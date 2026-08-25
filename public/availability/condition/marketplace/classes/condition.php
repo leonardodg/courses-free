@@ -114,10 +114,48 @@ class condition extends \core_availability\condition {
             $offer = offer::get_record(['id' => $this->offerid]);
             $name = $offer ? format_string($offer->get('name')) : get_string('unknownoffer', 'availability_marketplace');
             $key = $not ? 'requires_notoffer' : 'requires_offer';
-            return get_string($key, 'availability_marketplace', $name);
+            $text = get_string($key, 'availability_marketplace', $name);
+
+            // O link so entra quando o conteudo esta MESMO bloqueado ($not),
+            // e nunca no texto que o professor le ao montar a restricao. Um
+            // "compre agora" aparecendo para quem ja comprou, ou na tela de
+            // edicao, seria ruido.
+            //
+            // Bloquear sem oferecer o caminho perde a venda no momento exato do
+            // interesse: o aluno esta olhando o conteudo que quer.
+            if ($not && $offer) {
+                $text .= ' ' . self::buy_link($offer);
+            }
+            return $text;
         }
         $key = $not ? 'requires_noaccess' : 'requires_access';
         return get_string($key, 'availability_marketplace');
+    }
+
+    /**
+     * Link para a vitrine da empresa dona da oferta.
+     *
+     * Leva a vitrine e nao ao checkout: comprar exige o modal de gateways do
+     * core_payment, que precisa da pagina para funcionar. Um link direto ao
+     * pagamento pularia a descricao do que esta sendo comprado.
+     *
+     * @param offer $offer
+     * @return string
+     */
+    protected static function buy_link(offer $offer): string {
+        $company = \local_marketplace\company::get_record(['id' => $offer->get('companyid')]);
+        if (!$company) {
+            return '';
+        }
+
+        $url = new \moodle_url('/local/marketplace/offers.php', [
+            'company' => $company->get('shortname'),
+            'highlight' => $offer->get('id'),
+        ]);
+
+        return \html_writer::link($url, get_string('buyaccess', 'availability_marketplace'), [
+            'class' => 'btn btn-primary btn-sm ms-2',
+        ]);
     }
 
     /**
