@@ -35,7 +35,6 @@ use moodle_url;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class service_provider implements \core_payment\local\callback\service_provider {
-
     /** @var string Unica area de pagamento por enquanto. */
     const PAYMENT_AREA = 'offer';
 
@@ -123,6 +122,11 @@ class service_provider implements \core_payment\local\callback\service_provider 
             if ($seconds > 0) {
                 $existing->extend($seconds);
             }
+            // O ciclo e contado mesmo em oferta vitalicia, onde nao ha o que
+            // estender: o numero serve ao relatorio e ao limite de cobrancas,
+            // e nao a data de validade.
+            $existing->set('cycles', (int) $existing->get('cycles') + 1);
+            $existing->update();
         } else {
             $ent = new entitlement();
             $ent->set('userid', $userid);
@@ -130,6 +134,7 @@ class service_provider implements \core_payment\local\callback\service_provider 
             $ent->set('companyid', (int) $offer->get('companyid'));
             $ent->set('timestart', time());
             $ent->set('timeend', $offer->calculate_expiry());
+            $ent->set('cycles', 1);
             $ent->create();
         }
 

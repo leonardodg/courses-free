@@ -22,7 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
 
 use local_marketplace\entitlement;
 
@@ -37,7 +36,6 @@ use local_marketplace\entitlement;
  * primeiro aluno adquire direito a ele.
  */
 class enrol_marketplace_plugin extends enrol_plugin {
-
     /**
      * O admin nao adiciona instancia manualmente: quem cria e o sincronizador.
      *

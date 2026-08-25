@@ -30,7 +30,6 @@ use core\persistent;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class entitlement extends persistent {
-
     /** @var string Tabela. */
     const TABLE = 'local_marketplace_entitlement';
 
@@ -60,6 +59,8 @@ class entitlement extends persistent {
                 'default' => self::STATUS_ACTIVE,
                 'choices' => [self::STATUS_ACTIVE, self::STATUS_EXPIRED, self::STATUS_CANCELLED],
             ],
+            'cycles' => ['type' => PARAM_INT, 'default' => 0],
+            'norenew' => ['type' => PARAM_INT, 'default' => 0],
         ];
     }
 

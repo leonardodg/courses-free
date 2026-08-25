@@ -31,7 +31,6 @@ use paygw_mercadopago\mp_client;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class refresh_tokens extends scheduled_task {
-
     /** @var int Antecedencia da renovacao, em dias. */
     const RENEW_BEFORE_DAYS = 15;
 

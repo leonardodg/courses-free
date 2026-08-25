@@ -22,7 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
 
 /**
  * Passos de upgrade.
@@ -63,6 +62,86 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         }
 
         upgrade_plugin_savepoint(true, 2026082404, 'local', 'marketplace');
+    }
+
+    if ($oldversion < 2026082520) {
+        $dbman = $DB->get_manager();
+
+        // Modelo de assinatura com tres parametros independentes.
+        //
+        // Ate aqui havia um so: accessdays. Ele significava "duracao do acesso"
+        // em days e "intervalo de cobranca" em recurring - dois conceitos no
+        // mesmo campo, o que impedia expressar carencia e impedia limitar
+        // quantas vezes a assinatura cobra.
+        $table = new xmldb_table('local_marketplace_offer');
+
+        $field = new xmldb_field('billingdays', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'accessdays');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('maxcycles', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'billingdays');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // As assinaturas que ja existem cobravam no mesmo intervalo do acesso,
+        // porque era um campo so. Copiar preserva o comportamento delas.
+        $DB->execute("UPDATE {local_marketplace_offer}
+                         SET billingdays = accessdays
+                       WHERE accessmode = ? AND billingdays = 0", ['recurring']);
+
+        // Contador de ciclos no direito.
+        $table = new xmldb_table('local_marketplace_entitlement');
+        $field = new xmldb_field('cycles', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'status');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Quem ja comprou pagou ao menos uma vez. Deixar em zero faria um
+        // limite de ciclos contar do zero para quem ja esta pagando ha meses.
+        $DB->execute("UPDATE {local_marketplace_entitlement} SET cycles = 1 WHERE cycles = 0");
+
+        upgrade_plugin_savepoint(true, 2026082520, 'local', 'marketplace');
+    }
+
+    if ($oldversion < 2026082521) {
+        $dbman = $DB->get_manager();
+
+        // Cancelar assinatura NAO e revogar acesso.
+        //
+        // O aluno que pagou 30 dias e cancela no dia 10 nao pode perder os 20
+        // que restam: ele pagou por eles. Cancelar significa "nao quero
+        // renovar" - o acesso corre ate timeend e os avisos param.
+        //
+        // Revogacao imediata continua existindo como status=cancelled, para
+        // estorno e fraude, onde o dinheiro voltou e o acesso tem que sair na
+        // hora.
+        $table = new xmldb_table('local_marketplace_entitlement');
+        $field = new xmldb_field('norenew', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'cycles');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026082521, 'local', 'marketplace');
+    }
+
+    if ($oldversion < 2026082523) {
+        $dbman = $DB->get_manager();
+
+        // Comissao negociada por empresa.
+        //
+        // NULO de proposito: e a diferenca entre "nao negociamos nada, use o
+        // padrao do site" e "negociamos zero por cento". Com NOT NULL e default
+        // 25, as duas situacoes seriam indistinguiveis, e um parceiro isento
+        // voltaria a pagar 25% na primeira vez que alguem mudasse o padrao.
+        $table = new xmldb_table('local_marketplace_company');
+        $field = new xmldb_field('commissionpct', XMLDB_TYPE_NUMBER, '5, 2', null, null, null, null, 'status');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026082523, 'local', 'marketplace');
     }
 
     return true;

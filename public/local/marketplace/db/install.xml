@@ -14,6 +14,7 @@
         <FIELD NAME="themename" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Tema aplicado na categoria (allowcategorythemes)."/>
         <FIELD NAME="hostname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Dominio proprio. Fase 3: alimenta o mapa Host->wwwroot do config.php."/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|suspended. Nao ha aprovacao manual: os portoes sao a payment account configurada e o papel restrito."/>
+        <FIELD NAME="commissionpct" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="Comissao negociada com esta empresa, de 0 a 100. NULO herda o padrao do site - e a diferenca entre 'nao negociamos nada' e 'negociamos zero', que sem NULL seriam indistinguiveis."/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -58,7 +59,9 @@
         <FIELD NAME="price" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="currency" TYPE="char" LENGTH="3" NOTNULL="true" DEFAULT="BRL" SEQUENCE="false"/>
         <FIELD NAME="accessmode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="lifetime" SEQUENCE="false" COMMENT="lifetime=vitalicio · days=prazo em accessdays · recurring=assinatura."/>
-        <FIELD NAME="accessdays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Usado so quando accessmode=days. Em recurring e o intervalo de cobranca."/>
+        <FIELD NAME="accessdays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Quantos dias de acesso cada pagamento libera. 0 em lifetime."/>
+        <FIELD NAME="billingdays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Intervalo entre cobrancas, em dias. So em recurring. Separado de accessdays porque permitem carencia: cobrar a cada 30 dias liberando 35 da margem para o pagamento atrasar sem cortar o aluno."/>
+        <FIELD NAME="maxcycles" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Quantas cobrancas a assinatura admite. 0 = sem limite. E o que distingue 'mensal por 12 meses' de 'mensal enquanto quiser'."/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" SEQUENCE="false" COMMENT="draft|published|archived. Arquivar nao revoga direito ja vendido."/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -99,6 +102,8 @@
         <FIELD NAME="timestart" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timeend" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = vitalicio."/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|expired|cancelled. Cancelamento revoga NA HORA, por decisao de negocio."/>
+        <FIELD NAME="cycles" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Quantas cobrancas ja foram pagas deste direito. Contado aqui, e nao na tabela do gateway, porque o limite de ciclos e regra do marketplace: trocar de meio de pagamento nao pode zerar a contagem."/>
+        <FIELD NAME="norenew" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="O aluno cancelou a assinatura. NAO revoga: o acesso corre ate timeend, porque ele pagou por aquele periodo. So interrompe os avisos de vencimento. Revogacao imediata e status=cancelled, coisa diferente."/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

@@ -27,7 +27,6 @@ use local_marketplace\entitlement;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class sync_entitlements extends scheduled_task {
-
     /**
      * Nome exibido no admin.
      *
@@ -85,7 +84,10 @@ class sync_entitlements extends scheduled_task {
 
         mtrace(sprintf(
             'Sincronizados %d usuarios: %d matriculas, %d suspensas, %d reativadas.',
-            count($affected), $totals[0], $totals[1], $totals[2]
+            count($affected),
+            $totals[0],
+            $totals[1],
+            $totals[2]
         ));
     }
 }

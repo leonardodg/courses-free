@@ -36,7 +36,6 @@ use moodle_exception;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mp_client {
-
     /** @var string Base da API. */
     const API_BASE = 'https://api.mercadopago.com';
 
@@ -66,6 +65,8 @@ class mp_client {
     protected string $accesstoken;
 
     /**
+     * Constroi o cliente com o token que autentica as chamadas.
+     *
      * @param string $accesstoken Token do VENDEDOR para criar preferencia; da
      *                            plataforma para o fluxo OAuth.
      */
@@ -212,13 +213,13 @@ class mp_client {
      * @var array<string,string>
      */
     const SITE_CURRENCY = [
-        'MLA' => 'ARS',  // Argentina.
-        'MLB' => 'BRL',  // Brasil.
-        'MLC' => 'CLP',  // Chile.
-        'MCO' => 'COP',  // Colombia.
-        'MLM' => 'MXN',  // Mexico.
-        'MPE' => 'PEN',  // Peru.
-        'MLU' => 'UYU',  // Uruguai.
+        'MLA' => 'ARS', // Argentina.
+        'MLB' => 'BRL', // Brasil.
+        'MLC' => 'CLP', // Chile.
+        'MCO' => 'COP', // Colombia.
+        'MLM' => 'MXN', // Mexico.
+        'MPE' => 'PEN', // Peru.
+        'MLU' => 'UYU', // Uruguai.
     ];
 
     /**

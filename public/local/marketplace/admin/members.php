@@ -47,7 +47,7 @@ $url = new moodle_url('/local/marketplace/admin/members.php', ['id' => $companyi
 $PAGE->set_url($url);
 $PAGE->navbar->add(format_string($company->get('name')));
 
-// ------------------------------------------------------------------- acoes --
+// Acoes.
 if ($action !== '' && $userid > 0) {
     require_sesskey();
 
@@ -56,31 +56,50 @@ if ($action !== '' && $userid > 0) {
         // pela conta de pagamento, e a tela nao teria como recuperar isso.
         $membership = member::get_membership($companyid, $userid);
         if ($membership && $membership->is_owner()) {
-            redirect($url, get_string('errorcannotremoveowner', 'local_marketplace'), null,
-                \core\output\notification::NOTIFY_ERROR);
+            redirect(
+                $url,
+                get_string('errorcannotremoveowner', 'local_marketplace'),
+                null,
+                \core\output\notification::NOTIFY_ERROR
+            );
         }
         api::remove_member($company, $userid);
-        redirect($url, get_string('memberremoved', 'local_marketplace'), null,
-            \core\output\notification::NOTIFY_SUCCESS);
+        redirect(
+            $url,
+            get_string('memberremoved', 'local_marketplace'),
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
     }
 
     if ($action === 'promote' || $action === 'demote') {
-        api::set_member_role($company, $userid,
-            $action === 'promote' ? member::ROLE_OWNER : member::ROLE_SELLER);
-        redirect($url, get_string('memberrolechanged', 'local_marketplace'), null,
-            \core\output\notification::NOTIFY_SUCCESS);
+        api::set_member_role(
+            $company,
+            $userid,
+            $action === 'promote' ? member::ROLE_OWNER : member::ROLE_SELLER
+        );
+        redirect(
+            $url,
+            get_string('memberrolechanged', 'local_marketplace'),
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
     }
 }
 
-// ---------------------------------------------------------- acrescentar um --
+// Acrescentar um.
 // Processado ANTES do header: um redirect depois de imprimir a pagina
 // dispararia "Cannot modify header information".
 $mform = new \local_marketplace\form\member_form($url, ['companyid' => $companyid]);
 
 if ($data = $mform->get_data()) {
     api::add_member($company, (int) $data->userid);
-    redirect($url, get_string('memberadded', 'local_marketplace'), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $url,
+        get_string('memberadded', 'local_marketplace'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 echo $OUTPUT->header();
@@ -88,7 +107,7 @@ echo $OUTPUT->heading(get_string('membersof', 'local_marketplace', format_string
 
 $mform->display();
 
-// ------------------------------------------------------------------- lista --
+// Lista.
 $members = member::get_by_company($companyid);
 
 if (!$members) {

@@ -34,7 +34,6 @@ require_once($GLOBALS['CFG']->libdir . '/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class member_form extends \moodleform {
-
     /**
      * Campos.
      *
@@ -48,7 +47,7 @@ class member_form extends \moodleform {
         $mform->addElement('autocomplete', 'userid', get_string('user'), [], [
             'ajax' => 'core_user/form_user_selector',
             'multiple' => false,
-            'valuehtmlcallback' => function($userid) {
+            'valuehtmlcallback' => function ($userid) {
                 if (empty($userid)) {
                     return '';
                 }

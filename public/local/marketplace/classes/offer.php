@@ -30,7 +30,6 @@ use core\persistent;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class offer extends persistent {
-
     /** @var string Tabela. */
     const TABLE = 'local_marketplace_offer';
 
@@ -88,6 +87,8 @@ class offer extends persistent {
                 'choices' => [self::ACCESS_LIFETIME, self::ACCESS_DAYS, self::ACCESS_RECURRING],
             ],
             'accessdays' => ['type' => PARAM_INT, 'default' => 0],
+            'billingdays' => ['type' => PARAM_INT, 'default' => 0],
+            'maxcycles' => ['type' => PARAM_INT, 'default' => 0],
             'status' => [
                 'type' => PARAM_ALPHA,
                 'default' => self::STATUS_DRAFT,
@@ -156,14 +157,56 @@ class offer extends persistent {
         switch ($this->get('accessmode')) {
             case self::ACCESS_DAYS:
             case self::ACCESS_RECURRING:
-                // Em recurring, accessdays e o intervalo de cobranca: o direito
-                // vale ate a proxima fatura e e estendido a cada pagamento.
+                // Sempre accessdays, nos dois modos: e "quanto acesso este
+                // pagamento libera". O intervalo de cobranca vive em
+                // billingdays e nao entra aqui - se fossem o mesmo campo, nao
+                // haveria como dar carencia entre o vencimento da fatura e o
+                // corte do acesso.
                 $days = (int) $this->get('accessdays');
                 return $days > 0 ? $from + ($days * DAYSECS) : 0;
             case self::ACCESS_LIFETIME:
             default:
                 return 0;
         }
+    }
+
+    /**
+     * A assinatura ainda admite mais uma cobranca?
+     *
+     * @param int $cyclespaid Ciclos ja pagos pelo aluno.
+     * @return bool
+     */
+    public function accepts_cycle(int $cyclespaid): bool {
+        if ($this->get('accessmode') !== self::ACCESS_RECURRING) {
+            return true;
+        }
+        $max = (int) $this->get('maxcycles');
+
+        return $max <= 0 || $cyclespaid < $max;
+    }
+
+    /**
+     * Descricao legivel do modelo de cobranca.
+     *
+     * @return string
+     */
+    public function describe_billing(): string {
+        if ($this->get('accessmode') !== self::ACCESS_RECURRING) {
+            return $this->get('accessmode') === self::ACCESS_LIFETIME
+                ? get_string('accesslifetime', 'local_marketplace')
+                : get_string('accessdays', 'local_marketplace', (int) $this->get('accessdays'));
+        }
+
+        $max = (int) $this->get('maxcycles');
+        $a = (object) [
+            'billing' => (int) $this->get('billingdays'),
+            'access' => (int) $this->get('accessdays'),
+            'cycles' => $max,
+        ];
+
+        return $max > 0
+            ? get_string('accessrecurringlimited', 'local_marketplace', $a)
+            : get_string('accessrecurringopen', 'local_marketplace', $a);
     }
 
     /**

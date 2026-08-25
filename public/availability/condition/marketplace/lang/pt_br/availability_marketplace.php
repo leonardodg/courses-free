@@ -24,14 +24,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Restrição por compra';
-$string['title'] = 'Compra';
+$string['anyoffer'] = 'Qualquer oferta que inclua este curso';
 $string['description'] = 'Só acessa o conteúdo quem tem direito de acesso vigente.';
 $string['label_offer'] = 'Oferta exigida';
-$string['anyoffer'] = 'Qualquer oferta que inclua este curso';
+$string['pluginname'] = 'Restrição por compra';
+$string['privacy:metadata'] = 'O plugin Restrição por compra não armazena dados pessoais; ele lê os direitos mantidos pelo local_marketplace.';
 $string['requires_access'] = 'Você comprou o acesso a este curso';
 $string['requires_noaccess'] = 'Você <b>não</b> comprou o acesso a este curso';
-$string['requires_offer'] = 'Você comprou <b>{$a}</b>';
 $string['requires_notoffer'] = 'Você <b>não</b> comprou <b>{$a}</b>';
+$string['requires_offer'] = 'Você comprou <b>{$a}</b>';
+$string['title'] = 'Compra';
 $string['unknownoffer'] = '(oferta removida)';
-$string['privacy:metadata'] = 'O plugin Restrição por compra não armazena dados pessoais; ele lê os direitos mantidos pelo local_marketplace.';

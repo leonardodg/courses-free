@@ -30,7 +30,6 @@ use paygw_mercadopago\payment_processor;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class create_preference extends external_api {
-
     /**
      * Parametros.
      *

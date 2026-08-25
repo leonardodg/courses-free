@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['marketplace:config'] = 'Configurar matrícula do marketplace';
 $string['pluginname'] = 'Acesso do marketplace';
 $string['pluginname_desc'] = 'Matricula alunos conforme os direitos de acesso do marketplace. A matrícula é criada quando uma oferta é comprada e suspensa quando o direito vence ou é cancelado.';
-$string['tasksyncentitlements'] = 'Sincronizar direitos do marketplace';
-$string['marketplace:config'] = 'Configurar matrícula do marketplace';
 $string['privacy:metadata'] = 'O plugin Acesso do marketplace não armazena dados pessoais; ele age sobre os direitos mantidos pelo local_marketplace.';
+$string['tasksyncentitlements'] = 'Sincronizar direitos do marketplace';

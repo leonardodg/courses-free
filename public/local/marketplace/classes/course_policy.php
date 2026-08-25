@@ -34,7 +34,6 @@ use lang_string;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class course_policy extends persistent {
-
     /** @var string Tabela. */
     const TABLE = 'local_marketplace_course';
 

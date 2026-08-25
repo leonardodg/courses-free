@@ -33,20 +33,55 @@ require_once($CFG->libdir . '/adminlib.php');
 use local_marketplace\api;
 use local_marketplace\form\company_form;
 
+$id = optional_param('id', 0, PARAM_INT);
+
 admin_externalpage_setup('local_marketplace_companies');
 
 $listurl = new moodle_url('/local/marketplace/admin/companies.php');
+$existing = $id ? new \local_marketplace\company($id) : null;
 
-$PAGE->set_url(new moodle_url('/local/marketplace/admin/company_edit.php'));
-$PAGE->navbar->add(get_string('createcompany', 'local_marketplace'));
+$PAGE->set_url(new moodle_url('/local/marketplace/admin/company_edit.php', $id ? ['id' => $id] : []));
+$PAGE->navbar->add($existing
+    ? format_string($existing->get('name'))
+    : get_string('createcompany', 'local_marketplace'));
 
-$form = new company_form();
+$customdata = [];
+if ($existing) {
+    $customdata = [
+        'companyid' => (int) $existing->get('id'),
+        'shortname' => $existing->get('shortname'),
+    ];
+}
+
+$form = new company_form(null, $customdata);
+
+if ($existing) {
+    $form->set_data([
+        'id' => $existing->get('id'),
+        'name' => $existing->get('name'),
+        'shortname' => $existing->get('shortname'),
+        'cnpj' => $existing->get('cnpj'),
+        'commissionpct' => $existing->get('commissionpct'),
+        'themename' => $existing->get('themename'),
+        'hostname' => $existing->get('hostname'),
+    ]);
+}
 
 if ($form->is_cancelled()) {
     redirect($listurl);
 }
 
 if ($data = $form->get_data()) {
+    if ($existing) {
+        api::update_company($existing, $data);
+        redirect(
+            $listurl,
+            get_string('companyupdated', 'local_marketplace', format_string($existing->get('name'))),
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
+
     $company = api::create_company((object) [
         'name' => $data->name,
         'shortname' => $data->shortname,
@@ -66,7 +101,15 @@ if ($data = $form->get_data()) {
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('createcompany', 'local_marketplace'));
-echo $OUTPUT->notification(get_string('createcompanyintro', 'local_marketplace'), 'info');
+echo $OUTPUT->heading($existing
+    ? format_string($existing->get('name'))
+    : get_string('createcompany', 'local_marketplace'));
+
+if (!$existing) {
+    echo $OUTPUT->notification(get_string('createcompanyintro', 'local_marketplace'), 'info');
+} else {
+    echo $OUTPUT->notification(get_string('editcompanyintro', 'local_marketplace'), 'info');
+}
+
 $form->display();
 echo $OUTPUT->footer();

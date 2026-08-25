@@ -66,15 +66,24 @@ foreach ($companies as $c) {
     // procura: e o portao que decide se a empresa pode vender.
     $currency = $c->get_payment_currency();
     if ($c->can_sell()) {
-        $payment = html_writer::tag('span',
+        $payment = html_writer::tag(
+            'span',
             get_string('cansell', 'local_marketplace') . ($currency !== '' ? ' · ' . s($currency) : ''),
-            ['class' => 'badge bg-success']);
+            ['class' => 'badge bg-success']
+        );
     } else {
-        $payment = html_writer::tag('span', get_string('cannotsell', 'local_marketplace'),
-            ['class' => 'badge bg-warning text-dark']);
+        $payment = html_writer::tag(
+            'span',
+            get_string('cannotsell', 'local_marketplace'),
+            ['class' => 'badge bg-warning text-dark']
+        );
     }
 
     $actions = html_writer::link(
+        new moodle_url('/local/marketplace/admin/company_edit.php', ['id' => $c->get('id')]),
+        get_string('edit'),
+        ['class' => 'btn btn-sm btn-secondary']
+    ) . ' ' . html_writer::link(
         new moodle_url('/local/marketplace/admin/members.php', ['id' => $c->get('id')]),
         get_string('managemembers', 'local_marketplace'),
         ['class' => 'btn btn-sm btn-secondary']
