@@ -123,24 +123,50 @@ final class domain_map_test extends \advanced_testcase {
     }
 
     /**
-     * Empresa suspensa sai do mapa.
+     * Empresa suspensa CONTINUA no mapa.
      *
-     * Suspender e a forma de tirar uma empresa do ar. Se o dominio continuasse
-     * resolvendo, a suspensao nao suspenderia nada para quem chega pelo
-     * dominio proprio - justamente o publico dela.
+     * O arquivo responde "este dominio existe?", que e fronteira de seguranca:
+     * sem ele, o Host da requisicao definiria o wwwroot e um atacante mandando
+     * "Host: evil.com" faria o Moodle gerar todo link apontando para la.
+     *
+     * "Esta suspensa?" e outra pergunta, respondida no banco pelo after_config.
+     * Tirar a empresa daqui faria o dominio cair no site padrao em silencio, e
+     * acoplaria suspender a regenerar arquivo - se a regeneracao falhasse, a
+     * suspensao nao surtiria efeito.
      *
      * @return void
      */
-    public function test_suspended_company_is_removed(): void {
-        $c = $this->make_company('sai.exemplo.test');
+    public function test_suspended_company_stays_in_map(): void {
+        $c = $this->make_company('suspensa.exemplo.test');
         api::regenerate_domain_map();
-        $this->assertArrayHasKey('sai.exemplo.test', $this->read_map());
+        $this->assertArrayHasKey('suspensa.exemplo.test', $this->read_map());
 
         $c->set('status', company::STATUS_SUSPENDED);
         $c->update();
         api::regenerate_domain_map();
 
-        $this->assertArrayNotHasKey('sai.exemplo.test', $this->read_map());
+        $this->assertArrayHasKey(
+            'suspensa.exemplo.test',
+            $this->read_map(),
+            'o mapa lista dominio existente; a situacao e conferida no banco'
+        );
+    }
+
+    /**
+     * O mapa diz a que empresa o dominio pertence.
+     *
+     * E esse atalho que o after_config usa para descobrir a situacao sem
+     * reabrir o arquivo nem adivinhar pelo host.
+     *
+     * @return void
+     */
+    public function test_map_carries_company_shortname(): void {
+        $c = $this->make_company('dono.exemplo.test');
+        api::regenerate_domain_map();
+
+        $map = $this->read_map();
+
+        $this->assertSame($c->get('shortname'), $map['dono.exemplo.test']['company']);
     }
 
     /**

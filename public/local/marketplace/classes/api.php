@@ -213,7 +213,8 @@ class api {
 
         // Regenera quando o dominio ENTROU, SAIU ou mudou. Comparar com o
         // valor anterior evita reescrever o arquivo a cada troca de nome ou
-        // de tema, que nao afetam o mapa.
+        // de tema, que nao afetam o mapa. Suspender tambem nao afeta: o mapa
+        // lista dominio existente, e a situacao e conferida no banco.
         if ($hostbefore !== $company->get('hostname')) {
             self::regenerate_domain_map();
         }
@@ -238,10 +239,21 @@ class api {
     public static function regenerate_domain_map(): int {
         global $CFG, $DB;
 
+        // TODA empresa com dominio entra, inclusive a suspensa. O arquivo
+        // responde "este dominio existe?", que e fronteira de SEGURANCA: sem
+        // ele, o Host da requisicao definiria o wwwroot, e um atacante mandando
+        // "Host: evil.com" faria o Moodle gerar todo link apontando para la -
+        // inclusive o de redefinicao de senha, que sai por e-mail.
+        //
+        // "Esta suspensa?" e outra pergunta, respondida no banco pelo
+        // after_config, onde da para mostrar uma pagina explicando. Deixar a
+        // suspensao aqui faria o dominio cair no site padrao em silencio, e
+        // acoplaria suspender a regenerar arquivo: se a regeneracao falhasse, a
+        // suspensao nao surtiria efeito.
         $rows = $DB->get_records_select(
             company::TABLE,
-            "hostname IS NOT NULL AND hostname <> '' AND status = :status",
-            ['status' => company::STATUS_ACTIVE],
+            "hostname IS NOT NULL AND hostname <> ''",
+            [],
             'hostname',
             'id, shortname, hostname'
         );
