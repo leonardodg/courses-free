@@ -225,6 +225,90 @@ jobs:
           done <<< "$LIST"
 
   # ===========================================================================
+  # Roda os testes dos plugins de TERCEIROS no Moodle 5.2.
+  #
+  # NAO bloqueia o deploy, e nao e por preguica: se travasse, um teste quebrado
+  # no upstream deixaria a plataforma sem poder subir codigo nosso - e nao temos
+  # como corrigir o codigo deles. O valor aqui e saber, nao impedir.
+  #
+  # A pergunta que este job responde: customcert e moove nao declaram
+  # $plugin->supported, entao ninguem sabe se funcionam no 5.2. Rodar os testes
+  # deles e a unica forma de descobrir sem esperar quebrar em producao.
+  thirdparty:
+    name: Testar plugins de terceiros (informativo)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'true'
+          MARIADB_CHARACTER_SET_SERVER: utf8mb4
+          MARIADB_COLLATION_SERVER: utf8mb4_bin
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugins-src
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, mysqli, gd, zip, intl, soap, xmlrpc
+          ini-values: max_input_vars=5000
+          coverage: none
+
+      - name: Instalar o locale que o PHPUnit do Moodle exige
+        run: |
+          sudo locale-gen en_AU.UTF-8
+          sudo update-locale
+
+      - name: phpunit nos plugins sem suporte declarado
+        env:
+          MOODLE_BRANCH: MOODLE_502_STABLE
+          DB: mariadb
+        run: |
+          set -uo pipefail
+          composer create-project -n --no-dev --prefer-dist \
+            moodlehq/moodle-plugin-ci /tmp/ci ^4
+          export PATH="/tmp/ci/bin:/tmp/ci/vendor/bin:$PATH"
+
+          # So os que NAO declaram supported. Quem declara e cobre o 5.2 ja
+          # respondeu a pergunta; rodar tudo custaria minutos sem informacao
+          # nova.
+          RESUMO=""
+          i=0
+          for p in public/mod/customcert public/theme/moove; do
+            i=$((i+1))
+            echo "::group::$p"
+            rm -rf "/tmp/tp-$i"
+            if moodle-plugin-ci install \
+                 --plugin "$GITHUB_WORKSPACE/plugins-src/$p" \
+                 --db-host 127.0.0.1 \
+                 --db-name "moodle_tp_$i" \
+                 --moodle "/tmp/tp-$i" \
+               && moodle-plugin-ci phpunit; then
+              RESUMO="$RESUMO\n  OK      $p"
+            else
+              RESUMO="$RESUMO\n  FALHOU  $p"
+            fi
+            echo "::endgroup::"
+          done
+
+          echo "### Plugins de terceiros no Moodle 5.2" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          printf "%b\n" "$RESUMO" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          printf "%b\n" "$RESUMO"
+
+  # ===========================================================================
   image:
     name: Build e push da imagem (arm64)
     needs: validate
