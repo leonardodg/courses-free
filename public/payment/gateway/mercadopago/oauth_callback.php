@@ -77,7 +77,8 @@ $token = mp_client::exchange_code(
     $config->clientsecret,
     $code,
     $redirecturi,
-    $pending->codeverifier
+    $pending->codeverifier,
+    !empty($config->testmode)
 );
 
 // Localiza ou cria a linha do gateway nesta conta.
