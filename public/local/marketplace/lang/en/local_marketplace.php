@@ -58,6 +58,7 @@ $string['memberowner'] = 'Owner';
 $string['memberseller'] = 'Seller';
 
 // Payment gate.
+$string['linkednotenabled'] = 'The Mercado Pago account is linked but the gateway is switched off, so nothing can be sold yet. Open the payment settings and enable it.';
 $string['nopaymentaccount'] = 'This company has no payment method configured, so it can only publish free courses.';
 
 // Course policy.
