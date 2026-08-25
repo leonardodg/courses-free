@@ -119,6 +119,43 @@ class company_form extends \moodleform {
         $mform->setType('hostname', PARAM_HOST);
         $mform->addHelpButton('hostname', 'companyhostname', 'local_marketplace');
 
+        // Vitrine.
+        $mform->addElement('header', 'pageheader', get_string('pagesection', 'local_marketplace'));
+
+        $mform->addElement('text', 'pagetitle', get_string('pagetitle', 'local_marketplace'), ['size' => 50]);
+        $mform->setType('pagetitle', PARAM_TEXT);
+        $mform->addHelpButton('pagetitle', 'pagetitle', 'local_marketplace');
+
+        $mform->addElement('editor', 'pageintro', get_string('pageintro', 'local_marketplace'));
+        $mform->setType('pageintro', PARAM_RAW);
+        $mform->addHelpButton('pageintro', 'pageintro', 'local_marketplace');
+
+        $mform->addElement(
+            'filemanager',
+            'pagelogo',
+            get_string('pagelogo', 'local_marketplace'),
+            null,
+            ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['web_image']]
+        );
+        $mform->addHelpButton('pagelogo', 'pagelogo', 'local_marketplace');
+
+        $mform->addElement('text', 'pageaccent', get_string('pageaccent', 'local_marketplace'), ['size' => 10]);
+        $mform->setType('pageaccent', PARAM_TEXT);
+        $mform->addHelpButton('pageaccent', 'pageaccent', 'local_marketplace');
+
+        // Arquivo, e nao textarea. CSS colado num campo de texto acabaria
+        // renderizado inline na pagina, e ai o filtro teria que decidir o que e
+        // seguro. Servido como .css estatico, o navegador trata como folha de
+        // estilo e nunca como script.
+        $mform->addElement(
+            'filemanager',
+            'pagecss',
+            get_string('pagecss', 'local_marketplace'),
+            null,
+            ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['.css']]
+        );
+        $mform->addHelpButton('pagecss', 'pagecss', 'local_marketplace');
+
         $this->add_action_buttons(true, get_string(
             $editing ? 'savechanges' : 'createcompany',
             $editing ? 'core' : 'local_marketplace'

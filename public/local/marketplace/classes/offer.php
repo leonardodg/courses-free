@@ -60,6 +60,21 @@ class offer extends persistent {
     /** @var string Fora de venda. NAO revoga quem ja comprou. */
     const STATUS_ARCHIVED = 'archived';
 
+    /** @var string Ordem definida pelo vendedor. E o padrao. */
+    const SORT_MANUAL = 'manual';
+
+    /** @var string Mais recentes primeiro. */
+    const SORT_NEWEST = 'newest';
+
+    /** @var string Alfabetica. */
+    const SORT_NAME = 'name';
+
+    /** @var string Do mais barato ao mais caro. */
+    const SORT_PRICE = 'price';
+
+    /** @var string Do mais caro ao mais barato. */
+    const SORT_PRICEDESC = 'pricedesc';
+
     /**
      * Define as propriedades.
      *
@@ -277,10 +292,77 @@ class offer extends persistent {
      * @param int $companyid
      * @return offer[]
      */
-    public static function get_published(int $companyid): array {
+    public static function get_published(int $companyid, string $sort = self::SORT_MANUAL): array {
         return self::get_records(
             ['companyid' => $companyid, 'status' => self::STATUS_PUBLISHED],
-            'sortorder, name'
+            self::sort_clause($sort)
         );
+    }
+
+    /**
+     * Traduz a opcao de ordenacao para SQL.
+     *
+     * A ordem manual e o padrao, e nao o nome ou o preco. O vendedor define
+     * sortorder justamente para colocar na frente o que quer vender primeiro -
+     * trocar isso por alfabetica desfaria a curadoria dele a cada carregamento.
+     *
+     * @param string $sort
+     * @return string
+     */
+    public static function sort_clause(string $sort): string {
+        switch ($sort) {
+            case self::SORT_NAME:
+                return 'name';
+            case self::SORT_PRICE:
+                return 'price, name';
+            case self::SORT_PRICEDESC:
+                return 'price DESC, name';
+            case self::SORT_NEWEST:
+                // Desempate por id: ofertas criadas no mesmo segundo, o que
+                // acontece no seed e em importacao, sairiam em ordem aleatoria.
+                return 'timecreated DESC, id DESC';
+            case self::SORT_MANUAL:
+            default:
+                return 'sortorder, name';
+        }
+    }
+
+    /**
+     * Opcoes de ordenacao oferecidas ao aluno.
+     *
+     * @return string[]
+     */
+    public static function sort_options(): array {
+        return [
+            self::SORT_MANUAL,
+            self::SORT_NEWEST,
+            self::SORT_NAME,
+            self::SORT_PRICE,
+            self::SORT_PRICEDESC,
+        ];
+    }
+
+    /**
+     * Em quais subcategorias da empresa esta oferta libera curso.
+     *
+     * Serve ao filtro da vitrine. Uma oferta pode alcancar mais de uma
+     * subcategoria - um combo que junta cursos de trilhas diferentes - e por
+     * isso devolve lista, nao valor unico.
+     *
+     * @return int[]
+     */
+    public function get_category_ids(): array {
+        global $DB;
+
+        $courseids = $this->get_course_ids();
+        if (!$courseids) {
+            return [];
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED);
+
+        return array_map('intval', array_unique(
+            $DB->get_fieldset_select('course', 'category', "id $insql", $params)
+        ));
     }
 }

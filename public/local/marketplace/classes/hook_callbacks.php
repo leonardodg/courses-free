@@ -103,7 +103,7 @@ class hook_callbacks {
             header('Cache-Control: no-store');
         }
 
-        // get_string() aqui e seguro: o after_config roda depois do setup.php.
+        // O get_string() aqui e seguro: o after_config roda depois do setup.php.
         $title = get_string('domainsuspendedtitle', 'local_marketplace');
         $body = get_string('domainsuspendedbody', 'local_marketplace');
 

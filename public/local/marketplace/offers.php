@@ -38,6 +38,13 @@ $shortname = required_param('company', PARAM_ALPHANUMEXT);
 // isto o aluno cai numa lista e tem que adivinhar qual das ofertas destrava o
 // conteudo que ele estava vendo.
 $highlight = optional_param('highlight', 0, PARAM_INT);
+$sort = optional_param('sort', offer::SORT_MANUAL, PARAM_ALPHA);
+$filtercat = optional_param('cat', 0, PARAM_INT);
+$filtertype = optional_param('type', '', PARAM_ALPHA);
+
+if (!in_array($sort, offer::sort_options(), true)) {
+    $sort = offer::SORT_MANUAL;
+}
 
 require_login();
 
@@ -50,12 +57,78 @@ $url = new moodle_url('/local/marketplace/offers.php', ['company' => $shortname]
 $PAGE->set_context($company->get_context());
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(format_string($company->get('name')));
-$PAGE->set_heading(format_string($company->get('name')));
+$PAGE->set_title($company->get_page_title());
+$PAGE->set_heading($company->get_page_title());
+
+// CSS proprio do vendedor, servido como arquivo. Entra depois do tema, entao
+// consegue sobrescrever - que e o ponto de permitir CSS.
+$csurl = $company->get_page_css_url();
+if ($csurl) {
+    $PAGE->requires->css($csurl);
+}
 
 echo $OUTPUT->header();
 
-$offers = offer::get_published((int) $company->get('id'));
+// A cor de destaque vira uma variavel CSS, nao regra solta. Assim o CSS do
+// vendedor pode usa-la, e o valor passou pela validacao de hexadecimal - o
+// unico campo do cadastro que chega dentro de uma declaracao.
+$accent = (string) $company->get('pageaccent');
+if ($accent !== '') {
+    echo html_writer::tag(
+        'style',
+        '.local-marketplace-offers{--mp-accent:' . s($accent) . '}'
+        . '.local-marketplace-offers .btn-primary{background:' . s($accent) . ';border-color:' . s($accent) . '}'
+    );
+}
+
+$logo = $company->get_page_logo_url();
+if ($logo) {
+    echo html_writer::div(
+        html_writer::empty_tag('img', [
+            'src' => $logo->out(false),
+            'alt' => format_string($company->get('name')),
+            'class' => 'local-marketplace-logo',
+            'style' => 'max-height:96px;width:auto',
+            // Logo e decorativo em relacao ao conteudo: carregar cedo evita o
+            // salto de layout que empurraria as ofertas para baixo.
+            'loading' => 'eager',
+        ]),
+        'mb-3'
+    );
+}
+
+$intro = (string) $company->get('pageintro');
+if (trim($intro) !== '') {
+    // O format_text filtra o HTML: o vendedor escreve texto de venda, nao script.
+    echo html_writer::div(
+        format_text($intro, FORMAT_HTML, ['context' => $context]),
+        'local-marketplace-intro mb-4'
+    );
+}
+
+$offers = offer::get_published((int) $company->get('id'), $sort);
+
+// Subcategorias que de fato tem oferta publicada. Listar toda subcategoria da
+// empresa mostraria filtro que nao filtra nada - a que existe mas ainda nao tem
+// curso a venda.
+$subcats = [];
+foreach ($offers as $o) {
+    foreach ($o->get_category_ids() as $catid) {
+        if ($catid !== (int) $company->get('categoryid')) {
+            $subcats[$catid] = true;
+        }
+    }
+}
+$subcats = array_keys($subcats);
+
+// Aplica os filtros DEPOIS de levantar as subcategorias, senao a lista de
+// filtros encolheria a cada filtro aplicado e o aluno ficaria sem como voltar.
+if ($filtercat > 0) {
+    $offers = array_filter($offers, fn($o) => in_array($filtercat, $o->get_category_ids(), true));
+}
+if ($filtertype !== '') {
+    $offers = array_filter($offers, fn($o) => $o->get('offertype') === $filtertype);
+}
 
 if (!$offers) {
     echo $OUTPUT->notification(get_string('nooffers', 'local_marketplace'), 'info');
@@ -68,6 +141,95 @@ if (!$offers) {
 $cansell = $company->can_sell();
 if (!$cansell) {
     echo $OUTPUT->notification(get_string('nopaymentaccount', 'local_marketplace'), 'warning');
+}
+
+// Controles so aparecem quando ha o que ordenar ou filtrar. Uma empresa com
+// duas ofertas nao precisa de barra de filtro ocupando o topo da vitrine.
+$total = count(offer::get_published((int) $company->get('id')));
+if ($total > 2 || $subcats) {
+    $baseurl = new moodle_url('/local/marketplace/offers.php', ['company' => $shortname]);
+
+    echo html_writer::start_div('local-marketplace-controls d-flex flex-wrap gap-3 align-items-end mb-4');
+
+    // Ordenacao.
+    $sortlabels = [];
+    foreach (offer::sort_options() as $opt) {
+        $sortlabels[$opt] = get_string('sort' . $opt, 'local_marketplace');
+    }
+    echo html_writer::div(
+        html_writer::tag('label', get_string('sortby', 'local_marketplace'), [
+            'for' => 'mp-sort',
+            'class' => 'form-label small text-muted mb-1',
+        ]) .
+        $OUTPUT->single_select(
+            new moodle_url($baseurl, array_filter(['cat' => $filtercat, 'type' => $filtertype])),
+            'sort',
+            $sortlabels,
+            $sort,
+            null,
+            'mp-sort'
+        )
+    );
+
+    // Subcategorias.
+    if ($subcats) {
+        $catlabels = [0 => get_string('filterallcategories', 'local_marketplace')];
+        foreach ($subcats as $catid) {
+            $cat = core_course_category::get($catid, IGNORE_MISSING, true);
+            if ($cat) {
+                $catlabels[$catid] = $cat->get_formatted_name();
+            }
+        }
+        echo html_writer::div(
+            html_writer::tag('label', get_string('filtercategory', 'local_marketplace'), [
+                'for' => 'mp-cat',
+                'class' => 'form-label small text-muted mb-1',
+            ]) .
+            $OUTPUT->single_select(
+                new moodle_url($baseurl, array_filter(['sort' => $sort, 'type' => $filtertype])),
+                'cat',
+                $catlabels,
+                $filtercat,
+                null,
+                'mp-cat'
+            )
+        );
+    }
+
+    // Tipo de oferta.
+    $typelabels = [
+        '' => get_string('filteralltypes', 'local_marketplace'),
+        offer::TYPE_SINGLE => get_string('typesingle', 'local_marketplace'),
+        offer::TYPE_BUNDLE => get_string('typebundle', 'local_marketplace'),
+        offer::TYPE_CATALOG => get_string('typecatalog', 'local_marketplace'),
+    ];
+    echo html_writer::div(
+        html_writer::tag('label', get_string('filtertype', 'local_marketplace'), [
+            'for' => 'mp-type',
+            'class' => 'form-label small text-muted mb-1',
+        ]) .
+        $OUTPUT->single_select(
+            new moodle_url($baseurl, array_filter(['sort' => $sort, 'cat' => $filtercat])),
+            'type',
+            $typelabels,
+            $filtertype,
+            null,
+            'mp-type'
+        )
+    );
+
+    echo html_writer::end_div();
+
+    // Sem resultado apos filtrar e diferente de empresa sem oferta: aqui o
+    // aluno precisa saber que basta limpar o filtro.
+    if (!$offers) {
+        echo $OUTPUT->notification(get_string('nooffersfiltered', 'local_marketplace'), 'info');
+        echo html_writer::link($baseurl, get_string('filterclear', 'local_marketplace'), [
+            'class' => 'btn btn-secondary',
+        ]);
+        echo $OUTPUT->footer();
+        exit;
+    }
 }
 
 echo html_writer::start_div('local-marketplace-offers');
@@ -122,13 +284,58 @@ foreach ($offers as $offer) {
         'text-muted small mb-2'
     );
 
-    // Quais cursos, e nao so quantos. Com planos em niveis - basico,
-    // intermediario, completo - a diferenca entre eles E a lista: "inclui 4
-    // cursos" nao deixa o aluno escolher.
+    // Cards com imagem, titulo e descricao do proprio curso. Com planos em
+    // niveis - basico, intermediario, completo - a diferenca entre eles E a
+    // lista: "inclui 4 cursos" nao deixa o aluno escolher.
+    //
+    // Os dados vem do cadastro do curso, nao de campos duplicados na oferta.
+    // Duplicar faria o vendedor manter a mesma informacao em dois lugares, e
+    // os dois divergiriam na primeira edicao feita so num deles.
     if ($courses && $offer->get('offertype') !== offer::TYPE_CATALOG) {
-        $names = $DB->get_records_list('course', 'id', $courses, 'fullname', 'id, fullname');
-        $items = array_map(fn($c) => html_writer::tag('li', format_string($c->fullname)), $names);
-        echo html_writer::tag('ul', implode('', $items), ['class' => 'small text-muted mb-2']);
+        echo html_writer::start_div('row g-3 mb-3');
+        foreach ($courses as $courseid) {
+            $course = get_course((int) $courseid, false);
+            if (!$course) {
+                continue;
+            }
+
+            $image = \core_course\external\course_summary_exporter::get_course_image($course);
+            if (!$image) {
+                // Sem imagem cadastrada o core gera um padrao a partir do id,
+                // o mesmo que aparece na lista de cursos. Card sem imagem
+                // nenhuma quebraria o alinhamento da grade.
+                $image = $OUTPUT->get_generated_image_for_id((int) $course->id);
+            }
+
+            $coursecontext = context_course::instance((int) $course->id);
+            $summary = format_text(
+                (string) $course->summary,
+                (int) $course->summaryformat,
+                ['context' => $coursecontext]
+            );
+
+            echo html_writer::start_div('col-12 col-md-6 col-lg-4');
+            echo html_writer::start_div('card h-100');
+            echo html_writer::empty_tag('img', [
+                'src' => $image,
+                'alt' => '',
+                'class' => 'card-img-top',
+                'style' => 'aspect-ratio:16/9;object-fit:cover',
+                'loading' => 'lazy',
+            ]);
+            echo html_writer::start_div('card-body p-3');
+            echo html_writer::tag('h4', format_string($course->fullname), ['class' => 'card-title h6 mb-2']);
+            if (trim(strip_tags($summary)) !== '') {
+                echo html_writer::div(
+                    shorten_text(strip_tags($summary), 160),
+                    'card-text small text-muted mb-0'
+                );
+            }
+            echo html_writer::end_div();
+            echo html_writer::end_div();
+            echo html_writer::end_div();
+        }
+        echo html_writer::end_div();
     }
 
     if ($owned && $canrenew) {

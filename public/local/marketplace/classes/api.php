@@ -54,6 +54,9 @@ class api {
             $company->set('shortname', $data->shortname);
             $company->set('cnpj', !empty($data->cnpj) ? $data->cnpj : null);
             $company->set('commissionpct', self::commission_input($data->commissionpct ?? null));
+            $company->set('pagetitle', !empty($data->pagetitle) ? $data->pagetitle : null);
+            $company->set('pageintro', $data->pageintro ?? null);
+            $company->set('pageaccent', !empty($data->pageaccent) ? $data->pageaccent : null);
             $company->set('themename', !empty($data->themename) ? $data->themename : null);
             $company->set('hostname', !empty($data->hostname) ? $data->hostname : null);
             $company->create();
@@ -191,6 +194,9 @@ class api {
             $company->set('name', $data->name);
             $company->set('cnpj', !empty($data->cnpj) ? $data->cnpj : null);
             $company->set('commissionpct', self::commission_input($data->commissionpct ?? null));
+            $company->set('pagetitle', !empty($data->pagetitle) ? $data->pagetitle : null);
+            $company->set('pageintro', $data->pageintro ?? null);
+            $company->set('pageaccent', !empty($data->pageaccent) ? $data->pageaccent : null);
             $company->set('themename', !empty($data->themename) ? $data->themename : null);
             $company->set('hostname', !empty($data->hostname) ? $data->hostname : null);
             $company->update();

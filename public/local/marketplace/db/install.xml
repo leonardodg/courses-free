@@ -15,6 +15,9 @@
         <FIELD NAME="hostname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Dominio proprio. Fase 3: alimenta o mapa Host->wwwroot do config.php."/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|suspended. Nao ha aprovacao manual: os portoes sao a payment account configurada e o papel restrito."/>
         <FIELD NAME="commissionpct" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="Comissao negociada com esta empresa, de 0 a 100. NULO herda o padrao do site - e a diferenca entre 'nao negociamos nada' e 'negociamos zero', que sem NULL seriam indistinguiveis."/>
+        <FIELD NAME="pagetitle" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Titulo da vitrine. Vazio usa o nome da empresa."/>
+        <FIELD NAME="pageintro" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Texto de abertura da vitrine, em HTML filtrado pelo Moodle."/>
+        <FIELD NAME="pageaccent" TYPE="char" LENGTH="7" NOTNULL="false" SEQUENCE="false" COMMENT="Cor de destaque em hexadecimal, tipo #B85410. Guardada como cor e nao como CSS solto para nao virar vetor de injecao."/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

@@ -82,3 +82,59 @@ function local_marketplace_extend_navigation_category_settings($categorynode, $c
         );
     }
 }
+
+/**
+ * Serve o CSS da vitrine da empresa.
+ *
+ * Servido como arquivo, e nao embutido na pagina. Assim o navegador o trata
+ * como folha de estilo e nunca como script, independente do que o vendedor
+ * tenha escrito dentro. CSS inline exigiria filtrar o conteudo, e filtro de CSS
+ * e uma corrida que nao se ganha.
+ *
+ * Publico de proposito: e a folha de estilo de uma pagina de VENDA, que precisa
+ * abrir para quem ainda nao tem conta.
+ *
+ * @param stdClass $course
+ * @param stdClass $cm
+ * @param context $context
+ * @param string $filearea
+ * @param array $args
+ * @param bool $forcedownload
+ * @param array $options
+ * @return bool Falso quando o arquivo nao existe.
+ */
+function local_marketplace_pluginfile(
+    $course,
+    $cm,
+    $context,
+    $filearea,
+    $args,
+    $forcedownload,
+    array $options = []
+) {
+    // Logo e CSS: os dois sao da vitrine e vivem no contexto da categoria.
+    if (!in_array($filearea, ['pagecss', 'pagelogo'], true)) {
+        return false;
+    }
+
+    // Contexto de categoria: a vitrine pertence a empresa, e a empresa vive na
+    // categoria dela.
+    if ($context->contextlevel !== CONTEXT_COURSECAT) {
+        return false;
+    }
+
+    $itemid = (int) array_shift($args);
+    $filename = array_pop($args);
+    $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
+
+    $fs = get_file_storage();
+    $file = $fs->get_file($context->id, 'local_marketplace', $filearea, $itemid, $filepath, $filename);
+
+    if (!$file || $file->is_directory()) {
+        return false;
+    }
+
+    // Cache curto: o vendedor troca o logo ou o CSS e quer ver o efeito. Um dia
+    // de cache faria cada ajuste parecer que nao funcionou.
+    send_stored_file($file, 300, 0, false, $options);
+}

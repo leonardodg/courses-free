@@ -29,7 +29,6 @@ namespace local_marketplace;
  * @covers     \local_marketplace\api::regenerate_domain_map
  */
 final class domain_map_test extends \advanced_testcase {
-
     /**
      * Cria uma empresa com dominio.
      *

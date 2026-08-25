@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Servicos web do marketplace.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,26 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082545;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$functions = [
+    'local_marketplace_get_offers' => [
+        'classname' => 'local_marketplace\external\get_offers',
+        'methodname' => 'execute',
+        'description' => 'Ofertas publicadas de uma empresa, para pagina de venda externa.',
+        'type' => 'read',
+        'ajax' => true,
+        // Exige token. O vendedor gera o dele e usa na pagina externa; sem
+        // isso qualquer um varreria o catalogo inteiro da plataforma.
+        'loginrequired' => true,
+    ],
+];
+
+$services = [
+    'Marketplace storefront' => [
+        'functions' => ['local_marketplace_get_offers'],
+        'restrictedusers' => 1,
+        'enabled' => 0,
+        'shortname' => 'marketplace_storefront',
+        'downloadfiles' => 0,
+        'uploadfiles' => 0,
+    ],
+];
