@@ -58,15 +58,7 @@ $string['memberowner'] = 'Owner';
 $string['memberseller'] = 'Seller';
 
 // Payment gate.
-$string['mpaccount'] = 'Mercado Pago account';
-$string['mpnotlinked'] = 'This company has no Mercado Pago account linked, so it can only publish free courses.';
-$string['mplinked'] = 'Mercado Pago account linked';
-$string['mpexpired'] = 'The Mercado Pago authorisation expired and needs to be renewed.';
-$string['mprevoked'] = 'The Mercado Pago authorisation was revoked.';
-$string['statuspending'] = 'Pending';
-$string['statuslinked'] = 'Linked';
-$string['statusexpired'] = 'Expired';
-$string['statusrevoked'] = 'Revoked';
+$string['nopaymentaccount'] = 'This company has no payment method configured, so it can only publish free courses.';
 
 // Course policy.
 $string['hostingtype'] = 'Video hosting';
@@ -78,7 +70,7 @@ $string['commissionpct'] = 'Platform commission (%)';
 $string['errorshortnametaken'] = 'This short name is already in use.';
 $string['errorhostnametaken'] = 'This domain is already linked to another company.';
 $string['errorsellerrolemissing'] = 'The seller role is missing. Reinstall the Marketplace plugin.';
-$string['errorcannotsell'] = 'This company cannot sell yet: link a Mercado Pago account first.';
+$string['errorcannotsell'] = 'This company cannot sell yet: configure a payment method first.';
 $string['errorplatformhostingunavailable'] = 'Hosting video on the platform is not available yet.';
 
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';

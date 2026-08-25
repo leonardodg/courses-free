@@ -70,6 +70,7 @@ class api {
 
             self::assign_seller_role($company, $ownerid);
             self::apply_theme($company);
+            self::create_payment_account($company);
 
             $transaction->allow_commit();
         } catch (\Throwable $e) {
@@ -93,6 +94,34 @@ class api {
             'parent' => 0,
         ]);
         return $category->get_db_record();
+    }
+
+    /**
+     * Cria a payment account da empresa, no contexto da categoria dela.
+     *
+     * E o contexto que faz o vendedor conseguir administrar a propria conta
+     * sem enxergar as das outras empresas: moodle/payment:manageaccounts e
+     * CONTEXT_COURSE, e helper::get_payment_accounts_menu() resolve pelos
+     * contextos-pai.
+     *
+     * A conta nasce SEM gateway. E isso que mantem o portao de venda fechado
+     * ate o vendedor concluir o vinculo: account::is_available() exige ao
+     * menos um gateway habilitado.
+     *
+     * @param company $company
+     * @return \core_payment\account
+     */
+    public static function create_payment_account(company $company): \core_payment\account {
+        $context = $company->get_context();
+
+        $account = new \core_payment\account();
+        $account->set('name', $company->get('name'));
+        $account->set('idnumber', 'marketplace_' . $company->get('shortname'));
+        $account->set('contextid', $context->id);
+        $account->set('enabled', true);
+        $account->create();
+
+        return $account;
     }
 
     /**

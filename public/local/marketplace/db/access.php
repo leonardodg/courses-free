@@ -20,7 +20,7 @@
  * O onboarding e self-service: qualquer usuario autenticado cria empresa.
  * O que limita nao e aprovacao manual, sao dois portoes estruturais:
  *
- *   1. VENDER exige a empresa ter conta Mercado Pago vinculada. Isso NAO e uma
+ *   1. VENDER exige a empresa ter meio de pagamento configurado. Isso NAO e uma
  *      capability - e estado, verificado em company::can_sell(). Capability
  *      responderia "tem permissao?", e a pergunta aqui e "esta habilitado?".
  *
@@ -56,7 +56,7 @@ $capabilities = [
         ],
     ],
 
-    // Vincular/desvincular a conta Mercado Pago da empresa.
+    // Configurar o meio de pagamento da empresa.
     // Separada de managecompany porque mexe em credencial financeira.
     'local/marketplace:managepayment' => [
         'riskbitmask' => RISK_PERSONAL | RISK_CONFIG,
