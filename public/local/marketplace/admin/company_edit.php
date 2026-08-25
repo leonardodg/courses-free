@@ -57,18 +57,24 @@ $form = new company_form(null, $customdata);
 
 // O filemanager precisa de um rascunho preparado ANTES do set_data, senao a
 // tela abre vazia mesmo com arquivo salvo.
-$draftitemid = 0;
+$draftcss = 0;
+$draftlogo = 0;
 if ($existing && $existing->get('categoryid')) {
     $filecontext = $existing->get_context();
-    file_prepare_draft_area($draftitemid, $filecontext->id, 'local_marketplace', 'pagecss', 0, [
-        'subdirs' => 0,
-        'maxfiles' => 1,
-    ]);
+    foreach ([['pagecss', 'draftcss'], ['pagelogo', 'draftlogo']] as [$area, $var]) {
+        $id = 0;
+        file_prepare_draft_area($id, $filecontext->id, 'local_marketplace', $area, 0, [
+            'subdirs' => 0,
+            'maxfiles' => 1,
+        ]);
+        $$var = $id;
+    }
 }
 
 if ($existing) {
     $form->set_data([
-        'pagecss' => $draftitemid,
+        'pagecss' => $draftcss,
+        'pagelogo' => $draftlogo,
         'pagetitle' => $existing->get('pagetitle'),
         'pageintro' => [
             'text' => $existing->get('pageintro') ?? '',
@@ -99,14 +105,16 @@ if ($data = $form->get_data()) {
         // Salvo depois do update: o arquivo vive no contexto da categoria, e
         // numa empresa recem-criada a categoria so existe apos o provisionamento.
         if ($existing->get('categoryid')) {
-            file_save_draft_area_files(
-                (int) $data->pagecss,
-                $existing->get_context()->id,
-                'local_marketplace',
-                'pagecss',
-                0,
-                ['subdirs' => 0, 'maxfiles' => 1]
-            );
+            foreach (['pagecss', 'pagelogo'] as $area) {
+                file_save_draft_area_files(
+                    (int) ($data->$area ?? 0),
+                    $existing->get_context()->id,
+                    'local_marketplace',
+                    $area,
+                    0,
+                    ['subdirs' => 0, 'maxfiles' => 1]
+                );
+            }
         }
         redirect(
             $listurl,

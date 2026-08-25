@@ -204,6 +204,39 @@ class company extends persistent {
     }
 
     /**
+     * URL do logo da marca, se houver.
+     *
+     * Nao tem campo no banco: o arquivo em si e o dado. Uma coluna com o nome
+     * do arquivo abriria a chance de as duas coisas discordarem.
+     *
+     * @return \moodle_url|null
+     */
+    public function get_page_logo_url(): ?\moodle_url {
+        if (!$this->get('categoryid')) {
+            return null;
+        }
+
+        $fs = get_file_storage();
+        $context = $this->get_context();
+        $files = $fs->get_area_files($context->id, 'local_marketplace', 'pagelogo', 0, 'itemid', false);
+
+        if (!$files) {
+            return null;
+        }
+
+        $file = reset($files);
+
+        return \moodle_url::make_pluginfile_url(
+            $context->id,
+            'local_marketplace',
+            'pagelogo',
+            0,
+            $file->get_filepath(),
+            $file->get_filename()
+        );
+    }
+
+    /**
      * Titulo da vitrine, com o nome da empresa como padrao.
      *
      * @return string

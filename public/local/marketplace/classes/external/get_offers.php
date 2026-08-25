@@ -62,7 +62,7 @@ class get_offers extends external_api {
      * @return array
      */
     public static function execute(string $companyname): array {
-        global $USER;
+        global $USER, $OUTPUT;
 
         [$companyname] = array_values(self::validate_parameters(
             self::execute_parameters(),
@@ -93,9 +93,25 @@ class get_offers extends external_api {
             $courses = [];
             foreach ($o->get_course_ids() as $courseid) {
                 $course = get_course((int) $courseid, false);
+                if (!$course) {
+                    continue;
+                }
+
+                $image = \core_course\external\course_summary_exporter::get_course_image($course);
+                if (!$image) {
+                    $image = $OUTPUT->get_generated_image_for_id((int) $course->id);
+                }
+
+                $coursecontext = \context_course::instance((int) $course->id);
                 $courses[] = [
                     'id' => (int) $courseid,
-                    'fullname' => format_string($course->fullname, true, ['context' => $context]),
+                    'fullname' => format_string($course->fullname, true, ['context' => $coursecontext]),
+                    'summary' => format_text(
+                        (string) $course->summary,
+                        (int) $course->summaryformat,
+                        ['context' => $coursecontext]
+                    ),
+                    'imageurl' => $image,
                 ];
             }
 
@@ -140,6 +156,7 @@ class get_offers extends external_api {
                     ['context' => $context]
                 ),
                 'pageaccent' => (string) $company->get('pageaccent'),
+                'logourl' => ($url = $company->get_page_logo_url()) ? $url->out(false) : '',
                 'cansell' => $company->can_sell(),
                 'currency' => $company->get_payment_currency(),
             ],
@@ -160,6 +177,7 @@ class get_offers extends external_api {
                 'pagetitle' => new external_value(PARAM_TEXT, 'Titulo da vitrine'),
                 'pageintro' => new external_value(PARAM_RAW, 'Texto de abertura, ja filtrado'),
                 'pageaccent' => new external_value(PARAM_TEXT, 'Cor de destaque em hexadecimal'),
+                'logourl' => new external_value(PARAM_RAW, 'URL do logo da marca, vazio se nao houver'),
                 'cansell' => new external_value(PARAM_BOOL, 'Se a empresa pode vender curso pago'),
                 'currency' => new external_value(PARAM_TEXT, 'Moeda em que a empresa recebe'),
             ]),
@@ -183,6 +201,8 @@ class get_offers extends external_api {
                         new external_single_structure([
                             'id' => new external_value(PARAM_INT, 'ID do curso'),
                             'fullname' => new external_value(PARAM_TEXT, 'Nome do curso'),
+                            'summary' => new external_value(PARAM_RAW, 'Descricao do curso, ja filtrada'),
+                            'imageurl' => new external_value(PARAM_RAW, 'Imagem do curso, ou a gerada pelo core'),
                         ])
                     ),
                 ])

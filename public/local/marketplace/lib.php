@@ -112,7 +112,8 @@ function local_marketplace_pluginfile(
     $forcedownload,
     array $options = []
 ) {
-    if ($filearea !== 'pagecss') {
+    // Logo e CSS: os dois sao da vitrine e vivem no contexto da categoria.
+    if (!in_array($filearea, ['pagecss', 'pagelogo'], true)) {
         return false;
     }
 
@@ -127,13 +128,13 @@ function local_marketplace_pluginfile(
     $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
 
     $fs = get_file_storage();
-    $file = $fs->get_file($context->id, 'local_marketplace', 'pagecss', $itemid, $filepath, $filename);
+    $file = $fs->get_file($context->id, 'local_marketplace', $filearea, $itemid, $filepath, $filename);
 
     if (!$file || $file->is_directory()) {
         return false;
     }
 
-    // Cache curto: o vendedor edita o CSS e quer ver o efeito. Um dia de cache
-    // faria cada ajuste parecer que nao funcionou.
+    // Cache curto: o vendedor troca o logo ou o CSS e quer ver o efeito. Um dia
+    // de cache faria cada ajuste parecer que nao funcionou.
     send_stored_file($file, 300, 0, false, $options);
 }

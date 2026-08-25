@@ -74,6 +74,22 @@ if ($accent !== '') {
     );
 }
 
+$logo = $company->get_page_logo_url();
+if ($logo) {
+    echo html_writer::div(
+        html_writer::empty_tag('img', [
+            'src' => $logo->out(false),
+            'alt' => format_string($company->get('name')),
+            'class' => 'local-marketplace-logo',
+            'style' => 'max-height:96px;width:auto',
+            // Logo e decorativo em relacao ao conteudo: carregar cedo evita o
+            // salto de layout que empurraria as ofertas para baixo.
+            'loading' => 'eager',
+        ]),
+        'mb-3'
+    );
+}
+
 $intro = (string) $company->get('pageintro');
 if (trim($intro) !== '') {
     // O format_text filtra o HTML: o vendedor escreve texto de venda, nao script.
@@ -150,13 +166,58 @@ foreach ($offers as $offer) {
         'text-muted small mb-2'
     );
 
-    // Quais cursos, e nao so quantos. Com planos em niveis - basico,
-    // intermediario, completo - a diferenca entre eles E a lista: "inclui 4
-    // cursos" nao deixa o aluno escolher.
+    // Cards com imagem, titulo e descricao do proprio curso. Com planos em
+    // niveis - basico, intermediario, completo - a diferenca entre eles E a
+    // lista: "inclui 4 cursos" nao deixa o aluno escolher.
+    //
+    // Os dados vem do cadastro do curso, nao de campos duplicados na oferta.
+    // Duplicar faria o vendedor manter a mesma informacao em dois lugares, e
+    // os dois divergiriam na primeira edicao feita so num deles.
     if ($courses && $offer->get('offertype') !== offer::TYPE_CATALOG) {
-        $names = $DB->get_records_list('course', 'id', $courses, 'fullname', 'id, fullname');
-        $items = array_map(fn($c) => html_writer::tag('li', format_string($c->fullname)), $names);
-        echo html_writer::tag('ul', implode('', $items), ['class' => 'small text-muted mb-2']);
+        echo html_writer::start_div('row g-3 mb-3');
+        foreach ($courses as $courseid) {
+            $course = get_course((int) $courseid, false);
+            if (!$course) {
+                continue;
+            }
+
+            $image = \core_course\external\course_summary_exporter::get_course_image($course);
+            if (!$image) {
+                // Sem imagem cadastrada o core gera um padrao a partir do id,
+                // o mesmo que aparece na lista de cursos. Card sem imagem
+                // nenhuma quebraria o alinhamento da grade.
+                $image = $OUTPUT->get_generated_image_for_id((int) $course->id);
+            }
+
+            $coursecontext = context_course::instance((int) $course->id);
+            $summary = format_text(
+                (string) $course->summary,
+                (int) $course->summaryformat,
+                ['context' => $coursecontext]
+            );
+
+            echo html_writer::start_div('col-12 col-md-6 col-lg-4');
+            echo html_writer::start_div('card h-100');
+            echo html_writer::empty_tag('img', [
+                'src' => $image,
+                'alt' => '',
+                'class' => 'card-img-top',
+                'style' => 'aspect-ratio:16/9;object-fit:cover',
+                'loading' => 'lazy',
+            ]);
+            echo html_writer::start_div('card-body p-3');
+            echo html_writer::tag('h4', format_string($course->fullname), ['class' => 'card-title h6 mb-2']);
+            if (trim(strip_tags($summary)) !== '') {
+                echo html_writer::div(
+                    shorten_text(strip_tags($summary), 160),
+                    'card-text small text-muted mb-0'
+                );
+            }
+            echo html_writer::end_div();
+            echo html_writer::end_div();
+            echo html_writer::end_div();
+        }
+        echo html_writer::end_div();
     }
 
     if ($owned && $canrenew) {

@@ -130,6 +130,15 @@ class company_form extends \moodleform {
         $mform->setType('pageintro', PARAM_RAW);
         $mform->addHelpButton('pageintro', 'pageintro', 'local_marketplace');
 
+        $mform->addElement(
+            'filemanager',
+            'pagelogo',
+            get_string('pagelogo', 'local_marketplace'),
+            null,
+            ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['web_image']]
+        );
+        $mform->addHelpButton('pagelogo', 'pagelogo', 'local_marketplace');
+
         $mform->addElement('text', 'pageaccent', get_string('pageaccent', 'local_marketplace'), ['size' => 10]);
         $mform->setType('pageaccent', PARAM_TEXT);
         $mform->addHelpButton('pageaccent', 'pageaccent', 'local_marketplace');
