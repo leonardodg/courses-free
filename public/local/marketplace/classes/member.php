@@ -22,7 +22,8 @@ use core\persistent;
  * Vendedor vinculado a uma empresa.
  *
  * Uma empresa tem N membros, e um usuario pode participar de varias empresas.
- * A conta Mercado Pago, porem, e da EMPRESA - ver mpaccount. Foi uma escolha
+ * A credencial de pagamento, porem, e da EMPRESA - fica na payment account do
+ * core_payment, no contexto da categoria dela. Foi uma escolha
  * deliberada: se a credencial fosse por pessoa, o split de um curso escrito a
  * quatro maos nao teria destinatario definido.
  *

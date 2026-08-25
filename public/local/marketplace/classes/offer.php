@@ -101,7 +101,7 @@ class offer extends persistent {
      * A oferta e gratuita?
      *
      * Importa porque o portao de venda so vale para oferta paga: uma empresa
-     * sem conta Mercado Pago pode publicar curso de graca.
+     * sem meio de pagamento configurado pode publicar curso de graca.
      *
      * @return bool
      */
