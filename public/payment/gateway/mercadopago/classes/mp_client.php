@@ -40,8 +40,24 @@ class mp_client {
     /** @var string Base da API. */
     const API_BASE = 'https://api.mercadopago.com';
 
-    /** @var string Onde o vendedor autoriza a plataforma. */
-    const AUTH_URL = 'https://auth.mercadopago.com.br/authorization';
+    /**
+     * Dominio de autorizacao de cada site.
+     *
+     * O OAuth nao tem um dominio unico: o vendedor autoriza no dominio do PAIS
+     * dele. Mandar um vendedor argentino para o dominio .com.br nao da erro
+     * claro - a tela simplesmente nao reconhece a conta.
+     *
+     * @var array<string,string>
+     */
+    const SITE_AUTH_DOMAIN = [
+        'MLA' => 'auth.mercadopago.com.ar',
+        'MLB' => 'auth.mercadopago.com.br',
+        'MLC' => 'auth.mercadopago.cl',
+        'MCO' => 'auth.mercadopago.com.co',
+        'MLM' => 'auth.mercadopago.com.mx',
+        'MPE' => 'auth.mercadopago.com.pe',
+        'MLU' => 'auth.mercadopago.com.uy',
+    ];
 
     /** @var int Timeout em segundos. Pagamento nao pode pendurar a requisicao. */
     const TIMEOUT = 20;
@@ -97,15 +113,19 @@ class mp_client {
      * @param string $redirecturi Precisa casar EXATAMENTE com a cadastrada no painel
      * @param string $state Devolvido no callback; usamos para saber qual conta vincular
      * @param string $codechallenge Derivado do verifier guardado na sessao
+     * @param string $siteid Site da aplicacao da plataforma
      * @return string
      */
     public static function build_authorization_url(
         string $clientid,
         string $redirecturi,
         string $state,
-        string $codechallenge
+        string $codechallenge,
+        string $siteid
     ): string {
-        return self::AUTH_URL . '?' . http_build_query([
+        $domain = self::SITE_AUTH_DOMAIN[strtoupper($siteid)] ?? self::SITE_AUTH_DOMAIN['MLB'];
+
+        return 'https://' . $domain . '/authorization?' . http_build_query([
             'client_id' => $clientid,
             'response_type' => 'code',
             'platform_id' => 'mp',

@@ -53,6 +53,10 @@ $string['errorinvalidresponse'] = 'Mercado Pago returned an unexpected response 
 $string['errorapi'] = 'Mercado Pago rejected the request. {$a}';
 $string['errormissingappconfig'] = 'The platform application is not configured. Set the client ID and secret in the plugin settings.';
 $string['errorstatemismatch'] = 'The authorisation could not be verified. Start the process again.';
+$string['errorverifyaccount'] = 'The account was authorised but could not be verified with Mercado Pago, so it was not linked. Try again. ({$a})';
+$string['errorsitemismatch'] = 'This marketplace operates in {$a->platform} and the account you authorised is from {$a->seller}. Mercado Pago only splits payments between accounts of the same country, so this account cannot be linked. Use an account from {$a->platform}.';
+$string['platformsite'] = 'Marketplace country';
+$string['platformsite_desc'] = 'Country of the Mercado Pago account that receives the commission. It sets where sellers authorise and which accounts may be linked: the split only works between accounts of the same country, because the commission lands in the platform account and an account only holds its own currency. Sellers from other countries need a separate marketplace with its own application.';
 
 // Task.
 $string['taskrefreshtokens'] = 'Refresh Mercado Pago seller tokens';

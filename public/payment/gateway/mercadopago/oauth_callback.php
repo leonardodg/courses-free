@@ -89,19 +89,35 @@ $existing = $gateway->get('id') ? $gateway->get_configuration() : [];
 
 // Em que pais - e portanto em que moeda - este vendedor recebe. Perguntamos ao
 // Mercado Pago em vez de deixar o vendedor escolher: a conta e presa a um pais
-// e so recebe na moeda dele. Uma oferta em moeda diferente produziria
-// preferencia recusada no checkout, ja com o aluno na tela de pagamento.
-$siteid = '';
-$currency = '';
+// e so recebe na moeda dele.
+//
+// A consulta e obrigatoria, e nao um enfeite. O split so funciona entre contas
+// do MESMO pais: a comissao cai na conta da plataforma, e uma conta so guarda a
+// moeda do proprio pais - nao ha cambio no caminho. Vincular um vendedor de
+// outro pais produziria uma conta que parece pronta e falha na primeira venda,
+// com o aluno ja na tela de pagamento.
+//
+// Falha de rede aqui derruba o vinculo de proposito. Guardar um token cuja
+// origem nao conseguimos verificar seria trocar um erro visivel agora, que se
+// resolve clicando de novo, por um erro invisivel na conciliacao.
 try {
     $me = (new mp_client((string) ($token['access_token'] ?? '')))->get_me();
-    $siteid = (string) ($me['site_id'] ?? '');
-    $currency = mp_client::currency_for_site($siteid);
 } catch (moodle_exception $e) {
-    // O vinculo em si deu certo; nao vale descartar o token por causa disto.
-    // Sem moeda a empresa nao publica oferta paga, e o painel diz o porque.
-    debugging('paygw_mercadopago: falha ao consultar /users/me: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    redirect($returnurl, get_string('errorverifyaccount', 'paygw_mercadopago', $e->getMessage()), null,
+        \core\output\notification::NOTIFY_ERROR);
 }
+
+$siteid = (string) ($me['site_id'] ?? '');
+$platformsite = strtoupper((string) ($config->platformsite ?? 'MLB'));
+
+if ($siteid === '' || strtoupper($siteid) !== $platformsite) {
+    redirect($returnurl, get_string('errorsitemismatch', 'paygw_mercadopago', (object) [
+        'platform' => $platformsite,
+        'seller' => $siteid !== '' ? $siteid : '?',
+    ]), null, \core\output\notification::NOTIFY_ERROR);
+}
+
+$currency = mp_client::currency_for_site($siteid);
 
 // expires_in vem em segundos. Guardar o INSTANTE do vencimento, e nao a
 // duracao, evita ter que lembrar quando o token foi emitido.

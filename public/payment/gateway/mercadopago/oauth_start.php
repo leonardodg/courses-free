@@ -66,5 +66,6 @@ redirect(mp_client::build_authorization_url(
     $config->clientid,
     $redirecturi,
     $state,
-    mp_client::create_code_challenge($codeverifier)
+    mp_client::create_code_challenge($codeverifier),
+    (string) ($config->platformsite ?? 'MLB')
 ));
