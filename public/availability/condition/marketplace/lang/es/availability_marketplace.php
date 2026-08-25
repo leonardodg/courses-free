@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings do availability_marketplace.
+ * Cadenas de availability_marketplace.
  *
  * @package    availability_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -24,15 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['anyoffer'] = 'Qualquer oferta que inclua este curso';
-$string['buyaccess'] = 'Comprar acesso';
-$string['description'] = 'Somente alunos com direito de acesso vigente veem o conteúdo.';
-$string['label_offer'] = 'Oferta necessária';
-$string['pluginname'] = 'Restrição por compra';
-$string['privacy:metadata'] = 'O plugin Restrição por compra não guarda dados pessoais; ele apenas consulta os direitos de acesso guardados pelo local_marketplace.';
-$string['requires_access'] = 'Você comprou acesso a este curso';
-$string['requires_noaccess'] = 'Você <b>não</b> comprou acesso a este curso';
-$string['requires_notoffer'] = 'Você <b>não</b> comprou <b>{$a}</b>';
-$string['requires_offer'] = 'Você comprou <b>{$a}</b>';
+$string['anyoffer'] = 'Cualquier oferta que incluya este curso';
+$string['buyaccess'] = 'Comprar acceso';
+$string['description'] = 'Solo los estudiantes con un acceso vigente ven el contenido.';
+$string['label_offer'] = 'Oferta requerida';
+$string['pluginname'] = 'Restricción por compra';
+$string['privacy:metadata'] = 'El plugin Restricción por compra no guarda datos personales; solo consulta los accesos guardados por local_marketplace.';
+$string['requires_access'] = 'Compraste el acceso a este curso';
+$string['requires_noaccess'] = '<b>No</b> compraste el acceso a este curso';
+$string['requires_notoffer'] = '<b>No</b> compraste <b>{$a}</b>';
+$string['requires_offer'] = 'Compraste <b>{$a}</b>';
 $string['title'] = 'Compra';
-$string['unknownoffer'] = '(oferta removida)';
+$string['unknownoffer'] = '(oferta eliminada)';

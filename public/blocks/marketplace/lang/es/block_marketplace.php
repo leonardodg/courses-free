@@ -15,17 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Cadenas de block_marketplace.
  *
- * @package    local_marketplace
+ * @package    block_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082524;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$string['blockcancelled'] = 'Cancelada';
+$string['blockendson'] = 'Termina el {$a}';
+$string['blockhistory'] = 'Todas las suscripciones y pagos';
+$string['blockpaynow'] = 'Pagar ahora — faltan {$a} día(s)';
+$string['blockrenewson'] = 'Se renueva antes del {$a}';
+$string['marketplace:addinstance'] = 'Agregar un bloque de suscripciones';
+$string['marketplace:myaddinstance'] = 'Agregar un bloque de suscripciones al Tablero';
+$string['pluginname'] = 'Mis suscripciones';
+$string['privacy:metadata'] = 'El bloque Mis suscripciones muestra accesos guardados por local_marketplace y no guarda ningún dato.';

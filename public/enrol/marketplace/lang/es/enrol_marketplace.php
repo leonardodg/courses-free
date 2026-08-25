@@ -15,17 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Cadenas de enrol_marketplace.
  *
- * @package    local_marketplace
+ * @package    enrol_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082524;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$string['marketplace:config'] = 'Configurar la inscripción del marketplace';
+$string['pluginname'] = 'Acceso del marketplace';
+$string['pluginname_desc'] = 'Inscribe a los estudiantes según los accesos del marketplace que poseen. Ninguna inscripción se hace a mano: sigue a los accesos.';
+$string['privacy:metadata'] = 'El plugin Acceso del marketplace no guarda datos personales; actúa a partir de los accesos guardados por local_marketplace.';
+$string['tasksyncentitlements'] = 'Sincronizar accesos del marketplace';
