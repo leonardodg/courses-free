@@ -30,7 +30,6 @@ use core\persistent;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class entitlement extends persistent {
-
     /** @var string Tabela. */
     const TABLE = 'local_marketplace_entitlement';
 

@@ -29,7 +29,6 @@ namespace local_marketplace;
  * @covers     \local_marketplace\api::resolve_commission_percent
  */
 final class commission_test extends \advanced_testcase {
-
     /** @var company */
     protected $company;
 

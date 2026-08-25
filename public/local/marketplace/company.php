@@ -79,7 +79,7 @@ require_capability('local/marketplace:managecompany', $context);
 
 echo $OUTPUT->header();
 
-// ------------------------------------------------------- meio de pagamento --
+// Meio de pagamento.
 echo $OUTPUT->heading(get_string('paymentsection', 'local_marketplace'), 3);
 
 $account = $company->get_payment_account();
@@ -140,7 +140,7 @@ if (!$account) {
     );
 }
 
-// ------------------------------------------------------------------ ofertas --
+// Ofertas.
 echo $OUTPUT->heading(get_string('offerssection', 'local_marketplace'), 3);
 
 echo html_writer::div(
@@ -211,7 +211,7 @@ echo html_writer::div(
     'mb-4'
 );
 
-// ---------------------------------------------------------------- vendedores --
+// Vendedores.
 echo $OUTPUT->heading(get_string('members', 'local_marketplace'), 3);
 
 $table = new html_table();

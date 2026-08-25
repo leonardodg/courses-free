@@ -33,7 +33,6 @@ use local_marketplace\offer;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class notify_expiring extends \core\task\scheduled_task {
-
     /** @var int Quantos dias antes do vencimento avisar. */
     const NOTICE_DAYS = 5;
 
@@ -64,9 +63,11 @@ class notify_expiring extends \core\task\scheduled_task {
         // nao adianta avisar - viraria "seu acesso vai vencer" depois do fato.
         // norenew de fora: quem cancelou pediu para nao ser mais cobrado.
         // Insistir seria transformar o aviso em spam de quem ja disse nao.
-        $records = $DB->get_records_select('local_marketplace_entitlement',
+        $records = $DB->get_records_select(
+            'local_marketplace_entitlement',
             'status = :status AND norenew = 0 AND timeend > :now AND timeend <= :limit',
-            ['status' => entitlement::STATUS_ACTIVE, 'now' => $now, 'limit' => $limit]);
+            ['status' => entitlement::STATUS_ACTIVE, 'now' => $now, 'limit' => $limit]
+        );
 
         $sent = 0;
         foreach ($records as $record) {

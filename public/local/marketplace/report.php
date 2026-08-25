@@ -66,7 +66,7 @@ if (!$account) {
     exit;
 }
 
-// ------------------------------------------------------------- navegacao --
+// Navegacao.
 $views = [
     'transactions' => get_string('reportviewtransactions', 'local_marketplace'),
     'courses' => get_string('reportviewcourses', 'local_marketplace'),
@@ -94,8 +94,10 @@ if ($view !== 'subscriptions') {
     $links = [];
     foreach ($periods as $days => $label) {
         $links[] = html_writer::link(
-            new moodle_url('/local/marketplace/report.php',
-                ['company' => $shortname, 'view' => $view, 'from' => $days]),
+            new moodle_url(
+                '/local/marketplace/report.php',
+                ['company' => $shortname, 'view' => $view, 'from' => $days]
+            ),
             $label,
             ['class' => 'btn btn-sm ' . ((int) $from === (int) $days ? 'btn-secondary' : 'btn-outline-secondary')]
         );
@@ -103,7 +105,7 @@ if ($view !== 'subscriptions') {
     echo html_writer::div(implode(' ', $links), 'mb-3');
 }
 
-// ------------------------------------------------------ vendas aprovadas --
+// Vendas aprovadas.
 $params = ['accountid' => (int) $account->get('id'), 'status' => 'approved'];
 $where = 'accountid = :accountid AND status = :status';
 if ($from > 0 && $view !== 'subscriptions') {
@@ -112,7 +114,7 @@ if ($from > 0 && $view !== 'subscriptions') {
 }
 $sales = $DB->get_records_select('paygw_mercadopago', $where, $params, 'timecreated DESC');
 
-// =========================================================== TRANSACOES ==
+// TRANSACOES.
 if ($view === 'transactions') {
     if (!$sales) {
         echo $OUTPUT->notification(get_string('reportnosales', 'local_marketplace'), 'info');
@@ -170,7 +172,7 @@ if ($view === 'transactions') {
     echo html_writer::div(html_writer::table($table), 'table-responsive');
 }
 
-// =============================================== CURSOS VENDIDOS ==
+// CURSOS VENDIDOS.
 if ($view === 'courses') {
     if (!$sales) {
         echo $OUTPUT->notification(get_string('reportnosales', 'local_marketplace'), 'info');
@@ -215,8 +217,10 @@ if ($view === 'courses') {
     foreach ($percourse as $courseid => $d) {
         $course = $DB->get_record('course', ['id' => $courseid], 'id, fullname', IGNORE_MISSING);
         $name = $course
-            ? html_writer::link(new moodle_url('/course/view.php', ['id' => $courseid]),
-                format_string($course->fullname))
+            ? html_writer::link(
+                new moodle_url('/course/view.php', ['id' => $courseid]),
+                format_string($course->fullname)
+            )
             : '#' . $courseid;
         $table->data[] = [
             $name,
@@ -229,7 +233,7 @@ if ($view === 'courses') {
     echo $OUTPUT->notification(get_string('reportcoursesnotice', 'local_marketplace'), 'info');
 }
 
-// ==================================================== ASSINATURAS ==
+// ASSINATURAS.
 if ($view === 'subscriptions') {
     echo $OUTPUT->notification(get_string('reportsubsnotice', 'local_marketplace'), 'warning');
 
@@ -249,10 +253,12 @@ if ($view === 'subscriptions') {
     }
 
     [$insql, $inparams] = $DB->get_in_or_equal(array_keys($recurring), SQL_PARAMS_NAMED);
-    $ents = $DB->get_records_select('local_marketplace_entitlement',
+    $ents = $DB->get_records_select(
+        'local_marketplace_entitlement',
         "companyid = :companyid AND offerid $insql",
         array_merge(['companyid' => (int) $company->get('id')], $inparams),
-        'timeend DESC');
+        'timeend DESC'
+    );
 
     if (!$ents) {
         echo $OUTPUT->notification(get_string('reportnosubs', 'local_marketplace'), 'info');
@@ -290,18 +296,29 @@ if ($view === 'subscriptions') {
         $timeend = (int) $e->timeend;
 
         if ($e->status !== 'active') {
-            $badge = html_writer::tag('span', get_string('reportsubcancelled', 'local_marketplace'),
-                ['class' => 'badge bg-secondary']);
+            $badge = html_writer::tag(
+                'span',
+                get_string('reportsubcancelled', 'local_marketplace'),
+                ['class' => 'badge bg-secondary']
+            );
         } else if ($timeend > 0 && $timeend <= $now) {
-            $badge = html_writer::tag('span', get_string('reportsubexpired', 'local_marketplace'),
-                ['class' => 'badge bg-danger']);
+            $badge = html_writer::tag(
+                'span',
+                get_string('reportsubexpired', 'local_marketplace'),
+                ['class' => 'badge bg-danger']
+            );
         } else if ($timeend > 0 && ($timeend - $now) < (7 * DAYSECS)) {
-            $badge = html_writer::tag('span',
+            $badge = html_writer::tag(
+                'span',
                 get_string('reportsubduesoon', 'local_marketplace', max(1, (int) ceil(($timeend - $now) / DAYSECS))),
-                ['class' => 'badge bg-warning text-dark']);
+                ['class' => 'badge bg-warning text-dark']
+            );
         } else {
-            $badge = html_writer::tag('span', get_string('reportsubactive', 'local_marketplace'),
-                ['class' => 'badge bg-success']);
+            $badge = html_writer::tag(
+                'span',
+                get_string('reportsubactive', 'local_marketplace'),
+                ['class' => 'badge bg-success']
+            );
         }
 
         $table->data[] = [

@@ -133,8 +133,11 @@ foreach ($offers as $offer) {
 
     if ($owned && $canrenew) {
         echo $OUTPUT->notification(
-            get_string('renewnotice', 'local_marketplace',
-                userdate((int) $held->get('timeend'), get_string('strftimedaydate'))),
+            get_string(
+                'renewnotice',
+                'local_marketplace',
+                userdate((int) $held->get('timeend'), get_string('strftimedaydate'))
+            ),
             'warning'
         );
         echo html_writer::div(
@@ -158,14 +161,19 @@ foreach ($offers as $offer) {
             // coisas juntas evita o aluno achar que perdeu o que ja pagou.
             echo $OUTPUT->notification(
                 $until > 0
-                    ? get_string('cancelledbut', 'local_marketplace',
-                        userdate($until, get_string('strftimedaydate')))
+                    ? get_string(
+                        'cancelledbut',
+                        'local_marketplace',
+                        userdate($until, get_string('strftimedaydate'))
+                    )
                     : get_string('cancelledlifetime', 'local_marketplace'),
                 'info'
             );
             echo html_writer::link(
-                new moodle_url('/local/marketplace/cancel.php',
-                    ['id' => $held->get('id'), 'undo' => 1, 'sesskey' => sesskey()]),
+                new moodle_url(
+                    '/local/marketplace/cancel.php',
+                    ['id' => $held->get('id'), 'undo' => 1, 'sesskey' => sesskey()]
+                ),
                 get_string('cancelundo', 'local_marketplace'),
                 ['class' => 'btn btn-sm btn-secondary']
             );
@@ -176,8 +184,11 @@ foreach ($offers as $offer) {
             // descobre a data quando o acesso acaba.
             if ($until > 0) {
                 echo html_writer::div(
-                    get_string('accessuntil', 'local_marketplace',
-                        userdate($until, get_string('strftimedaydate'))),
+                    get_string(
+                        'accessuntil',
+                        'local_marketplace',
+                        userdate($until, get_string('strftimedaydate'))
+                    ),
                     'text-muted small mb-2'
                 );
             }

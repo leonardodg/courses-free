@@ -29,7 +29,6 @@ namespace paygw_mercadopago;
  * @covers     \paygw_mercadopago\mp_client
  */
 final class mp_client_test extends \advanced_testcase {
-
     /**
      * O verifier respeita o tamanho exigido pela RFC 7636.
      *
@@ -42,8 +41,11 @@ final class mp_client_test extends \advanced_testcase {
 
         $this->assertGreaterThanOrEqual(43, strlen($verifier));
         $this->assertLessThanOrEqual(128, strlen($verifier));
-        $this->assertMatchesRegularExpression('/^[A-Za-z0-9\-._~]+$/', $verifier,
-            'so caracteres unreserved, senao precisaria de escape na URL');
+        $this->assertMatchesRegularExpression(
+            '/^[A-Za-z0-9\-._~]+$/',
+            $verifier,
+            'so caracteres unreserved, senao precisaria de escape na URL'
+        );
     }
 
     /**

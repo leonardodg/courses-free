@@ -45,7 +45,7 @@ if ($ADMIN->fulltree) {
         PARAM_ALPHANUMEXT
     ));
 
-    // configpasswordunmask esconde o valor na tela e no log de alteracoes.
+    // Configpasswordunmask esconde o valor na tela e no log de alteracoes.
     $settings->add(new admin_setting_configpasswordunmask(
         'paygw_mercadopago/clientsecret',
         get_string('clientsecret', 'paygw_mercadopago'),

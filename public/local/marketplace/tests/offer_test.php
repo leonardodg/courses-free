@@ -25,7 +25,6 @@ namespace local_marketplace;
  * @covers     \local_marketplace\offer
  */
 final class offer_test extends \advanced_testcase {
-
     /**
      * Monta uma oferta sem gravar: as regras testadas nao tocam o banco.
      *

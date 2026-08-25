@@ -74,9 +74,12 @@ if ($form->is_cancelled()) {
 if ($data = $form->get_data()) {
     if ($existing) {
         api::update_company($existing, $data);
-        redirect($listurl,
+        redirect(
+            $listurl,
             get_string('companyupdated', 'local_marketplace', format_string($existing->get('name'))),
-            null, \core\output\notification::NOTIFY_SUCCESS);
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
     }
 
     $company = api::create_company((object) [

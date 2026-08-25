@@ -24,11 +24,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Mercado Pago';
-$string['gatewayname'] = 'Mercado Pago';
-$string['gatewaydescription'] = 'Pague com Pix, cartão ou boleto pelo Checkout Pro do Mercado Pago. O valor é dividido automaticamente entre o vendedor e a plataforma.';
-
-// Site settings.
 $string['appheading'] = 'Aplicação da plataforma';
 $string['appheading_desc'] = 'Credenciais da aplicação do Mercado Pago que pertence à plataforma, não ao vendedor. Cadastre exatamente esta URL de redirecionamento no painel do Mercado Pago: <code>{$a}</code>';
 $string['clientid'] = 'Client ID';
@@ -37,32 +32,25 @@ $string['clientsecret'] = 'Client secret';
 $string['clientsecret_desc'] = 'Usado apenas para trocar o código de autorização pelo token do vendedor. Nunca é enviado ao navegador.';
 $string['defaultfeepercent'] = 'Comissão padrão (%)';
 $string['defaultfeepercent_desc'] = 'Percentual que a plataforma retém em cada venda. O Mercado Pago desconta a taxa dele primeiro, e esta comissão incide sobre o restante.';
-
-// Account settings.
-$string['oauthstatus'] = 'Conta Mercado Pago';
-$string['linkaccount'] = 'Vincular conta Mercado Pago';
-$string['oauthlinked'] = 'Vinculada ao usuário {$a->mpuserid} do Mercado Pago. Autorização válida até {$a->expires}.';
-$string['oauthexpired'] = 'A autorização expirou. Vincule a conta novamente.';
-$string['sandbox'] = 'Modo de teste';
-$string['sandbox_help'] = 'Usa credenciais e usuários de teste. Nenhum dinheiro real é movimentado.';
-
-// Errors.
-$string['errornotlinked'] = 'Vincule a conta Mercado Pago antes de habilitar este gateway.';
+$string['errorapi'] = 'O Mercado Pago recusou a requisição. {$a}';
+$string['errorcreatingpreference'] = 'Não foi possível iniciar o pagamento. Tente de novo em instantes.';
 $string['errorcurl'] = 'Não foi possível falar com o Mercado Pago: {$a}';
 $string['errorinvalidresponse'] = 'O Mercado Pago devolveu uma resposta inesperada para {$a}';
-$string['errorapi'] = 'O Mercado Pago recusou a requisição. {$a}';
 $string['errormissingappconfig'] = 'A aplicação da plataforma não está configurada. Preencha o client ID e o secret nas configurações do plugin.';
+$string['errornotlinked'] = 'Vincule a conta Mercado Pago antes de habilitar este gateway.';
 $string['errorstatemismatch'] = 'Não foi possível verificar a autorização. Recomece o processo.';
-
-// Task.
-$string['taskrefreshtokens'] = 'Renovar tokens dos vendedores no Mercado Pago';
-
-// Checkout.
-$string['errorcreatingpreference'] = 'Não foi possível iniciar o pagamento. Tente de novo em instantes.';
+$string['gatewaydescription'] = 'Pague com Pix, cartão ou boleto pelo Checkout Pro do Mercado Pago. O valor é dividido automaticamente entre o vendedor e a plataforma.';
+$string['gatewayname'] = 'Mercado Pago';
+$string['linkaccount'] = 'Vincular conta Mercado Pago';
+$string['oauthexpired'] = 'A autorização expirou. Vincule a conta novamente.';
+$string['oauthlinked'] = 'Vinculada ao usuário {$a->mpuserid} do Mercado Pago. Autorização válida até {$a->expires}.';
+$string['oauthstatus'] = 'Conta Mercado Pago';
 $string['paymentapproved'] = 'Pagamento aprovado. Bom curso!';
 $string['paymentpending'] = 'Estamos aguardando a confirmação do Mercado Pago. Com Pix isso costuma levar alguns segundos. O acesso é liberado automaticamente assim que cair — não é preciso pagar de novo.';
 $string['paymentrejected'] = 'O pagamento não foi concluído. Nada foi cobrado.';
-
-$string['savebeforelinking'] = 'Salve este gateway primeiro e volte para vincular a conta Mercado Pago.';
-
+$string['pluginname'] = 'Mercado Pago';
 $string['privacy:metadata'] = 'O plugin Mercado Pago guarda o token de autorização do vendedor na conta de pagamento e envia ao Mercado Pago o valor do pagamento e o e-mail do comprador.';
+$string['sandbox'] = 'Modo de teste';
+$string['sandbox_help'] = 'Usa credenciais e usuários de teste. Nenhum dinheiro real é movimentado.';
+$string['savebeforelinking'] = 'Salve este gateway primeiro e volte para vincular a conta Mercado Pago.';
+$string['taskrefreshtokens'] = 'Renovar tokens dos vendedores no Mercado Pago';

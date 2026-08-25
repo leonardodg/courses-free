@@ -67,7 +67,7 @@ Opcoes:
 
 $shortname = $options['company'];
 
-// ------------------------------------------------------------------ limpeza --
+// Limpeza.
 if ($options['clean']) {
     $existing = company::get_record(['shortname' => $shortname]);
     if (!$existing) {
@@ -105,7 +105,7 @@ if ($options['clean']) {
     exit(0);
 }
 
-// ------------------------------------------------------------------- criacao --
+// Criacao.
 if (company::get_record(['shortname' => $shortname])) {
     cli_error("Empresa '$shortname' ja existe. Use --clean para remover antes.");
 }
@@ -141,7 +141,9 @@ $company = api::create_company((object) [
 $account = $company->get_payment_account();
 cli_writeln(sprintf(
     "Empresa criada: id %d | categoria %d | conta de pagamento %d",
-    $company->get('id'), $company->get('categoryid'), $account ? $account->get('id') : 0
+    $company->get('id'),
+    $company->get('categoryid'),
+    $account ? $account->get('id') : 0
 ));
 
 // Cursos.
@@ -169,8 +171,15 @@ for ($i = 1; $i <= (int) $options['courses']; $i++) {
  * @param int[] $courses
  * @return offer
  */
-function seed_offer(company $company, string $name, string $type, string $mode,
-        int $days, float $price, array $courses): offer {
+function seed_offer(
+    company $company,
+    string $name,
+    string $type,
+    string $mode,
+    int $days,
+    float $price,
+    array $courses
+): offer {
     $o = new offer();
     $o->set('companyid', (int) $company->get('id'));
     $o->set('name', $name);
@@ -200,9 +209,14 @@ $ofertas[] = seed_offer($company, 'Assinatura mensal', 'catalog', 'recurring', 3
 cli_writeln('');
 cli_heading('Ofertas publicadas');
 foreach ($ofertas as $o) {
-    cli_writeln(sprintf('  %-24s %-8s %-9s %8.2f  libera %d curso(s)',
-        $o->get('name'), $o->get('offertype'), $o->get('accessmode'),
-        $o->get('price'), count($o->get_course_ids())));
+    cli_writeln(sprintf(
+        '  %-24s %-8s %-9s %8.2f  libera %d curso(s)',
+        $o->get('name'),
+        $o->get('offertype'),
+        $o->get('accessmode'),
+        $o->get('price'),
+        count($o->get_course_ids())
+    ));
 }
 
 cli_writeln('');

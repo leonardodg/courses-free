@@ -49,7 +49,7 @@ if ($company->get('status') !== company::STATUS_ACTIVE) {
     throw new moodle_exception('invalidaccess', 'error');
 }
 
-// paymentid 0: nao houve pagamento. deliver_order e idempotente, entao clicar
+// Paymentid 0: nao houve pagamento. deliver_order e idempotente, entao clicar
 // duas vezes estende em vez de duplicar.
 service_provider::deliver_order('offer', $offerid, 0, (int) $USER->id);
 

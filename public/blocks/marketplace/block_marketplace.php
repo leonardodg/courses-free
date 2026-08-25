@@ -35,7 +35,6 @@ use local_marketplace\task\notify_expiring;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class block_marketplace extends block_base {
-
     /**
      * Titulo.
      *
@@ -108,8 +107,11 @@ class block_marketplace extends block_base {
                 $days = (int) ceil(($end - $now) / DAYSECS);
                 $urgent = ($end - $now) < $notice;
                 $parts[] = html_writer::div(
-                    get_string($cancelled ? 'blockendson' : 'blockrenewson', 'block_marketplace',
-                        userdate($end, get_string('strftimedaydate'))),
+                    get_string(
+                        $cancelled ? 'blockendson' : 'blockrenewson',
+                        'block_marketplace',
+                        userdate($end, get_string('strftimedaydate'))
+                    ),
                     'small ' . ($urgent ? 'text-danger fw-semibold' : 'text-muted')
                 );
 
@@ -126,8 +128,10 @@ class block_marketplace extends block_base {
             }
 
             if ($cancelled) {
-                $parts[] = html_writer::div(get_string('blockcancelled', 'block_marketplace'),
-                    'small fst-italic');
+                $parts[] = html_writer::div(
+                    get_string('blockcancelled', 'block_marketplace'),
+                    'small fst-italic'
+                );
             }
 
             $items[] = html_writer::div(implode('', $parts), 'mb-3');

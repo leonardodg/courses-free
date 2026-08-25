@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Strings for block_marketplace.
+ *
  * @package    block_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -22,12 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'My subscriptions';
+$string['blockcancelled'] = 'Cancelled';
+$string['blockendson'] = 'Ends on {$a}';
+$string['blockhistory'] = 'All subscriptions and payments';
+$string['blockpaynow'] = 'Pay now — {$a} day(s) left';
+$string['blockrenewson'] = 'Renews by {$a}';
 $string['marketplace:addinstance'] = 'Add a new subscriptions block';
 $string['marketplace:myaddinstance'] = 'Add a new subscriptions block to the Dashboard';
-$string['blockrenewson'] = 'Renews by {$a}';
-$string['blockendson'] = 'Ends on {$a}';
-$string['blockpaynow'] = 'Pay now — {$a} day(s) left';
-$string['blockcancelled'] = 'Cancelled';
-$string['blockhistory'] = 'All subscriptions and payments';
+$string['pluginname'] = 'My subscriptions';
 $string['privacy:metadata'] = 'The My subscriptions block shows entitlements stored by local_marketplace and stores no data of its own.';

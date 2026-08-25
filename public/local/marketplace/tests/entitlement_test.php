@@ -28,7 +28,6 @@ namespace local_marketplace;
  * @covers     \local_marketplace\entitlement
  */
 final class entitlement_test extends \advanced_testcase {
-
     /**
      * Monta um direito sem gravar.
      *

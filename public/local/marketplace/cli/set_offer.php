@@ -77,7 +77,7 @@ Exemplos:
     exit(0);
 }
 
-// ------------------------------------------------------------------- listar --
+// Listar.
 if ($options['list']) {
     $offers = offer::get_records([], 'companyid, sortorder, name');
     if (!$offers) {
@@ -85,11 +85,20 @@ if ($options['list']) {
         exit(0);
     }
 
-    cli_writeln(sprintf('%-5s %-14s %-8s %-26s %10s %-4s %-10s',
-        'ID', 'EMPRESA', 'TIPO', 'OFERTA', 'PRECO', 'MOE', 'SITUACAO'));
+    cli_writeln(sprintf(
+        '%-5s %-14s %-8s %-26s %10s %-4s %-10s',
+        'ID',
+        'EMPRESA',
+        'TIPO',
+        'OFERTA',
+        'PRECO',
+        'MOE',
+        'SITUACAO'
+    ));
     foreach ($offers as $o) {
         $c = company::get_record(['id' => $o->get('companyid')]);
-        cli_writeln(sprintf('%-5d %-14s %-8s %-26s %10.2f %-4s %-10s',
+        cli_writeln(sprintf(
+            '%-5d %-14s %-8s %-26s %10.2f %-4s %-10s',
             $o->get('id'),
             $c ? shorten_text($c->get('shortname'), 14, true) : '?',
             $o->get('offertype'),
@@ -116,7 +125,7 @@ if ($options['price'] !== null && (float) $options['price'] < 0) {
     cli_error('Preco nao pode ser negativo.');
 }
 
-// --------------------------------------------------------- alterar em lote --
+// Alterar em lote.
 if ($options['company'] !== '') {
     $c = company::get_record(['shortname' => $options['company']]);
     if (!$c) {
@@ -142,16 +151,21 @@ if ($options['company'] !== '') {
             $o->set('status', $options['status']);
         }
         $o->update();
-        cli_writeln(sprintf('  %-8s %-26s %10.2f %s / %s',
-            $o->get('offertype'), shorten_text($o->get('name'), 26, true),
-            $o->get('price'), $o->get('currency'), $o->get('status')));
+        cli_writeln(sprintf(
+            '  %-8s %-26s %10.2f %s / %s',
+            $o->get('offertype'),
+            shorten_text($o->get('name'), 26, true),
+            $o->get('price'),
+            $o->get('currency'),
+            $o->get('status')
+        ));
         $done++;
     }
     cli_writeln("$done oferta(s) alterada(s).");
     exit(0);
 }
 
-// ------------------------------------------------------------------ alterar --
+// Alterar.
 $offer = offer::get_record(['id' => (int) $options['id']]);
 if (!$offer) {
     cli_error("Oferta {$options['id']} nao existe. Use --list para ver as disponiveis.");
@@ -174,7 +188,7 @@ if (!$changed) {
     cli_error('Nada a alterar. Informe --price ou --status.');
 }
 
-// update() dispara a validacao do persistent, inclusive a checagem de que a
+// Update() dispara a validacao do persistent, inclusive a checagem de que a
 // moeda da oferta e aquela em que a empresa realmente recebe. Um preco salvo
 // numa moeda que a conta nao aceita so quebraria no checkout, com o aluno na
 // tela de pagamento.
@@ -182,7 +196,11 @@ $offer->update();
 
 cli_writeln(sprintf('Oferta %d (%s)', $offer->get('id'), $offer->get('name')));
 cli_writeln('  antes:  ' . $before);
-cli_writeln(sprintf('  agora:  %.2f %s / %s',
-    $offer->get('price'), $offer->get('currency'), $offer->get('status')));
+cli_writeln(sprintf(
+    '  agora:  %.2f %s / %s',
+    $offer->get('price'),
+    $offer->get('currency'),
+    $offer->get('status')
+));
 
 exit(0);

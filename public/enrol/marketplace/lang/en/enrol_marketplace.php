@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['marketplace:config'] = 'Configure marketplace enrolment';
 $string['pluginname'] = 'Marketplace access';
 $string['pluginname_desc'] = 'Enrols learners according to the marketplace entitlements they hold. Enrolments are created when an offer is purchased and suspended when the entitlement expires or is cancelled.';
-$string['tasksyncentitlements'] = 'Sync marketplace entitlements';
-$string['marketplace:config'] = 'Configure marketplace enrolment';
 $string['privacy:metadata'] = 'The Marketplace access plugin does not store personal data; it acts on entitlements held by local_marketplace.';
+$string['tasksyncentitlements'] = 'Sync marketplace entitlements';

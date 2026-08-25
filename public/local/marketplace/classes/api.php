@@ -27,7 +27,6 @@ use moodle_exception;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class api {
-
     /**
      * Cria a empresa e provisiona tudo que ela precisa para operar.
      *

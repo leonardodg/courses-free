@@ -71,8 +71,12 @@ if ($undo) {
     require_sesskey();
     $ent->set('norenew', 0);
     $ent->update();
-    redirect($storefront, get_string('cancelundone', 'local_marketplace'), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $storefront,
+        get_string('cancelundone', 'local_marketplace'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 if (!$confirm) {
@@ -85,8 +89,11 @@ if (!$confirm) {
                 'offer' => format_string($offer->get('name')),
                 'date' => userdate($until, get_string('strftimedaydate')),
             ])
-            : get_string('cancelconfirmlifetime', 'local_marketplace',
-                format_string($offer->get('name'))),
+            : get_string(
+                'cancelconfirmlifetime',
+                'local_marketplace',
+                format_string($offer->get('name'))
+            ),
         new moodle_url($url, ['confirm' => 1, 'sesskey' => sesskey()]),
         $storefront
     );
@@ -101,10 +108,13 @@ $ent->update();
 
 redirect(
     $storefront,
-    get_string('canceldone', 'local_marketplace',
+    get_string(
+        'canceldone',
+        'local_marketplace',
         (int) $ent->get('timeend') > 0
             ? userdate((int) $ent->get('timeend'), get_string('strftimedaydate'))
-            : '-'),
+        : '-'
+    ),
     null,
     \core\output\notification::NOTIFY_SUCCESS
 );

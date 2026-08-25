@@ -58,23 +58,31 @@ Opcoes:
 $sim = 'sim';
 $nao = 'nao';
 
-// ---------------------------------------------------------------- plugins --
+// Plugins.
 cli_heading('Plugins');
 $enrolok = enrol_is_enabled('marketplace');
-cli_writeln(sprintf('  enrol_marketplace habilitado ......... %s', $enrolok ? $sim : 'NAO  <-- sem isto a compra nao vira matricula'));
+cli_writeln(sprintf(
+    '  enrol_marketplace habilitado ......... %s',
+    $enrolok ? $sim : 'NAO  <-- sem isto a compra nao vira matricula'
+));
 $availok = array_key_exists('marketplace', core_component::get_plugin_list('availability'));
 cli_writeln(sprintf('  availability_marketplace instalado ... %s', $availok ? $sim : 'NAO'));
 $roleid = $DB->get_field('role', 'id', ['shortname' => 'marketplaceseller']);
 $capcount = $roleid ? $DB->count_records('role_capabilities', ['roleid' => $roleid]) : 0;
-cli_writeln(sprintf('  papel de vendedor .................... %s (%d capabilities)',
-    $roleid ? $sim : 'NAO', $capcount));
+cli_writeln(sprintf(
+    '  papel de vendedor .................... %s (%d capabilities)',
+    $roleid ? $sim : 'NAO',
+    $capcount
+));
 if ($roleid && $capcount === 0) {
     cli_writeln('    ATENCAO: papel existe sem capability nenhuma; reinstale o plugin.');
 }
-cli_writeln(sprintf('  tema por categoria ligado ............ %s',
-    !empty($CFG->allowcategorythemes) ? $sim : 'NAO  <-- tema por empresa nao vai funcionar'));
+cli_writeln(sprintf(
+    '  tema por categoria ligado ............ %s',
+    !empty($CFG->allowcategorythemes) ? $sim : 'NAO  <-- tema por empresa nao vai funcionar'
+));
 
-// -------------------------------------------------------------- empresas --
+// Empresas.
 $companies = company::get_records([], 'name');
 cli_heading(sprintf('Empresas (%d)', count($companies)));
 
@@ -101,7 +109,8 @@ foreach ($companies as $c) {
     $offers = offer::get_records(['companyid' => $c->get('id')], 'sortorder, name');
     cli_writeln(sprintf('    ofertas (%d):', count($offers)));
     foreach ($offers as $o) {
-        cli_writeln(sprintf('      %-28s %-8s %-9s %8.2f %s  libera %d curso(s)  [%s]',
+        cli_writeln(sprintf(
+            '      %-28s %-8s %-9s %8.2f %s  libera %d curso(s)  [%s]',
             core_text::substr($o->get('name'), 0, 28),
             $o->get('offertype'),
             $o->get('accessmode'),
@@ -113,7 +122,7 @@ foreach ($companies as $c) {
     }
 }
 
-// --------------------------------------------------------------- direitos --
+// Direitos.
 $total = $DB->count_records('local_marketplace_entitlement');
 $ativos = $DB->count_records_select(
     'local_marketplace_entitlement',
@@ -125,7 +134,7 @@ cli_writeln(sprintf('  total ............... %d', $total));
 cli_writeln(sprintf('  vigentes ............ %d', $ativos));
 cli_writeln(sprintf('  vencidos/cancelados . %d', $total - $ativos));
 
-// ----------------------------------------------------------- por usuario --
+// Por usuario.
 if ($options['user'] !== '') {
     $user = $DB->get_record('user', ['username' => $options['user']]);
     cli_heading('Usuario: ' . $options['user']);

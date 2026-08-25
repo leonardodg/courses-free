@@ -37,7 +37,6 @@ namespace paygw_mercadopago;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class gateway extends \core_payment\gateway {
-
     /**
      * Moedas aceitas.
      *
@@ -65,8 +64,12 @@ class gateway extends \core_payment\gateway {
     public static function add_configuration_to_gateway_form(\core_payment\form\account_gateway $form): void {
         $mform = $form->get_mform();
 
-        $mform->addElement('static', 'oauthstatus', get_string('oauthstatus', 'paygw_mercadopago'),
-            self::describe_oauth_status($form));
+        $mform->addElement(
+            'static',
+            'oauthstatus',
+            get_string('oauthstatus', 'paygw_mercadopago'),
+            self::describe_oauth_status($form)
+        );
 
         // NAO ha caixa de "modo de teste" aqui.
         //

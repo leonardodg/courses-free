@@ -56,8 +56,10 @@ if ($id) {
 }
 
 $panelurl = new moodle_url('/local/marketplace/company.php', ['company' => $shortname]);
-$url = new moodle_url('/local/marketplace/offer_edit.php',
-    array_filter(['company' => $shortname, 'id' => $id]));
+$url = new moodle_url(
+    '/local/marketplace/offer_edit.php',
+    array_filter(['company' => $shortname, 'id' => $id])
+);
 
 $PAGE->set_context($context);
 $PAGE->set_url($url);
@@ -131,8 +133,12 @@ if ($data = $form->get_data()) {
         }
     }
 
-    redirect($panelurl, get_string('offersaved', 'local_marketplace'), null,
-        \core\output\notification::NOTIFY_SUCCESS);
+    redirect(
+        $panelurl,
+        get_string('offersaved', 'local_marketplace'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 echo $OUTPUT->header();

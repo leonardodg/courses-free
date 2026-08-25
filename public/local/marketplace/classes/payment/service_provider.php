@@ -35,7 +35,6 @@ use moodle_url;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class service_provider implements \core_payment\local\callback\service_provider {
-
     /** @var string Unica area de pagamento por enquanto. */
     const PAYMENT_AREA = 'offer';
 

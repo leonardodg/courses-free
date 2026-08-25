@@ -84,21 +84,35 @@ foreach ($ents as $ent) {
     $expired = $end > 0 && $end <= $now;
 
     if ($ent->get('status') !== entitlement::STATUS_ACTIVE) {
-        $badge = html_writer::tag('span', get_string('reportsubcancelled', 'local_marketplace'),
-            ['class' => 'badge bg-secondary']);
+        $badge = html_writer::tag(
+            'span',
+            get_string('reportsubcancelled', 'local_marketplace'),
+            ['class' => 'badge bg-secondary']
+        );
     } else if ($expired) {
-        $badge = html_writer::tag('span', get_string('reportsubexpired', 'local_marketplace'),
-            ['class' => 'badge bg-danger']);
+        $badge = html_writer::tag(
+            'span',
+            get_string('reportsubexpired', 'local_marketplace'),
+            ['class' => 'badge bg-danger']
+        );
     } else if ($cancelled) {
-        $badge = html_writer::tag('span', get_string('blockcancelled', 'block_marketplace'),
-            ['class' => 'badge bg-secondary']);
+        $badge = html_writer::tag(
+            'span',
+            get_string('blockcancelled', 'block_marketplace'),
+            ['class' => 'badge bg-secondary']
+        );
     } else if ($end > 0 && ($end - $now) < $notice) {
-        $badge = html_writer::tag('span',
+        $badge = html_writer::tag(
+            'span',
             get_string('reportsubduesoon', 'local_marketplace', max(1, (int) ceil(($end - $now) / DAYSECS))),
-            ['class' => 'badge bg-warning text-dark']);
+            ['class' => 'badge bg-warning text-dark']
+        );
     } else {
-        $badge = html_writer::tag('span', get_string('reportsubactive', 'local_marketplace'),
-            ['class' => 'badge bg-success']);
+        $badge = html_writer::tag(
+            'span',
+            get_string('reportsubactive', 'local_marketplace'),
+            ['class' => 'badge bg-success']
+        );
     }
 
     // Pagar aparece para quem vence, venceu ou cancelou e mudou de ideia. Nao
@@ -139,11 +153,14 @@ foreach ($ents as $ent) {
 
 echo html_writer::div(html_writer::table($table), 'table-responsive');
 
-// ------------------------------------------------------------- pagamentos --
+// Pagamentos.
 echo $OUTPUT->heading(get_string('mysubspayments', 'local_marketplace'), 3);
 
-$payments = $DB->get_records('paygw_mercadopago',
-    ['userid' => (int) $USER->id, 'status' => 'approved'], 'timecreated DESC');
+$payments = $DB->get_records(
+    'paygw_mercadopago',
+    ['userid' => (int) $USER->id, 'status' => 'approved'],
+    'timecreated DESC'
+);
 
 if (!$payments) {
     echo $OUTPUT->notification(get_string('nopayments', 'local_marketplace'), 'info');

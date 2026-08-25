@@ -36,7 +36,6 @@ require_once($GLOBALS['CFG']->libdir . '/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class offer_form extends \moodleform {
-
     /**
      * Campos.
      *
@@ -51,7 +50,7 @@ class offer_form extends \moodleform {
         $mform->addElement('hidden', 'company', $company->get('shortname'));
         $mform->setType('company', PARAM_ALPHANUMEXT);
 
-        // ----------------------------------------------------------- basico --
+        // Basico.
         $mform->addElement('text', 'name', get_string('offername', 'local_marketplace'), ['size' => 50]);
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
@@ -71,8 +70,12 @@ class offer_form extends \moodleform {
         $courses = [];
         if ($company->get('categoryid')) {
             global $DB;
-            $records = $DB->get_records('course',
-                ['category' => (int) $company->get('categoryid')], 'fullname', 'id, fullname');
+            $records = $DB->get_records(
+                'course',
+                ['category' => (int) $company->get('categoryid')],
+                'fullname',
+                'id, fullname'
+            );
             foreach ($records as $c) {
                 $courses[$c->id] = format_string($c->fullname);
             }
@@ -82,18 +85,22 @@ class offer_form extends \moodleform {
         $mform->hideIf('courses', 'offertype', 'eq', offer::TYPE_CATALOG);
         $mform->addHelpButton('courses', 'offercourses', 'local_marketplace');
 
-        // ------------------------------------------------------------ preco --
+        // Preco.
         $mform->addElement('text', 'price', get_string('cost'), ['size' => 12]);
         $mform->setType('price', PARAM_FLOAT);
         $mform->addHelpButton('price', 'offerprice', 'local_marketplace');
 
         $currency = $company->get_payment_currency();
-        $mform->addElement('static', 'currencystatic', get_string('currency', 'core_payment'),
-            $currency !== '' ? s($currency) : get_string('paymentcurrencyunknown', 'local_marketplace'));
+        $mform->addElement(
+            'static',
+            'currencystatic',
+            get_string('currency', 'core_payment'),
+            $currency !== '' ? s($currency) : get_string('paymentcurrencyunknown', 'local_marketplace')
+        );
         $mform->addElement('hidden', 'currency', $currency !== '' ? $currency : 'BRL');
         $mform->setType('currency', PARAM_ALPHA);
 
-        // -------------------------------------------------------- assinatura --
+        // Assinatura.
         $mform->addElement('header', 'accessheader', get_string('offeraccess', 'local_marketplace'));
         $mform->setExpanded('accessheader');
 
@@ -122,11 +129,15 @@ class offer_form extends \moodleform {
         $mform->hideIf('maxcycles', 'accessmode', 'neq', offer::ACCESS_RECURRING);
         $mform->addHelpButton('maxcycles', 'offermaxcycles', 'local_marketplace');
 
-        $mform->addElement('static', 'recurringwarning', '',
-            get_string('offerrecurringwarning', 'local_marketplace'));
+        $mform->addElement(
+            'static',
+            'recurringwarning',
+            '',
+            get_string('offerrecurringwarning', 'local_marketplace')
+        );
         $mform->hideIf('recurringwarning', 'accessmode', 'neq', offer::ACCESS_RECURRING);
 
-        // ------------------------------------------------------- publicacao --
+        // Publicacao.
         $mform->addElement('header', 'pubheader', get_string('offerpublication', 'local_marketplace'));
         $mform->setExpanded('pubheader');
 

@@ -31,7 +31,6 @@ use local_marketplace\payment\service_provider;
  * @covers     \local_marketplace\payment\service_provider
  */
 final class service_provider_test extends \advanced_testcase {
-
     /** @var \stdClass */
     protected $user;
 
@@ -126,8 +125,11 @@ final class service_provider_test extends \advanced_testcase {
 
         $second = reset($active);
         $this->assertSame(2, (int) $second->get('cycles'));
-        $this->assertSame($firstend + (30 * DAYSECS), (int) $second->get('timeend'),
-            'a renovacao soma ao vencimento atual, nao recomeca de agora');
+        $this->assertSame(
+            $firstend + (30 * DAYSECS),
+            (int) $second->get('timeend'),
+            'a renovacao soma ao vencimento atual, nao recomeca de agora'
+        );
     }
 
     /**

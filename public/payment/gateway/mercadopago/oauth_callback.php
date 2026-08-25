@@ -45,8 +45,10 @@ unset($SESSION->paygw_mercadopago_oauth);
 // A ausencia do code_verifier entra na mesma checagem: ou a sessao e de um
 // fluxo iniciado antes do PKCE existir, ou nao veio daqui. Nos dois casos a
 // troca falharia adiante - melhor recusar agora, com mensagem clara.
-if (empty($pending) || empty($state) || !hash_equals($pending->state, $state)
-        || empty($pending->codeverifier)) {
+if (
+    empty($pending) || empty($state) || !hash_equals($pending->state, $state)
+        || empty($pending->codeverifier)
+) {
     throw new moodle_exception('errorstatemismatch', 'paygw_mercadopago');
 }
 
@@ -65,8 +67,12 @@ $returnurl = new moodle_url('/payment/manage_gateway.php', [
 
 // O vendedor pode ter recusado a autorizacao na tela do Mercado Pago.
 if ($error !== '' || $code === '') {
-    redirect($returnurl, get_string('errorstatemismatch', 'paygw_mercadopago'), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $returnurl,
+        get_string('errorstatemismatch', 'paygw_mercadopago'),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $config = get_config('paygw_mercadopago');
@@ -122,8 +128,12 @@ $existing = $gateway->get('id') ? $gateway->get_configuration() : [];
 try {
     $me = (new mp_client((string) ($token['access_token'] ?? '')))->get_me();
 } catch (moodle_exception $e) {
-    redirect($returnurl, get_string('errorverifyaccount', 'paygw_mercadopago', $e->getMessage()), null,
-        \core\output\notification::NOTIFY_ERROR);
+    redirect(
+        $returnurl,
+        get_string('errorverifyaccount', 'paygw_mercadopago', $e->getMessage()),
+        null,
+        \core\output\notification::NOTIFY_ERROR
+    );
 }
 
 $siteid = (string) ($me['site_id'] ?? '');
@@ -138,7 +148,7 @@ if ($siteid === '' || strtoupper($siteid) !== $platformsite) {
 
 $currency = mp_client::currency_for_site($siteid);
 
-// expires_in vem em segundos. Guardar o INSTANTE do vencimento, e nao a
+// Expires_in vem em segundos. Guardar o INSTANTE do vencimento, e nao a
 // duracao, evita ter que lembrar quando o token foi emitido.
 $expires = time() + (int) ($token['expires_in'] ?? 0);
 

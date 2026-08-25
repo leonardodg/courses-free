@@ -37,7 +37,6 @@ use local_marketplace\offer;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class condition extends \core_availability\condition {
-
     /** @var int Oferta exigida; 0 = qualquer uma que inclua o curso. */
     protected $offerid = 0;
 

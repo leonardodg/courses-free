@@ -34,7 +34,6 @@ require_once($GLOBALS['CFG']->libdir . '/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class company_form extends \moodleform {
-
     /**
      * Campos.
      *
@@ -57,9 +56,12 @@ class company_form extends \moodleform {
         $mform->addRule('name', null, 'required', null, 'client');
 
         if ($editing) {
-            $mform->addElement('static', 'shortnamestatic',
+            $mform->addElement(
+                'static',
+                'shortnamestatic',
                 get_string('companyshortname', 'local_marketplace'),
-                s($this->_customdata['shortname'] ?? ''));
+                s($this->_customdata['shortname'] ?? '')
+            );
             $mform->addElement('hidden', 'shortname', $this->_customdata['shortname'] ?? '');
             $mform->setType('shortname', PARAM_ALPHANUMEXT);
         } else {
@@ -74,7 +76,7 @@ class company_form extends \moodleform {
             $mform->addElement('autocomplete', 'ownerid', get_string('companyowner', 'local_marketplace'), [], [
                 'ajax' => 'core_user/form_user_selector',
                 'multiple' => false,
-                'valuehtmlcallback' => function($userid) {
+                'valuehtmlcallback' => function ($userid) {
                     if (empty($userid)) {
                         return '';
                     }
@@ -92,8 +94,12 @@ class company_form extends \moodleform {
 
         // Vazio NAO e zero. Vazio herda o padrao do site; zero e isencao
         // negociada. Um campo numerico obrigatorio nao teria como dizer isso.
-        $mform->addElement('text', 'commissionpct',
-            get_string('companycommission', 'local_marketplace'), ['size' => 8]);
+        $mform->addElement(
+            'text',
+            'commissionpct',
+            get_string('companycommission', 'local_marketplace'),
+            ['size' => 8]
+        );
         $mform->setType('commissionpct', PARAM_RAW_TRIMMED);
         $mform->addHelpButton('commissionpct', 'companycommission', 'local_marketplace');
 
