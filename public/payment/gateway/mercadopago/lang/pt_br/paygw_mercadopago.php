@@ -63,4 +63,6 @@ $string['paymentapproved'] = 'Pagamento aprovado. Bom curso!';
 $string['paymentpending'] = 'Estamos aguardando a confirmação do Mercado Pago. Com Pix isso costuma levar alguns segundos. O acesso é liberado automaticamente assim que cair — não é preciso pagar de novo.';
 $string['paymentrejected'] = 'O pagamento não foi concluído. Nada foi cobrado.';
 
+$string['savebeforelinking'] = 'Salve este gateway primeiro e volte para vincular a conta Mercado Pago.';
+
 $string['privacy:metadata'] = 'O plugin Mercado Pago guarda o token de autorização do vendedor na conta de pagamento e envia ao Mercado Pago o valor do pagamento e o e-mail do comprador.';
