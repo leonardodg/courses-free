@@ -41,7 +41,12 @@ unset($SESSION->paygw_mercadopago_oauth);
 // Confere o state ANTES de qualquer outra coisa. Sem isso o endpoint aceitaria
 // um codigo de autorizacao de origem desconhecida e vincularia a conta de quem
 // estivesse logado.
-if (empty($pending) || empty($state) || !hash_equals($pending->state, $state)) {
+//
+// A ausencia do code_verifier entra na mesma checagem: ou a sessao e de um
+// fluxo iniciado antes do PKCE existir, ou nao veio daqui. Nos dois casos a
+// troca falharia adiante - melhor recusar agora, com mensagem clara.
+if (empty($pending) || empty($state) || !hash_equals($pending->state, $state)
+        || empty($pending->codeverifier)) {
     throw new moodle_exception('errorstatemismatch', 'paygw_mercadopago');
 }
 
@@ -60,7 +65,13 @@ if ($error !== '' || $code === '') {
 $config = get_config('paygw_mercadopago');
 $redirecturi = (new moodle_url('/payment/gateway/mercadopago/oauth_callback.php'))->out(false);
 
-$token = mp_client::exchange_code($config->clientid, $config->clientsecret, $code, $redirecturi);
+$token = mp_client::exchange_code(
+    $config->clientid,
+    $config->clientsecret,
+    $code,
+    $redirecturi,
+    $pending->codeverifier
+);
 
 // Localiza ou cria a linha do gateway nesta conta.
 $gateway = \core_payment\account_gateway::get_record([
@@ -76,6 +87,38 @@ if (!$gateway) {
 
 $existing = $gateway->get('id') ? $gateway->get_configuration() : [];
 
+// Em que pais - e portanto em que moeda - este vendedor recebe. Perguntamos ao
+// Mercado Pago em vez de deixar o vendedor escolher: a conta e presa a um pais
+// e so recebe na moeda dele.
+//
+// A consulta e obrigatoria, e nao um enfeite. O split so funciona entre contas
+// do MESMO pais: a comissao cai na conta da plataforma, e uma conta so guarda a
+// moeda do proprio pais - nao ha cambio no caminho. Vincular um vendedor de
+// outro pais produziria uma conta que parece pronta e falha na primeira venda,
+// com o aluno ja na tela de pagamento.
+//
+// Falha de rede aqui derruba o vinculo de proposito. Guardar um token cuja
+// origem nao conseguimos verificar seria trocar um erro visivel agora, que se
+// resolve clicando de novo, por um erro invisivel na conciliacao.
+try {
+    $me = (new mp_client((string) ($token['access_token'] ?? '')))->get_me();
+} catch (moodle_exception $e) {
+    redirect($returnurl, get_string('errorverifyaccount', 'paygw_mercadopago', $e->getMessage()), null,
+        \core\output\notification::NOTIFY_ERROR);
+}
+
+$siteid = (string) ($me['site_id'] ?? '');
+$platformsite = strtoupper((string) ($config->platformsite ?? 'MLB'));
+
+if ($siteid === '' || strtoupper($siteid) !== $platformsite) {
+    redirect($returnurl, get_string('errorsitemismatch', 'paygw_mercadopago', (object) [
+        'platform' => $platformsite,
+        'seller' => $siteid !== '' ? $siteid : '?',
+    ]), null, \core\output\notification::NOTIFY_ERROR);
+}
+
+$currency = mp_client::currency_for_site($siteid);
+
 // expires_in vem em segundos. Guardar o INSTANTE do vencimento, e nao a
 // duracao, evita ter que lembrar quando o token foi emitido.
 $expires = time() + (int) ($token['expires_in'] ?? 0);
@@ -85,6 +128,8 @@ $gateway->set('config', json_encode(array_merge($existing, [
     'accesstoken' => (string) ($token['access_token'] ?? ''),
     'refreshtoken' => (string) ($token['refresh_token'] ?? ''),
     'tokenexpires' => $expires,
+    'siteid' => $siteid,
+    'currency' => $currency,
 ])));
 
 if ($gateway->get('id')) {

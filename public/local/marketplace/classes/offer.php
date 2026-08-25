@@ -98,6 +98,42 @@ class offer extends persistent {
     }
 
     /**
+     * A moeda tem que ser aquela em que a empresa realmente recebe.
+     *
+     * Sem esta checagem, uma oferta em BRL numa empresa com conta argentina
+     * passaria pelo cadastro sem reclamar e so quebraria no checkout - com o
+     * aluno ja na tela de pagamento, decidido a comprar. E o pior lugar
+     * possivel para descobrir um erro de cadastro.
+     *
+     * Oferta gratuita nao paga nada, entao a moeda dela nao importa.
+     *
+     * @param string $value
+     * @return true|\lang_string
+     */
+    protected function validate_currency($value) {
+        if ((float) $this->raw_get('price') <= 0) {
+            return true;
+        }
+
+        $company = company::get_record(['id' => $this->raw_get('companyid')]);
+        if (!$company) {
+            return true;
+        }
+
+        // Empresa sem vinculo concluido nao tem moeda conhecida. Publicar
+        // oferta paga ja e barrado pelo portao de venda; nao ha o que checar.
+        $expected = $company->get_payment_currency();
+        if ($expected === '' || $expected === $value) {
+            return true;
+        }
+
+        return new \lang_string('errorcurrencymismatch', 'local_marketplace', (object) [
+            'expected' => $expected,
+            'given' => $value,
+        ]);
+    }
+
+    /**
      * A oferta e gratuita?
      *
      * Importa porque o portao de venda so vale para oferta paga: uma empresa

@@ -72,8 +72,11 @@ class gateway extends \core_payment\gateway {
         $mform->setType('sandbox', PARAM_BOOL);
         $mform->addHelpButton('sandbox', 'sandbox', 'paygw_mercadopago');
 
-        // Guardados pelo callback do OAuth, nunca digitados.
-        foreach (['mpuserid', 'accesstoken', 'refreshtoken', 'tokenexpires'] as $field) {
+        // Guardados pelo callback do OAuth, nunca digitados. Precisam estar no
+        // formulario mesmo escondidos: a configuracao salva e a que o
+        // formulario devolve, entao um campo ausente aqui seria APAGADO na
+        // primeira vez que o vendedor salvasse a tela.
+        foreach (['mpuserid', 'accesstoken', 'refreshtoken', 'tokenexpires', 'siteid', 'currency'] as $field) {
             $mform->addElement('hidden', $field);
             $mform->setType($field, $field === 'tokenexpires' ? PARAM_INT : PARAM_RAW);
         }

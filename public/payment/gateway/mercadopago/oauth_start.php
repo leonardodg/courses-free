@@ -45,13 +45,27 @@ if (empty($config->clientid) || empty($config->clientsecret)) {
 // O state protege contra CSRF: sem ele, alguem poderia induzir o vendedor a
 // concluir um fluxo iniciado por terceiro e vincular a conta errada. Guardamos
 // na sessao e conferimos no retorno.
+//
+// O code_verifier do PKCE anda junto e resolve outro problema: o codigo de
+// autorizacao viaja na barra de enderecos e sobra no historico e em log de
+// proxy. Sem o verifier - que nunca sai daqui - esse codigo capturado nao troca
+// por token nenhum.
 $state = random_string(32);
+$codeverifier = mp_client::create_code_verifier();
+
 $SESSION->paygw_mercadopago_oauth = (object) [
     'state' => $state,
     'accountid' => $accountid,
+    'codeverifier' => $codeverifier,
     'timecreated' => time(),
 ];
 
 $redirecturi = (new moodle_url('/payment/gateway/mercadopago/oauth_callback.php'))->out(false);
 
-redirect(mp_client::build_authorization_url($config->clientid, $redirecturi, $state));
+redirect(mp_client::build_authorization_url(
+    $config->clientid,
+    $redirecturi,
+    $state,
+    mp_client::create_code_challenge($codeverifier),
+    (string) ($config->platformsite ?? 'MLB')
+));
