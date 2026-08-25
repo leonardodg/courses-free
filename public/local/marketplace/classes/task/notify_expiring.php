@@ -62,8 +62,10 @@ class notify_expiring extends \core\task\scheduled_task {
 
         // Só direitos com data marcada: vitalicio nao vence, e quem ja venceu
         // nao adianta avisar - viraria "seu acesso vai vencer" depois do fato.
+        // norenew de fora: quem cancelou pediu para nao ser mais cobrado.
+        // Insistir seria transformar o aviso em spam de quem ja disse nao.
         $records = $DB->get_records_select('local_marketplace_entitlement',
-            'status = :status AND timeend > :now AND timeend <= :limit',
+            'status = :status AND norenew = 0 AND timeend > :now AND timeend <= :limit',
             ['status' => entitlement::STATUS_ACTIVE, 'now' => $now, 'limit' => $limit]);
 
         $sent = 0;

@@ -215,4 +215,14 @@ There is no automatic charge — to keep your access, pay again here:
 If you would rather stop, do nothing and the access simply ends.';
 $string['expiringbodyhtml'] = '<p>Hello,</p><p>Your access to <strong>{$a->offer}</strong>, from {$a->company}, ends on <strong>{$a->date}</strong>.</p><p>There is no automatic charge — to keep your access, <a href="{$a->url}">pay again here</a>.</p><p>If you would rather stop, do nothing and the access simply ends.</p>';
 
+// Cancellation.
+$string['cancelsubscription'] = 'Cancel subscription';
+$string['cancelconfirm'] = 'Cancel <strong>{$a->offer}</strong>? You keep access until {$a->date} — you paid for that period and it is not taken away. After that the access simply ends, and we stop reminding you to renew.';
+$string['cancelconfirmlifetime'] = 'Stop renewal reminders for <strong>{$a}</strong>? Your access does not expire, so nothing changes except the reminders.';
+$string['canceldone'] = 'Subscription cancelled. Your access runs until {$a}.';
+$string['cancelundone'] = 'Subscription reactivated. You will be reminded before it expires.';
+$string['cancelundo'] = 'Reactivate';
+$string['cancelledbut'] = 'Cancelled. Your access runs until {$a} — the period you paid for is not taken away.';
+$string['cancelledlifetime'] = 'Renewal reminders are off. Your access does not expire.';
+
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';

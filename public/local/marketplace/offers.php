@@ -91,8 +91,9 @@ foreach ($offers as $offer) {
     // Renovar e a excecao a regra acima. Sem debito automatico, o unico jeito
     // de continuar assinando e comprar de novo - e esconder o botao de quem
     // esta prestes a vencer garantiria a perda de acesso.
+    $cancelled = $held && (int) $held->get('norenew') === 1;
     $canrenew = false;
-    if ($held && $offer->get('accessmode') === offer::ACCESS_RECURRING) {
+    if ($held && !$cancelled && $offer->get('accessmode') === offer::ACCESS_RECURRING) {
         $end = (int) $held->get('timeend');
         $canrenew = $end > 0
             && ($end - time()) < (\local_marketplace\task\notify_expiring::NOTICE_DAYS * DAYSECS)
@@ -150,16 +151,46 @@ foreach ($offers as $offer) {
         $attributes['class'] = 'btn btn-primary';
         echo html_writer::tag('button', get_string('renewnow', 'local_marketplace'), $attributes);
     } else if ($owned) {
-        echo $OUTPUT->notification(get_string('alreadyowned', 'local_marketplace'), 'success');
+        $until = $held ? (int) $held->get('timeend') : 0;
 
-        // Assinatura vigente mostra ate quando vale. Sem isso o aluno so
-        // descobre a data quando o acesso acaba.
-        if ($held && (int) $held->get('timeend') > 0) {
-            echo html_writer::div(
-                get_string('accessuntil', 'local_marketplace',
-                    userdate((int) $held->get('timeend'), get_string('strftimedaydate'))),
-                'text-muted small'
+        if ($cancelled) {
+            // Cancelada, mas o acesso continua ate a data paga. Dizer as duas
+            // coisas juntas evita o aluno achar que perdeu o que ja pagou.
+            echo $OUTPUT->notification(
+                $until > 0
+                    ? get_string('cancelledbut', 'local_marketplace',
+                        userdate($until, get_string('strftimedaydate')))
+                    : get_string('cancelledlifetime', 'local_marketplace'),
+                'info'
             );
+            echo html_writer::link(
+                new moodle_url('/local/marketplace/cancel.php',
+                    ['id' => $held->get('id'), 'undo' => 1, 'sesskey' => sesskey()]),
+                get_string('cancelundo', 'local_marketplace'),
+                ['class' => 'btn btn-sm btn-secondary']
+            );
+        } else {
+            echo $OUTPUT->notification(get_string('alreadyowned', 'local_marketplace'), 'success');
+
+            // Assinatura vigente mostra ate quando vale. Sem isso o aluno so
+            // descobre a data quando o acesso acaba.
+            if ($until > 0) {
+                echo html_writer::div(
+                    get_string('accessuntil', 'local_marketplace',
+                        userdate($until, get_string('strftimedaydate'))),
+                    'text-muted small mb-2'
+                );
+            }
+
+            // So faz sentido cancelar o que se renova. Numa compra avulsa ou
+            // vitalicia nao ha renovacao a interromper.
+            if ($held && $offer->get('accessmode') === offer::ACCESS_RECURRING) {
+                echo html_writer::link(
+                    new moodle_url('/local/marketplace/cancel.php', ['id' => $held->get('id')]),
+                    get_string('cancelsubscription', 'local_marketplace'),
+                    ['class' => 'btn btn-sm btn-outline-secondary']
+                );
+            }
         }
     } else if ($free) {
         // Oferta gratuita nao passa pelo gateway: nao ha o que cobrar.

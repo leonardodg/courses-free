@@ -102,6 +102,7 @@
         <FIELD NAME="timeend" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = vitalicio."/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|expired|cancelled. Cancelamento revoga NA HORA, por decisao de negocio."/>
         <FIELD NAME="cycles" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Quantas cobrancas ja foram pagas deste direito. Contado aqui, e nao na tabela do gateway, porque o limite de ciclos e regra do marketplace: trocar de meio de pagamento nao pode zerar a contagem."/>
+        <FIELD NAME="norenew" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="O aluno cancelou a assinatura. NAO revoga: o acesso corre ate timeend, porque ele pagou por aquele periodo. So interrompe os avisos de vencimento. Revogacao imediata e status=cancelled, coisa diferente."/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

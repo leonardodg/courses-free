@@ -61,6 +61,7 @@ class entitlement extends persistent {
                 'choices' => [self::STATUS_ACTIVE, self::STATUS_EXPIRED, self::STATUS_CANCELLED],
             ],
             'cycles' => ['type' => PARAM_INT, 'default' => 0],
+            'norenew' => ['type' => PARAM_INT, 'default' => 0],
         ];
     }
 

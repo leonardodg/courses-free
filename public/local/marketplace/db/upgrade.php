@@ -106,5 +106,26 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082520, 'local', 'marketplace');
     }
 
+    if ($oldversion < 2026082521) {
+        $dbman = $DB->get_manager();
+
+        // Cancelar assinatura NAO e revogar acesso.
+        //
+        // O aluno que pagou 30 dias e cancela no dia 10 nao pode perder os 20
+        // que restam: ele pagou por eles. Cancelar significa "nao quero
+        // renovar" - o acesso corre ate timeend e os avisos param.
+        //
+        // Revogacao imediata continua existindo como status=cancelled, para
+        // estorno e fraude, onde o dinheiro voltou e o acesso tem que sair na
+        // hora.
+        $table = new xmldb_table('local_marketplace_entitlement');
+        $field = new xmldb_field('norenew', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'cycles');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026082521, 'local', 'marketplace');
+    }
+
     return true;
 }
