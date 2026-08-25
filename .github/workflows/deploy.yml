@@ -3,8 +3,12 @@ name: CI/CD - courses.leodg.dev
 # =============================================================================
 # Ambiente unico (development) na VPS Oracle. Sem GCP, sem AWS.
 #
-#   pull_request  -> so valida
-#   push em main  -> valida, publica a imagem e faz deploy
+#   pull_request        -> so valida
+#   push em dev ou main -> valida, publica a imagem e faz deploy
+#
+# dev deploya porque o ambiente e um so. Exigir um PR dev->main a cada mudanca
+# so acrescentava um clique entre o merge e a VPS, sem separar nada: os dois
+# branches iam para a mesma maquina, com a mesma tag de imagem.
 #
 # -----------------------------------------------------------------------------
 # BOOTSTRAP: automatico. O job de deploy detecta se a tabela mdl_config existe;
@@ -17,7 +21,7 @@ name: CI/CD - courses.leodg.dev
 
 on:
   push:
-    branches: [main]
+    branches: [dev, main]
   pull_request:
     branches: [main, dev]
   workflow_dispatch:
@@ -25,11 +29,18 @@ on:
 concurrency:
   # Um deploy por vez: dois rodando juntos corrompem o upgrade.php.
   #
-  # O grupo TEM que variar por ref. Com uma string fixa, todas as execucoes
-  # entram no mesmo grupo - inclusive as de pull_request - e, como
-  # cancel-in-progress e false, uma validacao de PR segura o deploy do main
-  # em "pending" ate terminar. Foi o que travou o primeiro deploy.
-  group: deploy-courses-free-${{ github.ref }}
+  # Duas exigencias opostas, resolvidas por evento:
+  #
+  # PULL REQUEST - grupo POR REF. Com uma string fixa, uma validacao de PR
+  #   entraria na mesma fila do deploy e, como cancel-in-progress e false ali,
+  #   seguraria o deploy em "pending" ate terminar. Foi o que travou o primeiro
+  #   deploy deste repositorio.
+  #
+  # PUSH - grupo FIXO. Desde que dev e main deployam, um grupo por ref deixaria
+  #   os dois rodarem em paralelo na MESMA VPS, com a mesma tag de imagem e o
+  #   mesmo banco. Dois upgrade.php concorrentes e exatamente o que esta linha
+  #   existe para impedir.
+  group: deploy-courses-free-${{ github.event_name == 'pull_request' && github.ref || 'vps' }}
   # Em PR pode cancelar a execucao anterior; no main nunca, para nao
   # interromper um upgrade.php no meio.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -302,29 +313,22 @@ jobs:
 
             # --- espaco em disco ---
             #
-            # Cada deploy baixa uma imagem nova e deixa a anterior para tras. A
-            # imagem do Moodle passa de 1 GB, entao um dia de iteracao enche o
-            # disco da VPS - e o sintoma nao diz "disco cheio" de cara: o pull
-            # falha no meio da extracao, com "no space left on device" no meio
-            # de um caminho de arquivo qualquer.
+            # NAO limpe imagens daqui. Esta VPS hospeda outros servicos, e
+            # "docker image prune -a" apaga a imagem de qualquer container que
+            # esteja parado no momento - inclusive de projetos que nao sao
+            # deste repositorio. Imagem buildada localmente, sem registry, nao
+            # volta.
             #
-            # E o site continua NO AR com o container antigo, entao "o site
-            # responde" nao prova que o deploy aplicou. Em 2026-08-25 o job
-            # falhou aqui e mesmo assim courses.leodg.dev devolvia HTTP 200,
-            # servindo o codigo da versao anterior.
+            # A limpeza e manual, feita por quem sabe o que mais roda aqui.
             #
-            # A limpeza vem ANTES do pull, senao nao ha espaco para a imagem
-            # nova. "prune -a" so remove imagem que nenhum container usa - as
-            # dos servicos em execucao ficam.
-            #
-            # Volumes NAO entram: dbdata e moodledata sao bind mounts nesta VPS,
-            # mas basta alguem trocar por volume nomeado para "prune --volumes"
-            # apagar o banco. O risco nao compensa o espaco que liberaria.
-            echo ">> disco antes da limpeza:"
-            df -h / | tail -1
-            docker image prune -af || true
-            docker builder prune -af || true
-            echo ">> disco depois da limpeza:"
+            # O log abaixo existe porque a falha por disco cheio engana duas
+            # vezes: nao diz "disco cheio" de cara - aparece como "no space
+            # left on device" no meio de um caminho de arquivo qualquer, dentro
+            # da extracao da imagem - e o site continua NO AR com o container
+            # antigo, entao "o site responde" nao prova que o deploy aplicou.
+            # Em 2026-08-25 o job falhou e courses.leodg.dev seguia em 200,
+            # servindo a versao anterior.
+            echo ">> espaco em disco:"
             df -h / | tail -1
 
             docker compose pull
