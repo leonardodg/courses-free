@@ -16,28 +16,40 @@
 /**
  * Chamadas ao servidor.
  *
+ * Escrito em AMD, e nao no ES6 que o Moodle usa por convencao, porque este
+ * projeto nao tem grunt nem babel: nada transpila src em build. Com ES6 aqui, o
+ * arquivo compilava so na imaginacao - e o requirejs.php entrega ESTE arquivo
+ * sempre que nao existe um .map ao lado do build, produzindo "No define call".
+ *
  * @module     paygw_mercadopago/repository
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Ajax from 'core/ajax';
+define(['core/ajax'], function(Ajax) {
 
-/**
- * Pede ao servidor a criacao da preferencia.
- *
- * O valor NAO e enviado daqui: quem o resolve e o servidor, a partir do item.
- *
- * @param {String} component
- * @param {String} paymentArea
- * @param {Number} itemId
- * @returns {Promise<{success: Boolean, redirecturl: String, message: String}>}
- */
-export const createPreference = (component, paymentArea, itemId) => Ajax.call([{
-    methodname: 'paygw_mercadopago_create_preference',
-    args: {
-        component,
-        paymentarea: paymentArea,
-        itemid: itemId,
-    },
-}])[0];
+    return {
+        /**
+         * Pede ao servidor a criacao da preferencia.
+         *
+         * O valor NAO e enviado daqui: quem o resolve e o servidor, a partir do
+         * item. Confiar num valor vindo do navegador deixaria o preco a escolha
+         * de quem compra.
+         *
+         * @param {String} component
+         * @param {String} paymentArea
+         * @param {Number} itemId
+         * @returns {Promise<{success: Boolean, redirecturl: String, message: String}>}
+         */
+        createPreference: function(component, paymentArea, itemId) {
+            return Ajax.call([{
+                methodname: 'paygw_mercadopago_create_preference',
+                args: {
+                    component: component,
+                    paymentarea: paymentArea,
+                    itemid: itemId
+                }
+            }])[0];
+        }
+    };
+});
