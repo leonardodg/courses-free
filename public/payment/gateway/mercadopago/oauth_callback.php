@@ -54,7 +54,14 @@ $account = new \core_payment\account((int) $pending->accountid);
 $context = $account->get_context();
 require_capability('moodle/payment:manageaccounts', $context);
 
-$returnurl = $account->get_edit_url();
+// Volta para a tela do GATEWAY, nao para a da conta. get_edit_url() aponta para
+// manage_account.php, que edita nome e idnumber e nao tem nenhum botao do
+// Mercado Pago - a mensagem de sucesso apareceria numa pagina onde o proximo
+// passo nao existe.
+$returnurl = new moodle_url('/payment/manage_gateway.php', [
+    'accountid' => $account->get('id'),
+    'gateway' => 'mercadopago',
+]);
 
 // O vendedor pode ter recusado a autorizacao na tela do Mercado Pago.
 if ($error !== '' || $code === '') {
