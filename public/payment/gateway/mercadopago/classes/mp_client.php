@@ -165,6 +165,47 @@ class mp_client {
     }
 
     /**
+     * Moeda de cada pais onde o Mercado Pago opera.
+     *
+     * A conta do vendedor e presa a um pais, identificado pelo site_id, e so
+     * recebe na moeda dele: uma conta MLB nao recebe ARS. Por isso a moeda da
+     * empresa e DESCOBERTA da conta vinculada, nunca digitada - um campo livre
+     * so produziria preferencia recusada no checkout, diante do aluno.
+     *
+     * @var array<string,string>
+     */
+    const SITE_CURRENCY = [
+        'MLA' => 'ARS',  // Argentina.
+        'MLB' => 'BRL',  // Brasil.
+        'MLC' => 'CLP',  // Chile.
+        'MCO' => 'COP',  // Colombia.
+        'MLM' => 'MXN',  // Mexico.
+        'MPE' => 'PEN',  // Peru.
+        'MLU' => 'UYU',  // Uruguai.
+    ];
+
+    /**
+     * Moeda correspondente a um site do Mercado Pago.
+     *
+     * @param string $siteid
+     * @return string Vazio se o site for desconhecido.
+     */
+    public static function currency_for_site(string $siteid): string {
+        return self::SITE_CURRENCY[strtoupper($siteid)] ?? '';
+    }
+
+    /**
+     * Dados da conta dona do token.
+     *
+     * Usado logo apos o OAuth para saber em que pais o vendedor recebe.
+     *
+     * @return array Inclui id, site_id e country_id
+     */
+    public function get_me(): array {
+        return $this->request('GET', '/users/me');
+    }
+
+    /**
      * Cria a preferencia de pagamento (Checkout Pro).
      *
      * O marketplace_fee e o que faz a comissao voltar para a plataforma. Vai

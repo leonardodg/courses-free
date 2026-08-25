@@ -155,6 +155,36 @@ class company extends persistent {
     }
 
     /**
+     * Moeda em que esta empresa recebe.
+     *
+     * Nao e escolha livre: vem do pais da conta Mercado Pago vinculada, gravada
+     * no gateway pelo fluxo OAuth. Uma conta e presa a um pais e so recebe na
+     * moeda dele, entao a empresa "escolhe" a moeda escolhendo QUAL conta
+     * vincular - e trocar de moeda significa vincular outra conta.
+     *
+     * Vazio quando a empresa ainda nao vinculou, ou quando o vinculo ocorreu
+     * antes de passarmos a consultar o pais.
+     *
+     * @return string Codigo ISO de tres letras, ou vazio
+     */
+    public function get_payment_currency(): string {
+        $account = $this->get_payment_account();
+        if (!$account) {
+            return '';
+        }
+        foreach ($account->get_gateways() as $gw) {
+            if (!$gw->get('id') || !$gw->get('enabled')) {
+                continue;
+            }
+            $currency = (string) ($gw->get_configuration()['currency'] ?? '');
+            if ($currency !== '') {
+                return $currency;
+            }
+        }
+        return '';
+    }
+
+    /**
      * Contexto da categoria da empresa, onde vivem as capabilities e o papel.
      *
      * @return \context

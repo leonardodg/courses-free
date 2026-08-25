@@ -87,6 +87,22 @@ if (!$gateway) {
 
 $existing = $gateway->get('id') ? $gateway->get_configuration() : [];
 
+// Em que pais - e portanto em que moeda - este vendedor recebe. Perguntamos ao
+// Mercado Pago em vez de deixar o vendedor escolher: a conta e presa a um pais
+// e so recebe na moeda dele. Uma oferta em moeda diferente produziria
+// preferencia recusada no checkout, ja com o aluno na tela de pagamento.
+$siteid = '';
+$currency = '';
+try {
+    $me = (new mp_client((string) ($token['access_token'] ?? '')))->get_me();
+    $siteid = (string) ($me['site_id'] ?? '');
+    $currency = mp_client::currency_for_site($siteid);
+} catch (moodle_exception $e) {
+    // O vinculo em si deu certo; nao vale descartar o token por causa disto.
+    // Sem moeda a empresa nao publica oferta paga, e o painel diz o porque.
+    debugging('paygw_mercadopago: falha ao consultar /users/me: ' . $e->getMessage(), DEBUG_DEVELOPER);
+}
+
 // expires_in vem em segundos. Guardar o INSTANTE do vencimento, e nao a
 // duracao, evita ter que lembrar quando o token foi emitido.
 $expires = time() + (int) ($token['expires_in'] ?? 0);
@@ -96,6 +112,8 @@ $gateway->set('config', json_encode(array_merge($existing, [
     'accesstoken' => (string) ($token['access_token'] ?? ''),
     'refreshtoken' => (string) ($token['refresh_token'] ?? ''),
     'tokenexpires' => $expires,
+    'siteid' => $siteid,
+    'currency' => $currency,
 ])));
 
 if ($gateway->get('id')) {

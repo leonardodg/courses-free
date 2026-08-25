@@ -99,6 +99,16 @@ if (!$account) {
             get_string('cansellyes', 'local_marketplace', implode(', ', $gateways)),
             'success'
         );
+
+        // A moeda vem do pais da conta vinculada, nao de uma escolha no
+        // cadastro. Mostrar aqui evita a descoberta so na hora de precificar.
+        $currency = $company->get_payment_currency();
+        echo $OUTPUT->notification(
+            $currency !== ''
+                ? get_string('paymentcurrency', 'local_marketplace', $currency)
+                : get_string('paymentcurrencyunknown', 'local_marketplace'),
+            $currency !== '' ? 'info' : 'warning'
+        );
     } else {
         echo $OUTPUT->notification(get_string('nopaymentaccount', 'local_marketplace'), 'warning');
     }
