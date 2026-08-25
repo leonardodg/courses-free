@@ -444,8 +444,17 @@ jobs:
             # local-tls.yml, que nao entra no COMPOSE_FILE da VPS.
             DB_PORT=3307
             XDEBUG_PORT=9004
-            # So o nginx local alcanca o container; nada exposto na internet.
-            BIND_ADDR=127.0.0.1
+            # Em que interface o banco escuta.
+            #
+            # Padrao 127.0.0.1: so o nginx local alcanca, nada exposto. Para
+            # acessar de fora, defina a variable DB_BIND_ADDR no environment
+            # com o IP da interface do WireGuard - assim o banco fica visivel
+            # na VPN e invisivel na internet, sem abrir porta em firewall de
+            # borda.
+            #
+            # NAO use 0.0.0.0 aqui. MariaDB exposto na internet e alvo de
+            # varredura constante, e o ganho sobre a VPN e nenhum.
+            BIND_ADDR=${{ vars.DB_BIND_ADDR != '' && vars.DB_BIND_ADDR || '127.0.0.1' }}
             MOODLE_DBNAME=${{ vars.MOODLE_DBNAME }}
             EOF
 
