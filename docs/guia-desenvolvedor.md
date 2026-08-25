@@ -287,6 +287,61 @@ O `phpunit_dataroot` e o `moodledata` pertencem a `www-data`; rodar como
 `-u 1000:33` (uid do host, grupo www-data) dá acesso aos dois sem quebrar o
 Apache.
 
+## Domínio por vendedor
+
+Três camadas, e cada uma responde uma pergunta diferente:
+
+| Camada | Pergunta | Onde |
+|---|---|---|
+| nginx | *o tráfego chega?* | `server` block por domínio, com `Host` preservado |
+| Arquivo gerado | *este domínio existe?* | `$CFG->dataroot/marketplace_domains.php` |
+| Banco | *a empresa está ativa?* | `after_config`, com `$DB` disponível |
+
+**A segurança está no arquivo, não no nginx.** O `config.php` usa o `Host` apenas
+como chave de busca numa lista gerada do banco:
+
+```php
+$marketplacehost = strtolower($_SERVER['HTTP_HOST']);
+if (isset($marketplacemap[$marketplacehost]['wwwroot'])) {
+    $CFG->wwwroot = $marketplacemap[$marketplacehost]['wwwroot'];
+}
+```
+
+Um atacante mandando `Host: evil.com` não encontra a chave, o `if` não entra, e o
+`wwwroot` continua o padrão. O cabeçalho só consegue **selecionar** entre domínios
+já cadastrados — não introduzir um novo.
+
+Isso importa porque `$CFG->wwwroot` derivado do `Host` sem validação é injeção de
+cabeçalho: o Moodle passaria a gerar todo link apontando para o domínio do
+atacante, inclusive o de redefinição de senha que sai por e-mail.
+
+`SERVER_NAME` não serve aqui: o container roda Apache com `ServerName localhost`
+atrás do proxy, então ele nunca carrega o domínio do vendedor. E com
+`UseCanonicalName Off`, que é o padrão, o Apache o deriva do próprio `Host`.
+
+**Suspensão é conferida no banco**, não no arquivo. Filtrar na geração faria o
+domínio suspenso cair no site padrão em silêncio, e acoplaria suspender a
+regenerar arquivo. O `after_config` bloqueia a plataforma inteira naquele domínio
+e responde 503 com uma página explicando.
+
+### Provisionar um domínio
+
+```bash
+sudo .devcontainer/nginx/provisiona-dominio.sh meuscursos.joao.com contato@leodg.dev
+```
+
+Confere o DNS, instala o `server` block, valida, recarrega e emite o certificado.
+Depois disso falta cadastrar o domínio na empresa — sem isso a requisição chega
+mas o visitante vê o site principal.
+
+```bash
+php local/marketplace/cli/domains.php            # mapa em vigor
+php local/marketplace/cli/domains.php --rebuild  # regenera do banco
+```
+
+**Sem `$CFG->sessioncookiedomain`**, por decisão: a sessão passa a ser por domínio.
+Quem entra em `meuscursos.joao.com` não está logado em `courses.leodg.dev`.
+
 ## Armadilhas que já custaram tempo
 
 | Sintoma | Causa |
