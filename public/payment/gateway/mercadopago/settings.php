@@ -53,6 +53,22 @@ if ($ADMIN->fulltree) {
         ''
     ));
 
+    // O pais da aplicacao decide em que dominio o vendedor autoriza e quais
+    // contas podem ser vinculadas. Nao e cosmetico: o split so acontece entre
+    // contas do MESMO pais, porque a comissao cai na conta da plataforma e uma
+    // conta so guarda a moeda do proprio pais. Nao ha cambio no meio.
+    $sites = [];
+    foreach (\paygw_mercadopago\mp_client::SITE_CURRENCY as $siteid => $currency) {
+        $sites[$siteid] = $siteid . ' - ' . $currency;
+    }
+    $settings->add(new admin_setting_configselect(
+        'paygw_mercadopago/platformsite',
+        get_string('platformsite', 'paygw_mercadopago'),
+        get_string('platformsite_desc', 'paygw_mercadopago'),
+        'MLB',
+        $sites
+    ));
+
     $settings->add(new admin_setting_configtext(
         'paygw_mercadopago/defaultfeepercent',
         get_string('defaultfeepercent', 'paygw_mercadopago'),
