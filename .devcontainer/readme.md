@@ -188,3 +188,18 @@ pasta conhecida do host, para o backup ser um `tar` da pasta:
 - **`| tail` mascara o exit code** do `docker compose`. Use `${PIPESTATUS[0]}`.
 - **`PHP_OPCACHE_VALIDATE_TIMESTAMPS=0` desliga o hot-reload.** Com 0 o opcache
   nunca reconfere os arquivos e suas edições não têm efeito sem reiniciar.
+- **Trocar um secret exige reiniciar o container.** O entrypoint roda como root,
+  lê `/run/secrets/*` e **exporta como variável de ambiente** antes de entregar
+  o controle ao Apache — necessário, porque `www-data` não consegue ler arquivos
+  `600` do uid do host. O efeito colateral é que a credencial é lida **uma única
+  vez, no boot**: reescrever o arquivo não muda nada até `docker compose restart`.
+
+  O modo de falhar engana: `docker compose exec` cria um processo novo e lê o
+  valor atualizado, então testes por CLI passam enquanto o site devolve 500.
+  Para comparar o que o Apache realmente carrega com o que está no arquivo:
+
+  ```bash
+  docker compose exec -T moodle sh -c \
+    "tr '\0' '\n' < /proc/1/environ | grep '^MOODLE_DBPASS=' | cut -d= -f2- | md5sum" </dev/null
+  docker compose exec -T moodle md5sum /run/secrets/db_password </dev/null
+  ```
