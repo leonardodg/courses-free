@@ -38,7 +38,11 @@ $context = $account->get_context();
 require_capability('moodle/payment:manageaccounts', $context);
 
 $url = new moodle_url('/payment/gateway/mercadopago/oauth_unlink.php', ['accountid' => $accountid]);
-$returnurl = $account->get_edit_url();
+// Tela do GATEWAY, nao a da conta: e de la que se vincula de novo.
+$returnurl = new moodle_url('/payment/manage_gateway.php', [
+    'accountid' => $accountid,
+    'gateway' => 'mercadopago',
+]);
 
 $PAGE->set_context($context);
 $PAGE->set_url($url);
