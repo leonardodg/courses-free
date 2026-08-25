@@ -127,5 +127,23 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082521, 'local', 'marketplace');
     }
 
+    if ($oldversion < 2026082523) {
+        $dbman = $DB->get_manager();
+
+        // Comissao negociada por empresa.
+        //
+        // NULO de proposito: e a diferenca entre "nao negociamos nada, use o
+        // padrao do site" e "negociamos zero por cento". Com NOT NULL e default
+        // 25, as duas situacoes seriam indistinguiveis, e um parceiro isento
+        // voltaria a pagar 25% na primeira vez que alguem mudasse o padrao.
+        $table = new xmldb_table('local_marketplace_company');
+        $field = new xmldb_field('commissionpct', XMLDB_TYPE_NUMBER, '5, 2', null, null, null, null, 'status');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026082523, 'local', 'marketplace');
+    }
+
     return true;
 }

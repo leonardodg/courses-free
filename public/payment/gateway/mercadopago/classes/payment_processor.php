@@ -56,7 +56,17 @@ class payment_processor {
         // acompanhe a transacao desde a criacao da preferencia.
         $reference = 'mdl-' . $userid . '-' . $itemid . '-' . random_string(12);
 
+        // A comissao e regra do marketplace, nao do gateway. Perguntamos a ele
+        // quando ele esta presente, e caimos no padrao do site quando outro
+        // componente usa este gateway - assim o plugin continua servindo a
+        // qualquer componente do core_payment, sem depender do marketplace.
         $feepercent = (float) ($appconfig->defaultfeepercent ?? 25);
+        if ($component === 'local_marketplace' && class_exists('\local_marketplace\api')) {
+            $offer = \local_marketplace\offer::get_record(['id' => $itemid]);
+            if ($offer) {
+                $feepercent = \local_marketplace\api::resolve_commission_percent($offer);
+            }
+        }
         $fee = round($amount * ($feepercent / 100), 2);
 
         $record = (object) [

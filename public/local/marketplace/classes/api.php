@@ -54,6 +54,7 @@ class api {
             $company->set('name', $data->name);
             $company->set('shortname', $data->shortname);
             $company->set('cnpj', !empty($data->cnpj) ? $data->cnpj : null);
+            $company->set('commissionpct', self::commission_input($data->commissionpct ?? null));
             $company->set('themename', !empty($data->themename) ? $data->themename : null);
             $company->set('hostname', !empty($data->hostname) ? $data->hostname : null);
             $company->create();
@@ -81,6 +82,82 @@ class api {
     }
 
     /**
+     * Percentual de comissao que vale para uma oferta.
+     *
+     * Hierarquia, do mais especifico para o mais geral:
+     *
+     *   1. politica do CURSO, quando a oferta libera um curso so
+     *   2. comissao negociada com a EMPRESA
+     *   3. padrao do SITE
+     *
+     * A politica de curso so entra em oferta de curso unico, e a razao e que
+     * nao existe resposta correta para um combo: tres cursos com percentuais
+     * diferentes nao produzem um percentual do pacote. Pegar o maior seria
+     * predatorio, o menor seria arbitrario, e a media seria um numero que
+     * ninguem negociou. Entao no combo vale a empresa, que e o que o vendedor
+     * de fato acordou.
+     *
+     * A linha de politica so existe quando alguem a criou de proposito - nada
+     * cria por padrao. Por isso a existencia dela conta como intencao, e nao
+     * ha ambiguidade entre "definido como 25" e "nunca definido".
+     *
+     * @param offer $offer
+     * @return float Percentual entre 0 e 100.
+     */
+    public static function resolve_commission_percent(offer $offer): float {
+        if ($offer->get('offertype') === offer::TYPE_SINGLE) {
+            $courseids = $offer->get_course_ids();
+            if (count($courseids) === 1) {
+                $policy = course_policy::get_by_course((int) reset($courseids));
+                if ($policy) {
+                    return self::clamp((float) $policy->get('commissionpct'));
+                }
+            }
+        }
+
+        $company = company::get_record(['id' => (int) $offer->get('companyid')]);
+        if ($company) {
+            $negotiated = $company->get_commission_percent();
+            if ($negotiated !== null) {
+                return self::clamp($negotiated);
+            }
+        }
+
+        return self::clamp((float) (get_config('paygw_mercadopago', 'defaultfeepercent') ?: 25));
+    }
+
+    /**
+     * Mantem o percentual dentro de 0 a 100.
+     *
+     * Um valor fora da faixa viraria marketplace_fee maior que o proprio preco,
+     * e o Mercado Pago recusaria a preferencia - com o aluno ja no checkout.
+     *
+     * @param float $value
+     * @return float
+     */
+    protected static function clamp(float $value): float {
+        return max(0.0, min(100.0, $value));
+    }
+
+    /**
+     * Interpreta o campo de comissao vindo do formulario.
+     *
+     * Vazio vira NULO - herda o site. "0" vira zero - isencao negociada. Usar
+     * empty() aqui trataria os dois como a mesma coisa, e um parceiro isento
+     * passaria a pagar a comissao padrao sem ninguem ter mudado nada.
+     *
+     * @param mixed $value
+     * @return float|null
+     */
+    protected static function commission_input($value): ?float {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        return self::clamp((float) $value);
+    }
+
+    /**
      * Altera os dados cadastrais de uma empresa.
      *
      * O atalho NAO muda. Ele vira o idnumber da categoria, entra nas URLs da
@@ -105,6 +182,7 @@ class api {
 
             $company->set('name', $data->name);
             $company->set('cnpj', !empty($data->cnpj) ? $data->cnpj : null);
+            $company->set('commissionpct', self::commission_input($data->commissionpct ?? null));
             $company->set('themename', !empty($data->themename) ? $data->themename : null);
             $company->set('hostname', !empty($data->hostname) ? $data->hostname : null);
             $company->update();

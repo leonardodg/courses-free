@@ -232,4 +232,23 @@ $string['mysubspayments'] = 'Payments';
 $string['nosubscriptions'] = 'You have not bought anything yet.';
 $string['nopayments'] = 'No payments yet.';
 
+$string['companycommission'] = 'Commission (%)';
+$string['companycommission_help'] = 'Percentage the platform keeps on sales by this company, from 0 to 100. Leave empty to use the site default — empty and zero are different: empty means nothing was negotiated, zero means the partner is exempt.';
+$string['errorcommissionrange'] = 'Use a number from 0 to 100, or leave it empty to inherit the site default.';
+
+// Privacy.
+$string['privacy:metadata:member'] = 'Which companies a person sells for.';
+$string['privacy:metadata:member:companyid'] = 'The company.';
+$string['privacy:metadata:member:userid'] = 'The person linked to the company.';
+$string['privacy:metadata:member:memberrole'] = 'Whether they own the company or sell for it.';
+$string['privacy:metadata:member:timecreated'] = 'When the link was made.';
+$string['privacy:metadata:entitlement'] = 'What a learner bought and how long their access runs.';
+$string['privacy:metadata:entitlement:userid'] = 'The learner.';
+$string['privacy:metadata:entitlement:offerid'] = 'The offer bought.';
+$string['privacy:metadata:entitlement:companyid'] = 'The company that sold it.';
+$string['privacy:metadata:entitlement:timestart'] = 'When access started.';
+$string['privacy:metadata:entitlement:timeend'] = 'When access ends. Zero means it does not expire.';
+$string['privacy:metadata:entitlement:status'] = 'Whether the access is active, expired or revoked.';
+$string['privacy:metadata:entitlement:cycles'] = 'How many payments have been made.';
+
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';

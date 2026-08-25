@@ -74,4 +74,17 @@ $string['paymentrejected'] = 'The payment was not completed. Nothing was charged
 
 $string['savebeforelinking'] = 'Save this gateway first, then come back to link the Mercado Pago account.';
 
+// Privacy.
+$string['privacy:metadata:paygw_mercadopago'] = 'Payment transactions handled by this gateway.';
+$string['privacy:metadata:paygw_mercadopago:userid'] = 'The person who paid.';
+$string['privacy:metadata:paygw_mercadopago:amount'] = 'The amount charged.';
+$string['privacy:metadata:paygw_mercadopago:currency'] = 'The currency charged.';
+$string['privacy:metadata:paygw_mercadopago:status'] = 'Whether the payment was approved, rejected or is pending.';
+$string['privacy:metadata:paygw_mercadopago:mppaymentid'] = 'The payment identifier at Mercado Pago.';
+$string['privacy:metadata:paygw_mercadopago:timecreated'] = 'When the payment was started.';
+$string['privacy:metadata:mercadopago'] = 'Data sent to Mercado Pago so the payment can be taken. Mercado Pago is the controller of what it receives.';
+$string['privacy:metadata:mercadopago:amount'] = 'The amount to charge.';
+$string['privacy:metadata:mercadopago:currency'] = 'The currency to charge in.';
+$string['privacy:metadata:mercadopago:itemname'] = 'A description of what is being bought.';
+
 $string['privacy:metadata'] = 'The Mercado Pago plugin stores the seller authorisation token on the payment account and sends the payment amount and buyer email to Mercado Pago.';

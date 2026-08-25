@@ -90,6 +90,13 @@ class company_form extends \moodleform {
         $mform->setType('cnpj', PARAM_ALPHANUM);
         $mform->addHelpButton('cnpj', 'companycnpj', 'local_marketplace');
 
+        // Vazio NAO e zero. Vazio herda o padrao do site; zero e isencao
+        // negociada. Um campo numerico obrigatorio nao teria como dizer isso.
+        $mform->addElement('text', 'commissionpct',
+            get_string('companycommission', 'local_marketplace'), ['size' => 8]);
+        $mform->setType('commissionpct', PARAM_RAW_TRIMMED);
+        $mform->addHelpButton('commissionpct', 'companycommission', 'local_marketplace');
+
         // Tema por categoria. Depende de $CFG->allowcategorythemes, que o
         // install.php garante - sem ele o campo e gravado e nao surte efeito.
         $themes = ['' => get_string('defaultthemename', 'local_marketplace')];
@@ -140,6 +147,17 @@ class company_form extends \moodleform {
             $other = company::get_record(['hostname' => $data['hostname']]);
             if ($other && (int) $other->get('id') !== $self) {
                 $errors['hostname'] = get_string('errorhostnametaken', 'local_marketplace');
+            }
+        }
+
+        // String vazia herda o padrao do site e e valida. "0" nao e vazio: e
+        // isencao, e precisa passar - is_numeric cuida disso, empty() nao.
+        $pct = $data['commissionpct'] ?? '';
+        if ($pct !== '' && $pct !== null) {
+            if (!is_numeric($pct)) {
+                $errors['commissionpct'] = get_string('errorcommissionrange', 'local_marketplace');
+            } else if ((float) $pct < 0 || (float) $pct > 100) {
+                $errors['commissionpct'] = get_string('errorcommissionrange', 'local_marketplace');
             }
         }
 

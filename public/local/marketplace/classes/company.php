@@ -55,6 +55,11 @@ class company extends persistent {
                 'null' => NULL_ALLOWED,
                 'default' => null,
             ],
+            'commissionpct' => [
+                'type' => PARAM_FLOAT,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
             'categoryid' => [
                 'type' => PARAM_INT,
                 'null' => NULL_ALLOWED,
@@ -152,6 +157,39 @@ class company extends persistent {
         ]);
 
         return $account ?: null;
+    }
+
+    /**
+     * Comissao negociada com esta empresa.
+     *
+     * Nulo significa "nao negociamos nada, use o padrao do site" - diferente de
+     * zero, que significa "negociamos isencao". Sem essa distincao, um parceiro
+     * isento voltaria a pagar comissao na primeira vez que alguem mudasse o
+     * padrao do site.
+     *
+     * @return float|null
+     */
+    public function get_commission_percent(): ?float {
+        $value = $this->get('commissionpct');
+
+        return $value === null || $value === '' ? null : (float) $value;
+    }
+
+    /**
+     * Valida o percentual.
+     *
+     * @param mixed $value
+     * @return true|\lang_string
+     */
+    protected function validate_commissionpct($value) {
+        if ($value === null || $value === '') {
+            return true;
+        }
+        if ((float) $value < 0 || (float) $value > 100) {
+            return new \lang_string('errorcommissionrange', 'local_marketplace');
+        }
+
+        return true;
     }
 
     /**
