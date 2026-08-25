@@ -25,6 +25,14 @@ on:
   pull_request:
     branches: [main, dev]
   workflow_dispatch:
+    inputs:
+      recreate_config:
+        description: >-
+          Recriar o config.php da VPS a partir do template. Use quando o template
+          mudou: o deploy PRESERVA o config.php existente, entao mudanca no
+          template nao se aplica sozinha.
+        type: boolean
+        default: false
 
 concurrency:
   # Um deploy por vez: dois rodando juntos corrompem o upgrade.php.
@@ -453,8 +461,18 @@ jobs:
             # So cria se NAO existir. Sobrescrever a cada deploy apagaria
             # qualquer ajuste feito direto na VPS - e o config.php e onde vai
             # morar o mapa Host->wwwroot dos dominios de vendedor (Fase 3).
-            # Para forcar a atualizacao a partir do template, apague o arquivo
-            # na VPS e rode o deploy de novo.
+            #
+            # Para aplicar uma mudanca do template, rode o workflow a mao com
+            # recreate_config marcado. Guarda uma copia com data antes, porque
+            # este arquivo pode ter ajuste feito direto na VPS que ninguem
+            # lembra - e recria-lo sem copia perderia isso em silencio.
+            if [ "${{ inputs.recreate_config }}" = "true" ] && [ -f config.php ]; then
+              BACKUP="config.php.bak-$(date +%Y%m%d-%H%M%S)"
+              cp config.php "$BACKUP"
+              rm config.php
+              echo ">> config.php removido a pedido; copia em $BACKUP"
+            fi
+
             if [ -f config.php ]; then
               echo ">> config.php ja existe - preservado"
             else
