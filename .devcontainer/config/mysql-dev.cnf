@@ -1,13 +1,29 @@
 [mysqld]
-innodb_buffer_pool_size = 128M
+# Dimensionado para a VPS Oracle (23 GiB, compartilhada com outros servicos).
+# Os valores anteriores vinham de uma maquina bem menor: buffer pool de 128M e
+# max_connections=30 seguravam a concorrencia bem antes do necessario.
+
+# Cache de dados/indices do InnoDB. E o parametro que mais afeta desempenho:
+# o que nao cabe aqui vira leitura de disco a cada consulta.
+innodb_buffer_pool_size = 512M
 innodb_buffer_pool_instances = 1
-innodb_log_file_size = 32M
+innodb_log_file_size = 128M
+
+# 2 = grava o log a cada segundo em vez de a cada commit. Troca durabilidade
+# por velocidade: numa queda abrupta perdem-se ate ~1s de transacoes.
+# Aceitavel aqui; em producao com dado financeiro, reavaliar para 1.
 innodb_flush_log_at_trx_commit = 2
 innodb_flush_method = O_DIRECT
-max_connections = 30
+
+# Precisa ser MAIOR que o MaxRequestWorkers do Apache, com folga para o cron,
+# o CLI e conexoes administrativas. Hoje: 20 workers + margem.
+max_connections = 100
+
 performance_schema = OFF
-table_open_cache = 128
-tmp_table_size = 16M
-max_heap_table_size = 16M
+table_open_cache = 400
+tmp_table_size = 32M
+max_heap_table_size = 32M
+
+# Query cache foi descontinuado e nao ajuda em carga com escrita.
 query_cache_type = 0
 query_cache_size = 0

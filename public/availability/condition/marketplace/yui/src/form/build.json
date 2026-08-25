@@ -1,0 +1,10 @@
+{
+    "name": "moodle-availability_marketplace-form",
+    "builds": {
+        "moodle-availability_marketplace-form": {
+            "jsfiles": [
+                "form.js"
+            ]
+        }
+    }
+}

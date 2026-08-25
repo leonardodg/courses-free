@@ -55,9 +55,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 450M
+          memory: 2G   # 20 workers do Apache a ~80 MB cada, mais opcache e folga
         reservations:
-          memory: 256M
+          memory: 512M
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]

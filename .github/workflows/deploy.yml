@@ -303,6 +303,21 @@ jobs:
             docker compose pull
             # --wait ja espera os healthchecks; dispensa loop manual de espera.
             docker compose up -d --remove-orphans --wait
+
+            # OBRIGATORIO depois de reescrever os secrets acima.
+            #
+            # O entrypoint le /run/secrets/* como root e EXPORTA como variavel
+            # de ambiente antes de entregar o controle ao Apache - necessario,
+            # porque www-data nao consegue ler arquivo 600 do uid do host.
+            # O efeito colateral e que a credencial e lida UMA VEZ, no boot.
+            #
+            # "up -d" so recria o container quando a imagem ou a config mudam.
+            # Num deploy que nao muda nenhum dos dois, uma senha rotacionada
+            # ficaria sem efeito e o site responderia 500 com "Access denied" -
+            # exatamente o que aconteceu em 2026-08-25.
+            #
+            # O restart e barato e idempotente; deixar de fazer nao e.
+            docker compose restart moodle
             docker compose ps
 
             # A espera por saude e feita pelo --wait do "up" acima.
@@ -337,6 +352,44 @@ jobs:
             fi
 
             docker compose exec -T moodle php admin/cli/purge_caches.php </dev/null
+
+            # --- nginx -------------------------------------------------------
+            # Instala a config do site e o snippet de IP real da Cloudflare.
+            #
+            # Vem DEPOIS do compose de proposito: o server block faz proxy para
+            # o container, entao recarregar o nginx antes dele existir deixaria
+            # uma janela de 502.
+            #
+            # A sequencia e conservadora porque o nginx desta VPS serve outros
+            # 15 sites: guarda o estado anterior, testa, e so recarrega se
+            # passar. Se nao passar, restaura e falha o deploy - um "nginx -t"
+            # quebrado impede o reload de QUALQUER site, nao so deste.
+            NGINX_SITE=/etc/nginx/sites-available/courses.leodg.dev.conf
+            NGINX_SNIP=/etc/nginx/snippets/cloudflare-realip.conf
+            BACKUP=$(mktemp -d)
+
+            sudo -n mkdir -p /etc/nginx/snippets
+            for f in "$NGINX_SITE" "$NGINX_SNIP"; do
+              [ -f "$f" ] && sudo -n cp "$f" "$BACKUP/$(basename "$f")" || true
+            done
+
+            sudo -n cp .devcontainer/nginx/courses.leodg.dev.conf "$NGINX_SITE"
+            sudo -n cp .devcontainer/nginx/cloudflare-realip.conf "$NGINX_SNIP"
+            sudo -n ln -sfn "$NGINX_SITE" /etc/nginx/sites-enabled/courses.leodg.dev.conf
+
+            if sudo -n nginx -t 2>&1; then
+              sudo -n systemctl reload nginx
+              echo ">> nginx recarregado"
+            else
+              echo "::error::nginx -t falhou; restaurando a config anterior"
+              for f in "$NGINX_SITE" "$NGINX_SNIP"; do
+                [ -f "$BACKUP/$(basename "$f")" ] && sudo -n cp "$BACKUP/$(basename "$f")" "$f" || true
+              done
+              sudo -n nginx -t && sudo -n systemctl reload nginx
+              rm -rf "$BACKUP"
+              exit 1
+            fi
+            rm -rf "$BACKUP"
 
       - name: Smoke test
         run: |

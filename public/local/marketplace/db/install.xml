@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/marketplace/db" VERSION="20260824" COMMENT="Marketplace de cursos: empresas, vendedores e comissao."
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_marketplace_company" COMMENT="Empresa vendedora. Uma empresa tem N vendedores e no maximo uma conta Mercado Pago.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Nome de exibicao."/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Identificador curto, usado na URL vanity."/>
+        <FIELD NAME="cnpj" TYPE="char" LENGTH="14" NOTNULL="false" SEQUENCE="false" COMMENT="Opcional: pessoa fisica pode vender sem CNPJ."/>
+        <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Categoria de curso provisionada para a empresa."/>
+        <FIELD NAME="themename" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Tema aplicado na categoria (allowcategorythemes)."/>
+        <FIELD NAME="hostname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Dominio proprio. Fase 3: alimenta o mapa Host->wwwroot do config.php."/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|suspended. Nao ha aprovacao manual: os portoes sao a conta MP e o papel restrito."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="categoryid" TYPE="foreign" FIELDS="categoryid" REFTABLE="course_categories" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="shortname" UNIQUE="true" FIELDS="shortname"/>
+        <INDEX NAME="hostname" UNIQUE="true" FIELDS="hostname" COMMENT="Dois dominios iguais quebrariam a resolucao Host->empresa."/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_member" COMMENT="Vendedores da empresa. Uma empresa tem N membros; um usuario pode estar em varias empresas.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="memberrole" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="seller" SEQUENCE="false" COMMENT="owner|seller. O owner administra a empresa e a conta Mercado Pago."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="companyid" TYPE="foreign" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyid-userid" UNIQUE="true" FIELDS="companyid, userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_mpaccount" COMMENT="Credencial Mercado Pago da EMPRESA. E o portao de venda: sem registro aqui a empresa so publica curso gratuito.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="mpuserid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="user_id da conta Mercado Pago do vendedor."/>
+        <FIELD NAME="accesstoken" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Obtido por OAuth. Split via marketplace_fee exige token da NOSSA aplicacao."/>
+        <FIELD NAME="refreshtoken" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="tokenexpires" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="O token do MP expira em ~6 meses; task de renovacao usa este campo."/>
+        <FIELD NAME="oauthstatus" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|linked|expired|revoked. Só 'linked' habilita venda."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="companyid" TYPE="foreign-unique" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_offer" COMMENT="Unidade de VENDA. O curso deixa de ser o que se vende e passa a ser o que se libera: a mesma aula pode ser vendida como pacote basico, como combo ou dentro de uma assinatura.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="O que o aluno ve: 'Basico', 'Completo com mentoria', 'Assinatura anual'."/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="offertype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="single" SEQUENCE="false" COMMENT="single=um curso · bundle=combo · catalog=tudo da empresa (nao usa offer_course)."/>
+        <FIELD NAME="price" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="currency" TYPE="char" LENGTH="3" NOTNULL="true" DEFAULT="BRL" SEQUENCE="false"/>
+        <FIELD NAME="accessmode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="lifetime" SEQUENCE="false" COMMENT="lifetime=vitalicio · days=prazo em accessdays · recurring=assinatura."/>
+        <FIELD NAME="accessdays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Usado so quando accessmode=days. Em recurring e o intervalo de cobranca."/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" SEQUENCE="false" COMMENT="draft|published|archived. Arquivar nao revoga direito ja vendido."/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="companyid" TYPE="foreign" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyid-status" UNIQUE="false" FIELDS="companyid, status"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_offer_course" COMMENT="Cursos que a oferta libera. N:N porque um combo libera varios cursos e um curso aparece em varias ofertas. offertype=catalog nao usa esta tabela: a oferta segue a categoria da empresa e cursos novos entram sozinhos.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="offerid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="offerid" TYPE="foreign" FIELDS="offerid" REFTABLE="local_marketplace_offer" REFFIELDS="id"/>
+        <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="offerid-courseid" UNIQUE="true" FIELDS="offerid, courseid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_entitlement" COMMENT="O que o aluno comprou. E a fonte da verdade do acesso: o enrol_marketplace e o availability_marketplace consultam esta tabela, nunca a venda diretamente.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="offerid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Desnormalizado de proposito: o acesso ao catalogo consulta por empresa a cada pagina."/>
+        <FIELD NAME="timestart" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timeend" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = vitalicio."/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|expired|cancelled. Cancelamento revoga NA HORA, por decisao de negocio."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="offerid" TYPE="foreign" FIELDS="offerid" REFTABLE="local_marketplace_offer" REFFIELDS="id"/>
+        <KEY NAME="companyid" TYPE="foreign" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid-status" UNIQUE="false" FIELDS="userid, status"/>
+        <INDEX NAME="userid-companyid" UNIQUE="false" FIELDS="userid, companyid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_course" COMMENT="Politica de hospedagem e comissao por curso.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="hostingtype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="external" SEQUENCE="false" COMMENT="external|platform. Hoje so 'external' e permitido."/>
+        <FIELD NAME="commissionpct" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="25.00" SEQUENCE="false" COMMENT="Percentual retido pela plataforma."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid" TYPE="foreign-unique" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="companyid" TYPE="foreign" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>
