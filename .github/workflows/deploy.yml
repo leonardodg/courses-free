@@ -126,23 +126,42 @@ jobs:
             moodlehq/moodle-plugin-ci /tmp/ci ^4
           export PATH="/tmp/ci/bin:/tmp/ci/vendor/bin:$PATH"
 
-          # install monta um Moodle limpo por plugin; por isso o loop refaz
-          # a instalacao a cada um, em diretorio proprio.
+          # Quatro dos cinco plugins dependem do local_marketplace: o enrol e o
+          # availability usam as classes dele, e o block declara a dependencia.
+          # Instalar um sozinho num Moodle limpo faria o phpunit falhar por
+          # classe inexistente - falha do arranjo, nao do codigo.
+          #
+          # Por isso cada rodada leva os OUTROS plugins da lista em
+          # --extra-plugins, que espera um diretorio plano com um plugin por
+          # subpasta, nomeada com o nome do componente.
+          LIST='${{ steps.plugins.outputs.list }}'
+
           i=0
           while IFS= read -r p; do
             [ -z "$p" ] && continue
             i=$((i+1))
             echo "::group::$p"
+
+            # Monta o diretorio de dependencias, sem o plugin sob teste.
+            EXTRA="/tmp/extra-$i"
+            rm -rf "$EXTRA" && mkdir -p "$EXTRA"
+            while IFS= read -r dep; do
+              [ -z "$dep" ] && continue
+              [ "$dep" = "$p" ] && continue
+              cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
+            done <<< "$LIST"
+
             rm -rf "/tmp/moodle-$i"
             moodle-plugin-ci install \
               --plugin "$GITHUB_WORKSPACE/plugins-src/$p" \
+              --extra-plugins "$EXTRA" \
               --db-host 127.0.0.1 \
               --moodle "/tmp/moodle-$i"
             moodle-plugin-ci phplint
             moodle-plugin-ci phpcs --max-warnings 0
             moodle-plugin-ci phpunit
             echo "::endgroup::"
-          done <<< "${{ steps.plugins.outputs.list }}"
+          done <<< "$LIST"
 
   # ===========================================================================
   image:

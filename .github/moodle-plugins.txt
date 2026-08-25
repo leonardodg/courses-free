@@ -4,13 +4,15 @@
 #
 # ATENCAO: no Moodle 5.x os plugins ficam sob public/.
 
-# --- Fase 1 ---
-# public/local/marketplace
+# A ORDEM IMPORTA pouco para a validacao, mas o local_marketplace vem primeiro
+# porque e do que os outros dependem - quem ler o arquivo entende a hierarquia.
+public/local/marketplace
+public/payment/gateway/mercadopago
+public/enrol/marketplace
+public/availability/condition/marketplace
+public/blocks/marketplace
 
-# --- Fase 2 ---
-# public/payment/gateway/mercadopago
-
-# --- Fase 4 ---
+# --- Fase 4, ainda nao existe ---
 # public/theme/coursesfree
 
 # --- Plugins de terceiros -----------------------------------------------------
