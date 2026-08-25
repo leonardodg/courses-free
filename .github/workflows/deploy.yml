@@ -114,6 +114,15 @@ jobs:
           ini-values: max_input_vars=5000
           coverage: none
 
+      # O PHPUnit do Moodle exige en_AU.UTF-8 e aborta sem ele, com
+      # "Required locale 'en_AU.UTF-8' is not installed" - antes de rodar teste
+      # nenhum. O runner do GitHub nao traz esse locale.
+      - name: Instalar o locale que o PHPUnit do Moodle exige
+        if: steps.plugins.outputs.found == 'true'
+        run: |
+          sudo locale-gen en_AU.UTF-8
+          sudo update-locale
+
       - name: moodle-plugin-ci
         if: steps.plugins.outputs.found == 'true'
         env:
