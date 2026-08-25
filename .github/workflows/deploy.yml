@@ -160,11 +160,14 @@ jobs:
               cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
             done <<< "$LIST"
 
+            # Um banco POR plugin. O install nao derruba o banco anterior, e a
+            # segunda rodada morria com 'database "moodle" already exists'.
             rm -rf "/tmp/moodle-$i"
             moodle-plugin-ci install \
               --plugin "$GITHUB_WORKSPACE/plugins-src/$p" \
               --extra-plugins "$EXTRA" \
               --db-host 127.0.0.1 \
+              --db-name "moodle_ci_$i" \
               --moodle "/tmp/moodle-$i"
             moodle-plugin-ci phplint
             moodle-plugin-ci phpcs --max-warnings 0
