@@ -58,15 +58,7 @@ $string['memberowner'] = 'Dono';
 $string['memberseller'] = 'Vendedor';
 
 // Portão de pagamento.
-$string['mpaccount'] = 'Conta Mercado Pago';
-$string['mpnotlinked'] = 'Esta empresa não tem conta Mercado Pago vinculada, então só pode publicar cursos gratuitos.';
-$string['mplinked'] = 'Conta Mercado Pago vinculada';
-$string['mpexpired'] = 'A autorização do Mercado Pago expirou e precisa ser renovada.';
-$string['mprevoked'] = 'A autorização do Mercado Pago foi revogada.';
-$string['statuspending'] = 'Pendente';
-$string['statuslinked'] = 'Vinculada';
-$string['statusexpired'] = 'Expirada';
-$string['statusrevoked'] = 'Revogada';
+$string['nopaymentaccount'] = 'Esta empresa não tem meio de pagamento configurado, então só pode publicar cursos gratuitos.';
 
 // Política do curso.
 $string['hostingtype'] = 'Hospedagem do vídeo';
@@ -78,7 +70,7 @@ $string['commissionpct'] = 'Comissão da plataforma (%)';
 $string['errorshortnametaken'] = 'Este nome curto já está em uso.';
 $string['errorhostnametaken'] = 'Este domínio já está vinculado a outra empresa.';
 $string['errorsellerrolemissing'] = 'O papel de vendedor não existe. Reinstale o plugin Marketplace.';
-$string['errorcannotsell'] = 'Esta empresa ainda não pode vender: vincule uma conta Mercado Pago primeiro.';
+$string['errorcannotsell'] = 'Esta empresa ainda não pode vender: configure um meio de pagamento primeiro.';
 $string['errorplatformhostingunavailable'] = 'Hospedar vídeo na plataforma ainda não está disponível.';
 
 $string['privacy:metadata'] = 'O plugin Marketplace armazena empresas, seus vendedores e credenciais de pagamento.';

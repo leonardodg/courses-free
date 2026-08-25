@@ -4,7 +4,7 @@
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="local_marketplace_company" COMMENT="Empresa vendedora. Uma empresa tem N vendedores e no maximo uma conta Mercado Pago.">
+    <TABLE NAME="local_marketplace_company" COMMENT="Empresa vendedora, com N vendedores. A credencial de pagamento NAO vive aqui: fica na payment account do core_payment, no contexto da categoria da empresa.">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Nome de exibicao."/>
@@ -13,7 +13,7 @@
         <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Categoria de curso provisionada para a empresa."/>
         <FIELD NAME="themename" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Tema aplicado na categoria (allowcategorythemes)."/>
         <FIELD NAME="hostname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Dominio proprio. Fase 3: alimenta o mapa Host->wwwroot do config.php."/>
-        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|suspended. Nao ha aprovacao manual: os portoes sao a conta MP e o papel restrito."/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|suspended. Nao ha aprovacao manual: os portoes sao a payment account configurada e o papel restrito."/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -33,7 +33,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="memberrole" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="seller" SEQUENCE="false" COMMENT="owner|seller. O owner administra a empresa e a conta Mercado Pago."/>
+        <FIELD NAME="memberrole" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="seller" SEQUENCE="false" COMMENT="owner|seller. O owner administra a empresa e a conta de pagamento."/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -46,25 +46,6 @@
       <INDEXES>
         <INDEX NAME="companyid-userid" UNIQUE="true" FIELDS="companyid, userid"/>
       </INDEXES>
-    </TABLE>
-
-    <TABLE NAME="local_marketplace_mpaccount" COMMENT="Credencial Mercado Pago da EMPRESA. E o portao de venda: sem registro aqui a empresa so publica curso gratuito.">
-      <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="mpuserid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="user_id da conta Mercado Pago do vendedor."/>
-        <FIELD NAME="accesstoken" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Obtido por OAuth. Split via marketplace_fee exige token da NOSSA aplicacao."/>
-        <FIELD NAME="refreshtoken" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="tokenexpires" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="O token do MP expira em ~6 meses; task de renovacao usa este campo."/>
-        <FIELD NAME="oauthstatus" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|linked|expired|revoked. Só 'linked' habilita venda."/>
-        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-      </FIELDS>
-      <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="companyid" TYPE="foreign-unique" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
-      </KEYS>
     </TABLE>
 
     <TABLE NAME="local_marketplace_offer" COMMENT="Unidade de VENDA. O curso deixa de ser o que se vende e passa a ser o que se libera: a mesma aula pode ser vendida como pacote basico, como combo ou dentro de uma assinatura.">

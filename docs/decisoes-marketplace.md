@@ -121,6 +121,40 @@ Checkout Pro com `marketplace_fee` e avisa o aluno. O split funciona porque
 cada cobrança é avulsa, o aluno escolhe Pix ou cartão, e nenhum dado de cartão
 passa pela nossa base. Custo aceito: não é débito automático.
 
+### Não existe débito automático com split no Mercado Pago
+
+O Transparente foi avaliado como alternativa, já que suporta split via
+`application_fee`. Mas a documentação de cartões salvos é explícita: para pagar
+com cartão já salvo **é preciso capturar o CVV de novo**, porque o Mercado Pago
+não armazena esse dado. Cartão salvo ali é *checkout mais rápido*, não
+débito automático — o comprador precisa estar presente.
+
+O triângulo não tem interseção:
+
+| | Débito automático | Split |
+|---|---|---|
+| `preapproval` (Assinaturas) | sim | **não** |
+| Checkout Pro | não | sim |
+| Checkout Transparente | não (exige CVV) | sim |
+
+A limitação é do produto, não da nossa arquitetura. Se o aluno vai precisar
+agir a cada ciclo de qualquer forma, é melhor que seja num fluxo que divide o
+pagamento automaticamente e aceita Pix.
+
+### API de Preferências, não Orders API
+
+O painel do Mercado Pago pergunta qual API a integração usa. A resposta é
+**API de Preferências** (`/checkout/preferences`), que é onde o `marketplace_fee`
+é documentado para o Checkout Pro.
+
+A Orders API é a API unificada mais nova e provavelmente virará padrão, mas
+**não há documentação de split para ela**. Isso não prova que não suporte —
+prova que não está documentado, o que para integração financeira dá no mesmo.
+
+Dívida conhecida: se a API de Preferências for depreciada, será preciso migrar.
+Por isso as chamadas HTTP ficam isoladas em `paygw_mercadopago\mp_client`, para
+que a migração seja num arquivo e não espalhada pelo plugin.
+
 ### Por que não reusar `enrol_mpcheckoutpro`
 
 Plugin existente na diretoria oficial, avaliado e recusado:

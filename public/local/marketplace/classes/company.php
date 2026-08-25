@@ -114,8 +114,13 @@ class company extends persistent {
      *
      * Este e o portao de venda, e e ESTADO, nao permissao. Uma capability
      * responderia "tem direito de vender?"; a pergunta real e "esta habilitada
-     * a receber?". Sem conta Mercado Pago vinculada nao ha para onde mandar o
-     * dinheiro do vendedor, entao a empresa so publica curso gratuito.
+     * a receber?". Sem meio de recebimento configurado nao ha para onde mandar
+     * o dinheiro do vendedor, entao a empresa so publica curso gratuito.
+     *
+     * A pergunta e feita ao core_payment, NAO ao gateway. account::is_available()
+     * ja responde "habilitada e com ao menos um gateway configurado", e mantem
+     * isto agnostico: se um dia entrar outro meio de pagamento, o portao
+     * continua correto sem tocar aqui.
      *
      * @return bool
      */
@@ -123,8 +128,30 @@ class company extends persistent {
         if ($this->get('status') !== self::STATUS_ACTIVE) {
             return false;
         }
-        $account = mpaccount::get_record(['companyid' => $this->get('id')]);
-        return $account && $account->is_linked();
+        $account = $this->get_payment_account();
+        return $account && $account->is_available();
+    }
+
+    /**
+     * Payment account da empresa, no contexto da categoria dela.
+     *
+     * @return \core_payment\account|null
+     */
+    public function get_payment_account(): ?\core_payment\account {
+        $categoryid = $this->get('categoryid');
+        if (empty($categoryid)) {
+            return null;
+        }
+        $context = \context_coursecat::instance($categoryid, IGNORE_MISSING);
+        if (!$context) {
+            return null;
+        }
+        $account = \core_payment\account::get_record([
+            'contextid' => $context->id,
+            'archived' => 0,
+        ]);
+
+        return $account ?: null;
     }
 
     /**
