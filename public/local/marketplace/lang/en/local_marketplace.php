@@ -73,4 +73,16 @@ $string['errorsellerrolemissing'] = 'The seller role is missing. Reinstall the M
 $string['errorcannotsell'] = 'This company cannot sell yet: configure a payment method first.';
 $string['errorplatformhostingunavailable'] = 'Hosting video on the platform is not available yet.';
 
+// Storefront.
+$string['nooffers'] = 'This company has no published offers yet.';
+$string['offerincludes'] = 'Includes {$a} course(s)';
+$string['accesslifetime'] = 'Lifetime access';
+$string['accessdays'] = 'Access for {$a} days';
+$string['accessrecurring'] = 'Subscription, renewed every {$a} days';
+$string['buynow'] = 'Buy now';
+$string['getfree'] = 'Get free access';
+$string['alreadyowned'] = 'You already have access to this offer.';
+$string['unavailable'] = 'Not available for purchase yet.';
+$string['accessgranted'] = 'Access granted. Enjoy your course!';
+
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';
