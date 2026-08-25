@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Gateway do Mercado Pago (Checkout Pro) com split de pagamento.
+ * Funcoes web service do gateway.
  *
  * @package    paygw_mercadopago
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'paygw_mercadopago';
-$plugin->version   = 2026082501;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$functions = [
+    'paygw_mercadopago_create_preference' => [
+        'classname' => 'paygw_mercadopago\external\create_preference',
+        'methodname' => 'execute',
+        'description' => 'Cria a preferencia de pagamento e devolve a URL do checkout.',
+        'type' => 'write',
+        'ajax' => true,
+        'loginrequired' => true,
+    ],
+];

@@ -54,4 +54,13 @@ $string['errorapi'] = 'O Mercado Pago recusou a requisição. {$a}';
 $string['errormissingappconfig'] = 'A aplicação da plataforma não está configurada. Preencha o client ID e o secret nas configurações do plugin.';
 $string['errorstatemismatch'] = 'Não foi possível verificar a autorização. Recomece o processo.';
 
+// Task.
+$string['taskrefreshtokens'] = 'Renovar tokens dos vendedores no Mercado Pago';
+
+// Checkout.
+$string['errorcreatingpreference'] = 'Não foi possível iniciar o pagamento. Tente de novo em instantes.';
+$string['paymentapproved'] = 'Pagamento aprovado. Bom curso!';
+$string['paymentpending'] = 'Estamos aguardando a confirmação do Mercado Pago. Com Pix isso costuma levar alguns segundos. O acesso é liberado automaticamente assim que cair — não é preciso pagar de novo.';
+$string['paymentrejected'] = 'O pagamento não foi concluído. Nada foi cobrado.';
+
 $string['privacy:metadata'] = 'O plugin Mercado Pago guarda o token de autorização do vendedor na conta de pagamento e envia ao Mercado Pago o valor do pagamento e o e-mail do comprador.';
