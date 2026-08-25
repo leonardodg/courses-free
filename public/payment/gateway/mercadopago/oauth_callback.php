@@ -89,8 +89,19 @@ if (!$gateway) {
     $gateway = new \core_payment\account_gateway();
     $gateway->set('accountid', $account->get('id'));
     $gateway->set('gateway', 'mercadopago');
-    $gateway->set('enabled', 0);
 }
+
+// Habilita junto com o vinculo.
+//
+// Deixar desabilitado criava um segundo passo invisivel: o vendedor concluia o
+// OAuth, via a mensagem de sucesso, e a empresa continuava anunciada como "sem
+// meio de pagamento" - porque account::is_available() exige o gateway ligado.
+// A unica coisa entre o vinculo e a venda era um checkbox sem informacao
+// nenhuma, ja que a validacao do formulario recusa habilitar sem token.
+//
+// Autorizar a plataforma a cobrar em nome dele E a decisao; o checkbox era so
+// burocracia. Desvincular desliga de volta, entao a simetria se mantem.
+$gateway->set('enabled', 1);
 
 $existing = $gateway->get('id') ? $gateway->get_configuration() : [];
 

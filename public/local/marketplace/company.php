@@ -88,9 +88,20 @@ if (!$account) {
     echo $OUTPUT->notification(get_string('errornoaccount', 'local_marketplace'), 'error');
 } else {
     $gateways = [];
+    $linked = false;
     foreach ($account->get_gateways() as $name => $gw) {
-        if ($gw->get('id') && $gw->get('enabled')) {
+        if (!$gw->get('id')) {
+            continue;
+        }
+        if ($gw->get('enabled')) {
             $gateways[] = $name;
+        }
+        // Ha credencial guardada mesmo que o gateway esteja desligado. Sem
+        // separar os dois casos, uma empresa ja vinculada aparecia como "sem
+        // meio de pagamento" - mandando o vendedor refazer um vinculo que ja
+        // estava feito.
+        if (!empty($gw->get_configuration()['accesstoken'])) {
+            $linked = true;
         }
     }
 
@@ -109,6 +120,8 @@ if (!$account) {
                 : get_string('paymentcurrencyunknown', 'local_marketplace'),
             $currency !== '' ? 'info' : 'warning'
         );
+    } else if ($linked) {
+        echo $OUTPUT->notification(get_string('linkednotenabled', 'local_marketplace'), 'warning');
     } else {
         echo $OUTPUT->notification(get_string('nopaymentaccount', 'local_marketplace'), 'warning');
     }
