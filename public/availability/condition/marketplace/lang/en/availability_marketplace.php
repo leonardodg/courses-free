@@ -33,5 +33,6 @@ $string['requires_access'] = 'You have purchased access to this course';
 $string['requires_noaccess'] = 'You have <b>not</b> purchased access to this course';
 $string['requires_offer'] = 'You have purchased <b>{$a}</b>';
 $string['requires_notoffer'] = 'You have <b>not</b> purchased <b>{$a}</b>';
+$string['buyaccess'] = 'Buy access';
 $string['unknownoffer'] = '(offer removed)';
 $string['privacy:metadata'] = 'The Restriction by purchase plugin does not store personal data; it reads entitlements held by local_marketplace.';

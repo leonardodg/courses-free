@@ -76,6 +76,7 @@ $string['errorplatformhostingunavailable'] = 'Hosting video on the platform is n
 
 // Storefront.
 $string['nooffers'] = 'This company has no published offers yet.';
+$string['offerunlocks'] = 'This is the offer that unlocks the content you were viewing.';
 $string['offerincludes'] = 'Includes {$a} course(s)';
 $string['accesslifetime'] = 'Lifetime access';
 $string['accessdays'] = 'Access for {$a} days';
