@@ -152,11 +152,13 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         // vendedor A escrevendo script que roda no navegador do aluno da
         // empresa B seria XSS entre inquilinos. Quem quiser pagina propria de
         // verdade usa a API e hospeda onde quiser.
-        foreach ([
+        foreach (
+            [
             ['pagetitle', XMLDB_TYPE_CHAR, '255', 'commissionpct'],
             ['pageintro', XMLDB_TYPE_TEXT, null, 'pagetitle'],
             ['pageaccent', XMLDB_TYPE_CHAR, '7', 'pageintro'],
-        ] as [$name, $type, $precision, $after]) {
+            ] as [$name, $type, $precision, $after]
+        ) {
             $field = new xmldb_field($name, $type, $precision, null, null, null, null, $after);
             if (!$dbman->field_exists($table, $field)) {
                 $dbman->add_field($table, $field);

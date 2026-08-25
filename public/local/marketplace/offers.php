@@ -76,7 +76,7 @@ if ($accent !== '') {
 
 $intro = (string) $company->get('pageintro');
 if (trim($intro) !== '') {
-    // format_text filtra o HTML: o vendedor escreve texto de venda, nao script.
+    // O format_text filtra o HTML: o vendedor escreve texto de venda, nao script.
     echo html_writer::div(
         format_text($intro, FORMAT_HTML, ['context' => $context]),
         'local-marketplace-intro mb-4'
