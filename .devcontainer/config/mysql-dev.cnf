@@ -6,7 +6,6 @@
 # Cache de dados/indices do InnoDB. E o parametro que mais afeta desempenho:
 # o que nao cabe aqui vira leitura de disco a cada consulta.
 innodb_buffer_pool_size = 512M
-innodb_buffer_pool_instances = 1
 innodb_log_file_size = 128M
 
 # 2 = grava o log a cada segundo em vez de a cada commit. Troca durabilidade

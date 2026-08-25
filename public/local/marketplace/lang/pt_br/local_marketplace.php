@@ -73,4 +73,16 @@ $string['errorsellerrolemissing'] = 'O papel de vendedor não existe. Reinstale 
 $string['errorcannotsell'] = 'Esta empresa ainda não pode vender: configure um meio de pagamento primeiro.';
 $string['errorplatformhostingunavailable'] = 'Hospedar vídeo na plataforma ainda não está disponível.';
 
+// Vitrine.
+$string['nooffers'] = 'Esta empresa ainda não publicou ofertas.';
+$string['offerincludes'] = 'Inclui {$a} curso(s)';
+$string['accesslifetime'] = 'Acesso vitalício';
+$string['accessdays'] = 'Acesso por {$a} dias';
+$string['accessrecurring'] = 'Assinatura, renovada a cada {$a} dias';
+$string['buynow'] = 'Comprar agora';
+$string['getfree'] = 'Obter acesso gratuito';
+$string['alreadyowned'] = 'Você já tem acesso a esta oferta.';
+$string['unavailable'] = 'Ainda não disponível para compra.';
+$string['accessgranted'] = 'Acesso liberado. Bom curso!';
+
 $string['privacy:metadata'] = 'O plugin Marketplace armazena empresas, seus vendedores e credenciais de pagamento.';

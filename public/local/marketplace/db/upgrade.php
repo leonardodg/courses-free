@@ -31,6 +31,8 @@ defined('MOODLE_INTERNAL') || die();
  * @return bool
  */
 function xmldb_local_marketplace_upgrade($oldversion) {
+    global $DB;
+
     if ($oldversion < 2026082403) {
         // O install.php passou a garantir allowcategorythemes, mas ele so roda
         // em instalacao nova. Sem este passo, todo ambiente que ja tem o plugin
@@ -39,6 +41,28 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         local_marketplace_require_category_themes();
 
         upgrade_plugin_savepoint(true, 2026082403, 'local', 'marketplace');
+    }
+
+    if ($oldversion < 2026082404) {
+        // Remove a tabela local_marketplace_mpaccount.
+        //
+        // Ela guardava o token do Mercado Pago, o que criava DUAS fontes de
+        // verdade para uma credencial financeira. A credencial passou a viver
+        // onde o Moodle espera: account_gateway.config do core_payment.
+        //
+        // Tirar a tabela do install.xml nao basta - o Moodle nunca apaga
+        // tabela sozinho num upgrade, e com razao. O sintoma era o
+        // check_database_schema acusando "table is not expected".
+        //
+        // Nao ha dado a migrar: o vinculo com o Mercado Pago sempre foi feito
+        // pelo fluxo OAuth do gateway, que grava direto na conta de pagamento.
+        $dbman = $DB->get_manager();
+        $table = new xmldb_table('local_marketplace_mpaccount');
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026082404, 'local', 'marketplace');
     }
 
     return true;
