@@ -144,6 +144,7 @@ class mp_client {
      * @param string $code Codigo recebido no callback
      * @param string $redirecturi Precisa ser o MESMO usado na autorizacao
      * @param string $codeverifier O verifier cujo challenge foi enviado na autorizacao
+     * @param bool $testmode Emite token de teste em vez de token de producao
      * @return array access_token, refresh_token, expires_in, user_id
      */
     public static function exchange_code(
@@ -151,16 +152,32 @@ class mp_client {
         string $clientsecret,
         string $code,
         string $redirecturi,
-        string $codeverifier
+        string $codeverifier,
+        bool $testmode = false
     ): array {
-        return self::post_json(self::API_BASE . '/oauth/token', [
+        $body = [
             'grant_type' => 'authorization_code',
             'client_id' => $clientid,
             'client_secret' => $clientsecret,
             'code' => $code,
             'redirect_uri' => $redirecturi,
             'code_verifier' => $codeverifier,
-        ]);
+        ];
+
+        // O Mercado Pago recusa pagamento entre ambientes misturados, com
+        // "Uma das partes com as quais voce esta tentando efetuar o pagamento
+        // e de teste". As tres partes contam: comprador, vendedor e a
+        // APLICACAO que cobra a comissao.
+        //
+        // Sem test_token, a aplicacao entra como producao mesmo que vendedor e
+        // comprador sejam usuarios de teste - porque ela pertence a conta real
+        // do dono da plataforma. O resultado e um checkout que abre e morre em
+        // /fatal/, sem dizer qual das partes esta fora.
+        if ($testmode) {
+            $body['test_token'] = 'true';
+        }
+
+        return self::post_json(self::API_BASE . '/oauth/token', $body);
     }
 
     /**

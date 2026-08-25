@@ -69,6 +69,17 @@ if ($ADMIN->fulltree) {
         $sites
     ));
 
+    // Vale para o SITE inteiro, e nao por conta, porque o ambiente e uma
+    // propriedade do conjunto: comprador, vendedor e aplicacao precisam estar
+    // todos do mesmo lado. Uma chave por vendedor permitiria a mistura que o
+    // Mercado Pago recusa.
+    $settings->add(new admin_setting_configcheckbox(
+        'paygw_mercadopago/testmode',
+        get_string('testmode', 'paygw_mercadopago'),
+        get_string('testmode_desc', 'paygw_mercadopago'),
+        0
+    ));
+
     $settings->add(new admin_setting_configtext(
         'paygw_mercadopago/defaultfeepercent',
         get_string('defaultfeepercent', 'paygw_mercadopago'),
