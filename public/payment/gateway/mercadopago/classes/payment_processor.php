@@ -122,7 +122,12 @@ class payment_processor {
         $record->timemodified = time();
         $DB->update_record(self::TABLE, $record);
 
-        $point = !empty($config['sandbox']) && !empty($preference['sandbox_init_point'])
+        // O ambiente vem da configuracao do SITE, nao da conta. Havia uma
+        // caixa por conta com o mesmo rotulo da de site, e desligar so uma
+        // mandava o aluno para o sandbox segurando um token de producao - o
+        // checkout abria em sandbox.mercadopago.com.br e o Pix nem aparecia,
+        // sem nada na tela indicando o porque.
+        $point = !empty($appconfig->testmode) && !empty($preference['sandbox_init_point'])
             ? $preference['sandbox_init_point']
             : ($preference['init_point'] ?? '');
 

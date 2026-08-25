@@ -80,11 +80,11 @@ require_sesskey();
 // propria validacao do formulario considera invalido.
 $gateway->set('enabled', 0);
 
-// Preserva o que nao e credencial: sandbox e escolha de configuracao, nao
-// vestigio do vinculo.
-$gateway->set('config', json_encode([
-    'sandbox' => (int) ($config['sandbox'] ?? 0),
-]));
+// Nao sobra nada a preservar: a config desta conta e so credencial. O ambiente
+// de teste virou configuracao do site, entao a antiga chave 'sandbox' daqui e
+// descartada de proposito - manter uma copia orfa dela seria manter viva a
+// ambiguidade que fazia o checkout ir para o sandbox com token de producao.
+$gateway->set('config', json_encode([]));
 $gateway->update();
 
 // Limpar aqui NAO revoga a autorizacao do lado do Mercado Pago. O vendedor

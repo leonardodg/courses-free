@@ -68,9 +68,16 @@ class gateway extends \core_payment\gateway {
         $mform->addElement('static', 'oauthstatus', get_string('oauthstatus', 'paygw_mercadopago'),
             self::describe_oauth_status($form));
 
-        $mform->addElement('advcheckbox', 'sandbox', get_string('sandbox', 'paygw_mercadopago'));
-        $mform->setType('sandbox', PARAM_BOOL);
-        $mform->addHelpButton('sandbox', 'sandbox', 'paygw_mercadopago');
+        // NAO ha caixa de "modo de teste" aqui.
+        //
+        // Existia uma, por conta, com o MESMO rotulo da configuracao de site.
+        // Duas caixas indistinguiveis governando a mesma coisa: desligar uma e
+        // esquecer a outra mandava o aluno para o sandbox com um token de
+        // producao, e a tela nao dava nenhuma pista de qual faltava.
+        //
+        // O ambiente e propriedade do SITE, nao da conta - comprador, vendedor
+        // e aplicacao precisam estar todos do mesmo lado. Uma chave por conta
+        // permitia justamente a mistura que o Mercado Pago recusa.
 
         // Guardados pelo callback do OAuth, nunca digitados. Precisam estar no
         // formulario mesmo escondidos: a configuracao salva e a que o

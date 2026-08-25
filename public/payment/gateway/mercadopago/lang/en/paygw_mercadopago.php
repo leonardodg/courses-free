@@ -43,8 +43,6 @@ $string['oauthstatus'] = 'Mercado Pago account';
 $string['linkaccount'] = 'Link Mercado Pago account';
 $string['oauthlinked'] = 'Linked to Mercado Pago user {$a->mpuserid}. Authorisation valid until {$a->expires}.';
 $string['oauthexpired'] = 'The authorisation expired. Link the account again.';
-$string['sandbox'] = 'Test mode';
-$string['sandbox_help'] = 'Use test credentials and test users. No real money moves.';
 
 // Errors.
 $string['errornotlinked'] = 'Link the Mercado Pago account before enabling this gateway.';
