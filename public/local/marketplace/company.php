@@ -143,6 +143,15 @@ if (!$account) {
 // ------------------------------------------------------------------ ofertas --
 echo $OUTPUT->heading(get_string('offerssection', 'local_marketplace'), 3);
 
+echo html_writer::div(
+    html_writer::link(
+        new moodle_url('/local/marketplace/offer_edit.php', ['company' => $shortname]),
+        get_string('offercreate', 'local_marketplace'),
+        ['class' => 'btn btn-primary']
+    ),
+    'mb-3'
+);
+
 $offers = offer::get_records(['companyid' => $company->get('id')], 'sortorder, name');
 
 if (!$offers) {
@@ -154,7 +163,9 @@ if (!$offers) {
         get_string('offertype', 'local_marketplace'),
         get_string('cost'),
         get_string('courses'),
+        get_string('offeraccess', 'local_marketplace'),
         get_string('companystatus', 'local_marketplace'),
+        '',
     ];
     foreach ($offers as $o) {
         $table->data[] = [
@@ -164,7 +175,16 @@ if (!$offers) {
                 ? get_string('free', 'local_marketplace')
                 : \core_payment\helper::get_cost_as_string((float) $o->get('price'), $o->get('currency')),
             count($o->get_course_ids()),
+            $o->describe_billing(),
             get_string('status' . $o->get('status'), 'local_marketplace'),
+            html_writer::link(
+                new moodle_url('/local/marketplace/offer_edit.php', [
+                    'company' => $shortname,
+                    'id' => $o->get('id'),
+                ]),
+                get_string('edit'),
+                ['class' => 'btn btn-sm btn-secondary']
+            ),
         ];
     }
     echo html_writer::table($table);

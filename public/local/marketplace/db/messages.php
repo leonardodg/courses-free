@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Avisos do marketplace.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082520;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$messageproviders = [
+    // Vencimento de acesso. E-mail ligado por padrao: sem debito automatico,
+    // este aviso e a unica coisa entre o aluno e a perda de acesso.
+    'expiring' => [
+        'defaults' => [
+            'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_LOGGEDIN + MESSAGE_DEFAULT_LOGGEDOFF,
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_LOGGEDIN + MESSAGE_DEFAULT_LOGGEDOFF,
+        ],
+    ],
+];

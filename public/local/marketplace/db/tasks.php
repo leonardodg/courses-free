@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Tarefas agendadas do marketplace.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,17 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082520;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$tasks = [
+    [
+        // Uma vez por dia, de madrugada. O aviso e sobre uma data, nao sobre um
+        // instante: rodar de hora em hora nao antecipa nada e so multiplica a
+        // chance de incomodar.
+        'classname' => 'local_marketplace\task\notify_expiring',
+        'blocking' => 0,
+        'minute' => '30',
+        'hour' => '6',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+];

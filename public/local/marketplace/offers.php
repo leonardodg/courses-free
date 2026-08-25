@@ -79,11 +79,24 @@ foreach ($offers as $offer) {
     // Quem ja tem direito vigente nao ve botao de comprar: veria um preco por
     // algo que ja pode acessar.
     $owned = false;
+    $held = null;
     foreach (entitlement::get_active_for_user((int) $USER->id, (int) $company->get('id')) as $ent) {
         if ((int) $ent->get('offerid') === $offerid) {
             $owned = true;
+            $held = $ent;
             break;
         }
+    }
+
+    // Renovar e a excecao a regra acima. Sem debito automatico, o unico jeito
+    // de continuar assinando e comprar de novo - e esconder o botao de quem
+    // esta prestes a vencer garantiria a perda de acesso.
+    $canrenew = false;
+    if ($held && $offer->get('accessmode') === offer::ACCESS_RECURRING) {
+        $end = (int) $held->get('timeend');
+        $canrenew = $end > 0
+            && ($end - time()) < (\local_marketplace\task\notify_expiring::NOTICE_DAYS * DAYSECS)
+            && $offer->accepts_cycle((int) $held->get('cycles'));
     }
 
     $wanted = ($highlight === $offerid);
@@ -104,12 +117,50 @@ foreach ($offers as $offer) {
     $courses = $offer->get_course_ids();
     echo html_writer::div(
         get_string('offerincludes', 'local_marketplace', count($courses)) . ' · ' .
-        get_string('access' . $offer->get('accessmode'), 'local_marketplace', $offer->get('accessdays')),
+        $offer->describe_billing(),
         'text-muted small mb-2'
     );
 
-    if ($owned) {
+    // Quais cursos, e nao so quantos. Com planos em niveis - basico,
+    // intermediario, completo - a diferenca entre eles E a lista: "inclui 4
+    // cursos" nao deixa o aluno escolher.
+    if ($courses && $offer->get('offertype') !== offer::TYPE_CATALOG) {
+        $names = $DB->get_records_list('course', 'id', $courses, 'fullname', 'id, fullname');
+        $items = array_map(fn($c) => html_writer::tag('li', format_string($c->fullname)), $names);
+        echo html_writer::tag('ul', implode('', $items), ['class' => 'small text-muted mb-2']);
+    }
+
+    if ($owned && $canrenew) {
+        echo $OUTPUT->notification(
+            get_string('renewnotice', 'local_marketplace',
+                userdate((int) $held->get('timeend'), get_string('strftimedaydate'))),
+            'warning'
+        );
+        echo html_writer::div(
+            helper::get_cost_as_string((float) $offer->get('price'), $offer->get('currency')),
+            'h4 mb-2'
+        );
+        $attributes = helper::gateways_modal_link_params(
+            'local_marketplace',
+            'offer',
+            $offerid,
+            format_string($offer->get('name'))
+        );
+        $attributes['id'] = 'pay-offer-' . $offerid;
+        $attributes['class'] = 'btn btn-primary';
+        echo html_writer::tag('button', get_string('renewnow', 'local_marketplace'), $attributes);
+    } else if ($owned) {
         echo $OUTPUT->notification(get_string('alreadyowned', 'local_marketplace'), 'success');
+
+        // Assinatura vigente mostra ate quando vale. Sem isso o aluno so
+        // descobre a data quando o acesso acaba.
+        if ($held && (int) $held->get('timeend') > 0) {
+            echo html_writer::div(
+                get_string('accessuntil', 'local_marketplace',
+                    userdate((int) $held->get('timeend'), get_string('strftimedaydate'))),
+                'text-muted small'
+            );
+        }
     } else if ($free) {
         // Oferta gratuita nao passa pelo gateway: nao ha o que cobrar.
         echo html_writer::link(

@@ -65,5 +65,46 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082404, 'local', 'marketplace');
     }
 
+    if ($oldversion < 2026082520) {
+        $dbman = $DB->get_manager();
+
+        // Modelo de assinatura com tres parametros independentes.
+        //
+        // Ate aqui havia um so: accessdays. Ele significava "duracao do acesso"
+        // em days e "intervalo de cobranca" em recurring - dois conceitos no
+        // mesmo campo, o que impedia expressar carencia e impedia limitar
+        // quantas vezes a assinatura cobra.
+        $table = new xmldb_table('local_marketplace_offer');
+
+        $field = new xmldb_field('billingdays', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'accessdays');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('maxcycles', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'billingdays');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // As assinaturas que ja existem cobravam no mesmo intervalo do acesso,
+        // porque era um campo so. Copiar preserva o comportamento delas.
+        $DB->execute("UPDATE {local_marketplace_offer}
+                         SET billingdays = accessdays
+                       WHERE accessmode = ? AND billingdays = 0", ['recurring']);
+
+        // Contador de ciclos no direito.
+        $table = new xmldb_table('local_marketplace_entitlement');
+        $field = new xmldb_field('cycles', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'status');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Quem ja comprou pagou ao menos uma vez. Deixar em zero faria um
+        // limite de ciclos contar do zero para quem ja esta pagando ha meses.
+        $DB->execute("UPDATE {local_marketplace_entitlement} SET cycles = 1 WHERE cycles = 0");
+
+        upgrade_plugin_savepoint(true, 2026082520, 'local', 'marketplace');
+    }
+
     return true;
 }

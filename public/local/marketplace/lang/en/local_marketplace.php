@@ -164,4 +164,55 @@ $string['reportsubexpired'] = 'Expired';
 $string['reportsubcancelled'] = 'Cancelled';
 $string['reportnetnotice'] = 'The Mercado Pago fee is not shown here because it is not reported back to us: it varies by payment method and payout term, and is deducted on their side before the platform commission. Your net amount is the one in your Mercado Pago statement.';
 
+// Offer CRUD.
+$string['offercreate'] = 'New offer';
+$string['offeredit'] = 'Offer';
+$string['offersaved'] = 'Offer saved.';
+$string['offertype_help'] = 'Single course sells one course. Bundle sells a chosen set — this is how you build tiers such as Basic, Standard and Complete for the same company. Whole catalogue follows the company category, so new courses join automatically.';
+$string['offercourses'] = 'Courses released';
+$string['offercourses_help'] = 'Which courses this offer unlocks. Not needed for Whole catalogue, which follows the company category.';
+$string['offerprice'] = 'Price';
+$string['offerprice_help'] = 'Zero makes the offer free. Free offers skip Mercado Pago entirely.';
+$string['offeraccess'] = 'Access and billing';
+$string['offeraccessmode'] = 'Access model';
+$string['offeraccessmode_help'] = 'Lifetime never expires. Fixed period grants a number of days per purchase. Subscription grants a period and expects renewal.';
+$string['offeraccessdays'] = 'Days of access per payment';
+$string['offeraccessdays_help'] = 'How long each payment unlocks. In a subscription this can exceed the billing interval to give a grace period: billing every 30 days while granting 35 lets a late payment through without cutting the learner off.';
+$string['offerbillingdays'] = 'Billing interval (days)';
+$string['offerbillingdays_help'] = 'How often the learner is expected to pay again. Used for the expiry reminder.';
+$string['offermaxcycles'] = 'Maximum payments';
+$string['offermaxcycles_help'] = 'How many times this subscription may be charged in total. Zero means no limit. Use 12 for a monthly plan that runs for a year, or 3 for a yearly plan that runs for three years.';
+$string['offerrecurringwarning'] = 'Mercado Pago has no recurring charge with split payments, so nothing is debited automatically. The learner receives a reminder before expiry with a link to pay again.';
+$string['offerpublication'] = 'Publication';
+$string['offerstatus_help'] = 'Only published offers appear in the storefront. Archiving does not revoke access already bought.';
+$string['offersortorder'] = 'Display order';
+$string['modelifetime'] = 'Lifetime';
+$string['modedays'] = 'Fixed period';
+$string['moderecurring'] = 'Subscription';
+$string['accessrecurringopen'] = 'Subscription: {$a->billing} days per payment, no end date';
+$string['accessrecurringlimited'] = 'Subscription: {$a->billing} days per payment, up to {$a->cycles} payments';
+$string['accessuntil'] = 'Access until {$a}';
+$string['erroraccessdays'] = 'Enter at least one day of access.';
+$string['errorbillingdays'] = 'Enter the billing interval in days.';
+$string['errormaxcycles'] = 'Use zero for no limit, or a positive number.';
+$string['errorrecurringfree'] = 'A subscription needs a price. A free one would expire with no way to renew.';
+$string['errornocourses'] = 'Choose at least one course, or use the Whole catalogue type.';
+$string['errorsinglemanycourses'] = 'A single course offer releases one course. Use Bundle for more than one.';
+
+// Expiry reminder.
+$string['tasknotifyexpiring'] = 'Notify learners of expiring access';
+$string['renewnow'] = 'Renew now';
+$string['renewnotice'] = 'Your access ends on {$a}. Renew to keep it.';
+$string['messageprovider:expiring'] = 'Access about to expire';
+$string['expiringsubject'] = 'Your access to {$a->offer} ends in {$a->days} day(s)';
+$string['expiringbody'] = 'Hello,
+
+Your access to {$a->offer}, from {$a->company}, ends on {$a->date}.
+
+There is no automatic charge — to keep your access, pay again here:
+{$a->url}
+
+If you would rather stop, do nothing and the access simply ends.';
+$string['expiringbodyhtml'] = '<p>Hello,</p><p>Your access to <strong>{$a->offer}</strong>, from {$a->company}, ends on <strong>{$a->date}</strong>.</p><p>There is no automatic charge — to keep your access, <a href="{$a->url}">pay again here</a>.</p><p>If you would rather stop, do nothing and the access simply ends.</p>';
+
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';
