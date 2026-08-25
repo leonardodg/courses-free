@@ -136,14 +136,33 @@ class gateway extends \core_payment\gateway {
             ]);
         }
 
+        $accountid = (int) $gateway->get('accountid');
         $expires = (int) ($config['tokenexpires'] ?? 0);
+
+        // Trocar de conta nao exige desvincular - autorizar de novo sobrescreve
+        // o token. Os dois botoes existem porque as intencoes sao diferentes:
+        // um corrige a conta errada, o outro encerra a operacao.
+        $actions = \html_writer::link(
+            new \moodle_url('/payment/gateway/mercadopago/oauth_start.php', ['accountid' => $accountid]),
+            get_string('relinkaccount', 'paygw_mercadopago'),
+            ['class' => 'btn btn-secondary', 'target' => '_self']
+        ) . ' ' . \html_writer::link(
+            new \moodle_url('/payment/gateway/mercadopago/oauth_unlink.php', ['accountid' => $accountid]),
+            get_string('unlinkaccount', 'paygw_mercadopago'),
+            ['class' => 'btn btn-outline-danger', 'target' => '_self']
+        );
+
         if ($expires && $expires <= time()) {
-            return get_string('oauthexpired', 'paygw_mercadopago');
+            return get_string('oauthexpired', 'paygw_mercadopago') . '<br>' . $actions;
         }
+
+        $currency = (string) ($config['currency'] ?? '');
 
         return get_string('oauthlinked', 'paygw_mercadopago', [
             'mpuserid' => s($config['mpuserid'] ?? '?'),
             'expires' => $expires ? userdate($expires) : '-',
-        ]);
+        ])
+            . ($currency !== '' ? ' ' . get_string('oauthcurrency', 'paygw_mercadopago', s($currency)) : '')
+            . '<br>' . $actions;
     }
 }
