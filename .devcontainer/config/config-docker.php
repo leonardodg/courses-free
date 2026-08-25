@@ -45,10 +45,26 @@ $debugenv = strtoupper((string) getenv('MOODLE_DEBUG'));
 $CFG->debug = ($debugenv === 'DEVELOPER') ? 32767 : 0;
 $CFG->debugdisplay = (int) (getenv('MOODLE_DEBUG_DISPLAY') ?: 0);
 
-// Caches de JS e de strings ficam LIGADOS so quando nao estamos em DEVELOPER,
-// senao as edicoes de AMD e de lang nao aparecem sem purgar cache.
-$CFG->cachejs = ($debugenv !== 'DEVELOPER');
+// Cache de strings segue o debug: editar lang e ver o efeito sem purgar cache
+// so interessa a quem esta editando, e o custo de deixar desligado e pequeno.
 $CFG->langstringcache = ($debugenv !== 'DEVELOPER');
+
+// cachejs NAO segue o debug. E controlado a parte, e vem LIGADO por padrao.
+//
+// Com ele desligado o Moodle serve CADA modulo AMD numa requisicao separada. O
+// modal de pagamento depende de varios modulos do core, entao a janela entre o
+// botao "Comprar" aparecer e o handler de clique existir passa de
+// milissegundos para segundos - e o aluno precisa clicar DUAS vezes para
+// conseguir pagar. Foi o que aconteceu em courses.leodg.dev, que rodava com
+// MOODLE_DEBUG=DEVELOPER.
+//
+// Amarrar isto ao debug cobrava de quem compra o conforto de quem edita JS.
+// Quem precisa mesmo do JS sem bundle liga MOODLE_CACHEJS=false por tempo
+// determinado, sem levar junto as mensagens de debug.
+$cachejsenv = getenv('MOODLE_CACHEJS');
+$CFG->cachejs = ($cachejsenv === false || $cachejsenv === '')
+    ? true
+    : filter_var($cachejsenv, FILTER_VALIDATE_BOOLEAN);
 
 $CFG->preventexecpath = true;
 $CFG->localcachedir = '/var/www/moodledata/localcache';

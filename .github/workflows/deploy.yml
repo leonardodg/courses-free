@@ -256,6 +256,10 @@ jobs:
             MOODLE_DBCOLLATION=utf8mb4_bin
             MOODLE_URL=${{ vars.MOODLE_URL }}
             MOODLE_DEBUG=DEVELOPER
+            # Independente do debug. Desligar faz o Moodle servir cada modulo
+            # AMD numa requisicao, e o botao de comprar passa a exigir dois
+            # cliques enquanto o modal de pagamento termina de carregar.
+            MOODLE_CACHEJS=true
             MOODLE_DEBUG_DISPLAY=0
             PHP_OPCACHE_VALIDATE_TIMESTAMPS=1
             CRON_ENABLED=true
