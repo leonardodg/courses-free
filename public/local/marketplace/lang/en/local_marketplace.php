@@ -225,4 +225,11 @@ $string['cancelundo'] = 'Reactivate';
 $string['cancelledbut'] = 'Cancelled. Your access runs until {$a} — the period you paid for is not taken away.';
 $string['cancelledlifetime'] = 'Renewal reminders are off. Your access does not expire.';
 
+// Learner subscriptions page.
+$string['mysubscriptions'] = 'My subscriptions';
+$string['mysubsactive'] = 'Subscriptions';
+$string['mysubspayments'] = 'Payments';
+$string['nosubscriptions'] = 'You have not bought anything yet.';
+$string['nopayments'] = 'No payments yet.';
+
 $string['privacy:metadata'] = 'The Marketplace plugin stores companies, their sellers and payment credentials.';

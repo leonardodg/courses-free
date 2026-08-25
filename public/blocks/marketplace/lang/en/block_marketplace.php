@@ -15,17 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
- *
- * @package    local_marketplace
+ * @package    block_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082522;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$string['pluginname'] = 'My subscriptions';
+$string['marketplace:addinstance'] = 'Add a new subscriptions block';
+$string['marketplace:myaddinstance'] = 'Add a new subscriptions block to the Dashboard';
+$string['blockrenewson'] = 'Renews by {$a}';
+$string['blockendson'] = 'Ends on {$a}';
+$string['blockpaynow'] = 'Pay now — {$a} day(s) left';
+$string['blockcancelled'] = 'Cancelled';
+$string['blockhistory'] = 'All subscriptions and payments';
+$string['privacy:metadata'] = 'The My subscriptions block shows entitlements stored by local_marketplace and stores no data of its own.';

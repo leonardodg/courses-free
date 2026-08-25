@@ -15,17 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
- *
- * @package    local_marketplace
+ * @package    block_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082522;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$capabilities = [
+    'block/marketplace:addinstance' => [
+        'riskbitmask' => RISK_SPAM | RISK_XSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_BLOCK,
+        'archetypes' => ['manager' => CAP_ALLOW],
+        'clonepermissionsfrom' => 'moodle/site:manageblocks',
+    ],
+    'block/marketplace:myaddinstance' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => ['user' => CAP_ALLOW],
+        'clonepermissionsfrom' => 'moodle/my:manageblocks',
+    ],
+];
