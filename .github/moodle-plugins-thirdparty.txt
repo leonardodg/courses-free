@@ -1,0 +1,33 @@
+# Plugins de TERCEIROS instalados na plataforma.
+# Formato: um path por linha, relativo a raiz do repo, sem barra inicial.
+#
+# Estes NAO passam por phpcs nem phpunit, e a razao e pratica: sao 800+ arquivos
+# de codigo de upstream. Um phpcs com --max-warnings 0 acusaria centenas de
+# violacoes que nao podemos corrigir, e como o job de validacao bloqueia o
+# deploy, isso travaria os deploys para sempre por problemas que nao sao nossos.
+#
+# O que rodamos e phplint: confirma que eles PARSEIAM na versao de PHP do
+# projeto. E o risco real de manter plugin de terceiro - subir o PHP e descobrir
+# em producao que um deles usa sintaxe removida.
+#
+# Instalados em 2026-08-24, da release oficial 5.2 do marketplace, com MD5
+# conferido.
+
+public/mod/customcert
+public/blocks/completion_progress
+public/blocks/configurable_reports
+public/enrol/coursecompleted
+public/theme/boost_union
+public/theme/moove
+
+# Para atualizar, use a API do diretorio oficial em vez de baixar da web:
+#   curl -s "https://download.moodle.org/api/1.3/pluginfo.php?plugin=<componente>&branch=5.2&format=json"
+# Ela devolve downloadurl e downloadmd5 da release que atende a branch.
+# ATENCAO: alguns zips extraem com o nome do REPOSITORIO
+# (ex.: moodle-mod_customcert-5.2.6). O diretorio precisa casar com o nome do
+# componente (customcert), senao o Moodle nao reconhece o plugin.
+#
+# --- Sem release 5.2 ate 2026-08-24, fora do MVP ---
+#   mod_attendance      (suporta ate 5.1)
+#   format_onetopic     (suporta ate 5.1)
+#   format_tiles        (suporta ate 5.1, sem release ha 7 meses)

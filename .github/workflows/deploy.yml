@@ -57,18 +57,25 @@ jobs:
 
     # moodle-plugin-ci instala um Moodle de verdade para rodar os testes,
     # entao precisa de um banco no runner.
+    #
+    # MariaDB, e nao Postgres, porque a VPS roda MariaDB. Testar num motor
+    # diferente do de producao deixa passar exatamente o que so aparece em
+    # producao: diferenca de collation, de tipo de coluna, de comportamento em
+    # ordenacao. A versao acompanha a do compose.
     services:
-      postgres:
-        image: postgres:16
+      mariadb:
+        image: mariadb:11.4
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_HOST_AUTH_METHOD: trust
-        ports: ['5432:5432']
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'true'
+          MARIADB_CHARACTER_SET_SERVER: utf8mb4
+          # utf8mb4_bin e exigencia do Moodle, e e a mesma da VPS.
+          MARIADB_COLLATION_SERVER: utf8mb4_bin
+        ports: ['3306:3306']
         options: >-
-          --health-cmd pg_isready
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@v4
@@ -107,12 +114,53 @@ jobs:
           exit $FAIL
 
       - uses: shivammathur/setup-php@v2
-        if: steps.plugins.outputs.found == 'true'
         with:
           php-version: '8.4'
-          extensions: mbstring, pgsql, mysqli, gd, zip, intl, soap, xmlrpc
+          extensions: mbstring, mysqli, gd, zip, intl, soap, xmlrpc
           ini-values: max_input_vars=5000
           coverage: none
+
+      # Plugins de terceiros: SO phplint.
+      #
+      # Sao 800+ arquivos de upstream. Um phpcs com --max-warnings 0 acusaria
+      # centenas de violacoes que nao podemos corrigir, e como este job bloqueia
+      # o deploy, travaria os deploys para sempre por problema que nao e nosso.
+      #
+      # O que phplint pega e o risco real de manter plugin de terceiro: subir a
+      # versao do PHP e so descobrir em producao que um deles usa sintaxe
+      # removida. Roda antes do resto porque e barato e falha rapido.
+      - name: Conferir que os plugins de terceiros parseiam no PHP do projeto
+        working-directory: plugins-src
+        run: |
+          set -euo pipefail
+          LIST=$(grep -vE '^\s*(#|$)' .github/moodle-plugins-thirdparty.txt || true)
+          if [ -z "$LIST" ]; then
+            echo "Nenhum plugin de terceiro listado."
+            exit 0
+          fi
+
+          FAIL=0
+          while IFS= read -r p; do
+            [ -z "$p" ] && continue
+            if [ ! -d "$p" ]; then
+              echo "::error::$p nao existe"
+              FAIL=1
+              continue
+            fi
+            N=$(find "$p" -name '*.php' | wc -l)
+            echo "::group::$p ($N arquivos)"
+            # -print0/-0 aguenta caminho com espaco; -P usa os nucleos do runner.
+            if ! find "$p" -name '*.php' -print0 \
+                 | xargs -0 -P 4 -n 20 php -l > /tmp/lint.out 2>&1; then
+              grep -v '^No syntax errors' /tmp/lint.out | head -20
+              echo "::error::$p tem erro de sintaxe no PHP $(php -r 'echo PHP_VERSION;')"
+              FAIL=1
+            else
+              echo "ok"
+            fi
+            echo "::endgroup::"
+          done <<< "$LIST"
+          exit $FAIL
 
       # O PHPUnit do Moodle exige en_AU.UTF-8 e aborta sem ele, com
       # "Required locale 'en_AU.UTF-8' is not installed" - antes de rodar teste
@@ -128,7 +176,8 @@ jobs:
         env:
           # Tem que acompanhar a branch do repo.
           MOODLE_BRANCH: MOODLE_502_STABLE
-          DB: pgsql
+          # Acompanha o servico acima e o motor da VPS.
+          DB: mariadb
         run: |
           set -euo pipefail
           composer create-project -n --no-dev --prefer-dist \
