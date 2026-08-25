@@ -59,6 +59,21 @@ class company extends persistent {
                 'null' => NULL_ALLOWED,
                 'default' => null,
             ],
+            'pagetitle' => [
+                'type' => PARAM_TEXT,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
+            'pageintro' => [
+                'type' => PARAM_RAW,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
+            'pageaccent' => [
+                'type' => PARAM_TEXT,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
             'categoryid' => [
                 'type' => PARAM_INT,
                 'null' => NULL_ALLOWED,
@@ -156,6 +171,71 @@ class company extends persistent {
         ]);
 
         return $account ?: null;
+    }
+
+    /**
+     * URL do CSS proprio da vitrine, se houver.
+     *
+     * @return \moodle_url|null
+     */
+    public function get_page_css_url(): ?\moodle_url {
+        if (!$this->get('categoryid')) {
+            return null;
+        }
+
+        $context = $this->get_context();
+        $fs = get_file_storage();
+        $files = $fs->get_area_files($context->id, 'local_marketplace', 'pagecss', 0, 'itemid', false);
+
+        if (!$files) {
+            return null;
+        }
+
+        $file = reset($files);
+
+        return \moodle_url::make_pluginfile_url(
+            $context->id,
+            'local_marketplace',
+            'pagecss',
+            0,
+            $file->get_filepath(),
+            $file->get_filename()
+        );
+    }
+
+    /**
+     * Titulo da vitrine, com o nome da empresa como padrao.
+     *
+     * @return string
+     */
+    public function get_page_title(): string {
+        $custom = (string) $this->get('pagetitle');
+
+        return $custom !== '' ? $custom : (string) $this->get('name');
+    }
+
+    /**
+     * Valida a cor de destaque.
+     *
+     * Este e o unico campo do cadastro que vai parar DENTRO de uma regra CSS.
+     * Aceitar texto livre ali deixaria o vendedor fechar a declaracao e abrir
+     * outra - e num navegador antigo, chegar a expression() ou url(javascript:).
+     *
+     * Por isso o formato e imposto aqui e nao so na tela: hexadecimal de tres
+     * ou seis digitos, mais nada.
+     *
+     * @param mixed $value
+     * @return true|\lang_string
+     */
+    protected function validate_pageaccent($value) {
+        if ($value === null || $value === '') {
+            return true;
+        }
+        if (!preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', (string) $value)) {
+            return new \lang_string('errorpageaccent', 'local_marketplace');
+        }
+
+        return true;
     }
 
     /**

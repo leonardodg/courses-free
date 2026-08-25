@@ -144,5 +144,27 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082523, 'local', 'marketplace');
     }
 
+    if ($oldversion < 2026082540) {
+        $dbman = $DB->get_manager();
+        $table = new xmldb_table('local_marketplace_company');
+
+        // Personalizacao da vitrine por empresa. Campos, e nao HTML livre: o
+        // vendedor A escrevendo script que roda no navegador do aluno da
+        // empresa B seria XSS entre inquilinos. Quem quiser pagina propria de
+        // verdade usa a API e hospeda onde quiser.
+        foreach ([
+            ['pagetitle', XMLDB_TYPE_CHAR, '255', 'commissionpct'],
+            ['pageintro', XMLDB_TYPE_TEXT, null, 'pagetitle'],
+            ['pageaccent', XMLDB_TYPE_CHAR, '7', 'pageintro'],
+        ] as [$name, $type, $precision, $after]) {
+            $field = new xmldb_field($name, $type, $precision, null, null, null, null, $after);
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026082540, 'local', 'marketplace');
+    }
+
     return true;
 }

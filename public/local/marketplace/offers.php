@@ -50,10 +50,38 @@ $url = new moodle_url('/local/marketplace/offers.php', ['company' => $shortname]
 $PAGE->set_context($company->get_context());
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(format_string($company->get('name')));
-$PAGE->set_heading(format_string($company->get('name')));
+$PAGE->set_title($company->get_page_title());
+$PAGE->set_heading($company->get_page_title());
+
+// CSS proprio do vendedor, servido como arquivo. Entra depois do tema, entao
+// consegue sobrescrever - que e o ponto de permitir CSS.
+$csurl = $company->get_page_css_url();
+if ($csurl) {
+    $PAGE->requires->css($csurl);
+}
 
 echo $OUTPUT->header();
+
+// A cor de destaque vira uma variavel CSS, nao regra solta. Assim o CSS do
+// vendedor pode usa-la, e o valor passou pela validacao de hexadecimal - o
+// unico campo do cadastro que chega dentro de uma declaracao.
+$accent = (string) $company->get('pageaccent');
+if ($accent !== '') {
+    echo html_writer::tag(
+        'style',
+        '.local-marketplace-offers{--mp-accent:' . s($accent) . '}'
+        . '.local-marketplace-offers .btn-primary{background:' . s($accent) . ';border-color:' . s($accent) . '}'
+    );
+}
+
+$intro = (string) $company->get('pageintro');
+if (trim($intro) !== '') {
+    // format_text filtra o HTML: o vendedor escreve texto de venda, nao script.
+    echo html_writer::div(
+        format_text($intro, FORMAT_HTML, ['context' => $context]),
+        'local-marketplace-intro mb-4'
+    );
+}
 
 $offers = offer::get_published((int) $company->get('id'));
 
