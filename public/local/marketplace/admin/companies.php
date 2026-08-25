@@ -75,6 +75,10 @@ foreach ($companies as $c) {
     }
 
     $actions = html_writer::link(
+        new moodle_url('/local/marketplace/admin/company_edit.php', ['id' => $c->get('id')]),
+        get_string('edit'),
+        ['class' => 'btn btn-sm btn-secondary']
+    ) . ' ' . html_writer::link(
         new moodle_url('/local/marketplace/admin/members.php', ['id' => $c->get('id')]),
         get_string('managemembers', 'local_marketplace'),
         ['class' => 'btn btn-sm btn-secondary']

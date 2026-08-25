@@ -43,31 +43,48 @@ class company_form extends \moodleform {
     protected function definition() {
         $mform = $this->_form;
 
+        // Na edicao, atalho e dono saem do formulario. Os dois tem donos de
+        // problema proprios: o atalho ja pode estar em link divulgado, e a
+        // troca de dono se resolve na tela de vendedores, onde da para promover
+        // outro antes de rebaixar o atual.
+        $editing = !empty($this->_customdata['companyid']);
+
+        $mform->addElement('hidden', 'id', $this->_customdata['companyid'] ?? 0);
+        $mform->setType('id', PARAM_INT);
+
         $mform->addElement('text', 'name', get_string('companyname', 'local_marketplace'), ['size' => 50]);
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
 
-        $mform->addElement('text', 'shortname', get_string('companyshortname', 'local_marketplace'), ['size' => 30]);
-        $mform->setType('shortname', PARAM_ALPHANUMEXT);
-        $mform->addRule('shortname', null, 'required', null, 'client');
-        $mform->addHelpButton('shortname', 'companyshortname', 'local_marketplace');
+        if ($editing) {
+            $mform->addElement('static', 'shortnamestatic',
+                get_string('companyshortname', 'local_marketplace'),
+                s($this->_customdata['shortname'] ?? ''));
+            $mform->addElement('hidden', 'shortname', $this->_customdata['shortname'] ?? '');
+            $mform->setType('shortname', PARAM_ALPHANUMEXT);
+        } else {
+            $mform->addElement('text', 'shortname', get_string('companyshortname', 'local_marketplace'), ['size' => 30]);
+            $mform->setType('shortname', PARAM_ALPHANUMEXT);
+            $mform->addRule('shortname', null, 'required', null, 'client');
+            $mform->addHelpButton('shortname', 'companyshortname', 'local_marketplace');
 
-        // O dono e quem administra a empresa e vincula a conta Mercado Pago.
-        // Autocomplete por ajax em vez de uma lista de usuarios: numa
-        // plataforma aberta a lista cresce sem limite.
-        $mform->addElement('autocomplete', 'ownerid', get_string('companyowner', 'local_marketplace'), [], [
-            'ajax' => 'core_user/form_user_selector',
-            'multiple' => false,
-            'valuehtmlcallback' => function($userid) {
-                if (empty($userid)) {
-                    return '';
-                }
-                $user = \core_user::get_user($userid);
-                return $user ? fullname($user) . ' (' . s($user->email) . ')' : '';
-            },
-        ]);
-        $mform->addRule('ownerid', null, 'required', null, 'client');
-        $mform->addHelpButton('ownerid', 'companyowner', 'local_marketplace');
+            // O dono e quem administra a empresa e vincula a conta Mercado Pago.
+            // Autocomplete por ajax em vez de uma lista de usuarios: numa
+            // plataforma aberta a lista cresce sem limite.
+            $mform->addElement('autocomplete', 'ownerid', get_string('companyowner', 'local_marketplace'), [], [
+                'ajax' => 'core_user/form_user_selector',
+                'multiple' => false,
+                'valuehtmlcallback' => function($userid) {
+                    if (empty($userid)) {
+                        return '';
+                    }
+                    $user = \core_user::get_user($userid);
+                    return $user ? fullname($user) . ' (' . s($user->email) . ')' : '';
+                },
+            ]);
+            $mform->addRule('ownerid', null, 'required', null, 'client');
+            $mform->addHelpButton('ownerid', 'companyowner', 'local_marketplace');
+        }
 
         $mform->addElement('text', 'cnpj', get_string('companycnpj', 'local_marketplace'), ['size' => 20]);
         $mform->setType('cnpj', PARAM_ALPHANUM);
@@ -89,7 +106,10 @@ class company_form extends \moodleform {
         $mform->setType('hostname', PARAM_HOST);
         $mform->addHelpButton('hostname', 'companyhostname', 'local_marketplace');
 
-        $this->add_action_buttons(true, get_string('createcompany', 'local_marketplace'));
+        $this->add_action_buttons(true, get_string(
+            $editing ? 'savechanges' : 'createcompany',
+            $editing ? 'core' : 'local_marketplace'
+        ));
     }
 
     /**
@@ -105,12 +125,22 @@ class company_form extends \moodleform {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
-        if (!empty($data['shortname']) && company::get_record(['shortname' => $data['shortname']])) {
-            $errors['shortname'] = get_string('errorshortnametaken', 'local_marketplace');
+        // Na edicao, a propria empresa nao conta como conflito - senao salvar
+        // sem mudar nada acusaria "atalho ja em uso".
+        $self = (int) ($data['id'] ?? 0);
+
+        if (!empty($data['shortname'])) {
+            $other = company::get_record(['shortname' => $data['shortname']]);
+            if ($other && (int) $other->get('id') !== $self) {
+                $errors['shortname'] = get_string('errorshortnametaken', 'local_marketplace');
+            }
         }
 
-        if (!empty($data['hostname']) && company::get_record(['hostname' => $data['hostname']])) {
-            $errors['hostname'] = get_string('errorhostnametaken', 'local_marketplace');
+        if (!empty($data['hostname'])) {
+            $other = company::get_record(['hostname' => $data['hostname']]);
+            if ($other && (int) $other->get('id') !== $self) {
+                $errors['hostname'] = get_string('errorhostnametaken', 'local_marketplace');
+            }
         }
 
         return $errors;

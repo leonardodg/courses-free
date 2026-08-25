@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_marketplace';
-$plugin->version   = 2026082516;
+$plugin->version   = 2026082517;
 $plugin->requires  = 2026042000; // Moodle 5.2.
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = '0.1.0';

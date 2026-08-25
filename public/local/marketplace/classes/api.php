@@ -81,6 +81,54 @@ class api {
     }
 
     /**
+     * Altera os dados cadastrais de uma empresa.
+     *
+     * O atalho NAO muda. Ele vira o idnumber da categoria, entra nas URLs da
+     * vitrine e do painel, e pode ja estar em link divulgado pelo vendedor.
+     * Trocar exigiria renomear o idnumber e quebraria os links antigos sem
+     * aviso - custo que nao se justifica para um campo cosmetico.
+     *
+     * O dono tambem nao muda aqui: quem responde pela empresa se resolve na
+     * tela de vendedores, onde da para promover outro antes de rebaixar o atual.
+     *
+     * @param company $company
+     * @param object $data name, cnpj, themename, hostname
+     * @return company
+     */
+    public static function update_company(company $company, object $data): company {
+        global $DB;
+
+        $transaction = $DB->start_delegated_transaction();
+
+        try {
+            $renamed = ($company->get('name') !== $data->name);
+
+            $company->set('name', $data->name);
+            $company->set('cnpj', !empty($data->cnpj) ? $data->cnpj : null);
+            $company->set('themename', !empty($data->themename) ? $data->themename : null);
+            $company->set('hostname', !empty($data->hostname) ? $data->hostname : null);
+            $company->update();
+
+            // A categoria carrega o nome da empresa. Deixar de renomear faria a
+            // arvore de cursos divergir do cadastro, e e a arvore que o aluno ve.
+            if ($renamed && $company->get('categoryid')) {
+                $category = \core_course_category::get((int) $company->get('categoryid'), IGNORE_MISSING, true);
+                if ($category) {
+                    $category->update(['name' => $data->name]);
+                }
+            }
+
+            self::apply_theme($company);
+
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+
+        return $company;
+    }
+
+    /**
      * Cria a categoria de cursos da empresa.
      *
      * @param company $company
@@ -156,7 +204,16 @@ class api {
 
         $theme = $company->get('themename');
         $categoryid = $company->get('categoryid');
-        if (empty($theme) || empty($categoryid)) {
+        if (empty($categoryid)) {
+            return true;
+        }
+
+        // Tema vazio LIMPA o da categoria, e nao "nao faz nada". Sair cedo aqui
+        // tornaria impossivel voltar ao tema do site pela edicao: a empresa
+        // ficaria presa ao primeiro tema escolhido.
+        if (empty($theme)) {
+            $DB->set_field('course_categories', 'theme', '', ['id' => $categoryid]);
+            theme_reset_static_caches();
             return true;
         }
 
