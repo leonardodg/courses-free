@@ -129,7 +129,7 @@ if (!$offers) {
     $table->head = [
         get_string('offername', 'local_marketplace'),
         get_string('offertype', 'local_marketplace'),
-        get_string('price'),
+        get_string('cost'),
         get_string('courses'),
         get_string('companystatus', 'local_marketplace'),
     ];

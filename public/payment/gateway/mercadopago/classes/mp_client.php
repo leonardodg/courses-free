@@ -58,20 +58,61 @@ class mp_client {
     }
 
     /**
+     * Gera um code_verifier para o PKCE.
+     *
+     * O Mercado Pago exige entre 43 e 128 caracteres. random_string() do Moodle
+     * produz apenas alfanumericos, que estao dentro do conjunto "unreserved" da
+     * RFC 7636 - nao precisam de escape na URL nem no JSON, o que elimina uma
+     * classe inteira de erro de codificacao.
+     *
+     * @return string
+     */
+    public static function create_code_verifier(): string {
+        return random_string(64);
+    }
+
+    /**
+     * Deriva o code_challenge do verifier, metodo S256.
+     *
+     * base64url e base64 comum com +/ trocados por -_ e sem o padding '=';
+     * mandar base64 puro faz o Mercado Pago recusar a autorizacao.
+     *
+     * @param string $verifier
+     * @return string
+     */
+    public static function create_code_challenge(string $verifier): string {
+        return rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+    }
+
+    /**
      * URL para o vendedor autorizar a plataforma.
+     *
+     * O PKCE e opcional no Mercado Pago, mas mandamos sempre: o servidor so
+     * cobra o code_verifier na troca se a autorizacao trouxe o challenge, entao
+     * enviar os dois mantem o fluxo coerente com a aplicacao configurada de
+     * qualquer jeito - e protege o codigo de autorizacao caso ele vaze no
+     * historico do navegador ou num log de proxy.
      *
      * @param string $clientid client_id da aplicacao da plataforma
      * @param string $redirecturi Precisa casar EXATAMENTE com a cadastrada no painel
      * @param string $state Devolvido no callback; usamos para saber qual conta vincular
+     * @param string $codechallenge Derivado do verifier guardado na sessao
      * @return string
      */
-    public static function build_authorization_url(string $clientid, string $redirecturi, string $state): string {
+    public static function build_authorization_url(
+        string $clientid,
+        string $redirecturi,
+        string $state,
+        string $codechallenge
+    ): string {
         return self::AUTH_URL . '?' . http_build_query([
             'client_id' => $clientid,
             'response_type' => 'code',
             'platform_id' => 'mp',
             'redirect_uri' => $redirecturi,
             'state' => $state,
+            'code_challenge' => $codechallenge,
+            'code_challenge_method' => 'S256',
         ]);
     }
 
@@ -82,13 +123,15 @@ class mp_client {
      * @param string $clientsecret
      * @param string $code Codigo recebido no callback
      * @param string $redirecturi Precisa ser o MESMO usado na autorizacao
+     * @param string $codeverifier O verifier cujo challenge foi enviado na autorizacao
      * @return array access_token, refresh_token, expires_in, user_id
      */
     public static function exchange_code(
         string $clientid,
         string $clientsecret,
         string $code,
-        string $redirecturi
+        string $redirecturi,
+        string $codeverifier
     ): array {
         return self::post_json(self::API_BASE . '/oauth/token', [
             'grant_type' => 'authorization_code',
@@ -96,6 +139,7 @@ class mp_client {
             'client_secret' => $clientsecret,
             'code' => $code,
             'redirect_uri' => $redirecturi,
+            'code_verifier' => $codeverifier,
         ]);
     }
 

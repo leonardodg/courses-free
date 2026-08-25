@@ -41,7 +41,12 @@ unset($SESSION->paygw_mercadopago_oauth);
 // Confere o state ANTES de qualquer outra coisa. Sem isso o endpoint aceitaria
 // um codigo de autorizacao de origem desconhecida e vincularia a conta de quem
 // estivesse logado.
-if (empty($pending) || empty($state) || !hash_equals($pending->state, $state)) {
+//
+// A ausencia do code_verifier entra na mesma checagem: ou a sessao e de um
+// fluxo iniciado antes do PKCE existir, ou nao veio daqui. Nos dois casos a
+// troca falharia adiante - melhor recusar agora, com mensagem clara.
+if (empty($pending) || empty($state) || !hash_equals($pending->state, $state)
+        || empty($pending->codeverifier)) {
     throw new moodle_exception('errorstatemismatch', 'paygw_mercadopago');
 }
 
@@ -60,7 +65,13 @@ if ($error !== '' || $code === '') {
 $config = get_config('paygw_mercadopago');
 $redirecturi = (new moodle_url('/payment/gateway/mercadopago/oauth_callback.php'))->out(false);
 
-$token = mp_client::exchange_code($config->clientid, $config->clientsecret, $code, $redirecturi);
+$token = mp_client::exchange_code(
+    $config->clientid,
+    $config->clientsecret,
+    $code,
+    $redirecturi,
+    $pending->codeverifier
+);
 
 // Localiza ou cria a linha do gateway nesta conta.
 $gateway = \core_payment\account_gateway::get_record([
