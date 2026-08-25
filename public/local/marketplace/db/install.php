@@ -47,6 +47,8 @@ defined('MOODLE_INTERNAL') || die();
 function xmldb_local_marketplace_install() {
     global $DB;
 
+    local_marketplace_require_category_themes();
+
     // As capabilities do db/access.php ainda NAO estao registradas neste ponto:
     // o Moodle roda esta funcao antes de processar o access.php. Sem isto,
     // assign_capability() aborta com "Capability ... was not found".
@@ -104,5 +106,26 @@ function xmldb_local_marketplace_install() {
     ];
     foreach ($prohibit as $capability) {
         assign_capability($capability, CAP_PROHIBIT, $roleid, $catcontext->id, true);
+    }
+}
+
+/**
+ * Liga o tema por categoria, do qual o tema por empresa depende.
+ *
+ * Nao e preferencia de administrador: e requisito do produto. O vinculo
+ * empresa->tema e feito gravando o tema na categoria dela, e com
+ * allowcategorythemes desligado o Moodle simplesmente ignora esse campo.
+ *
+ * O modo de falhar e silencioso, que e o pior: o vendedor escolhe o tema, a
+ * tela confirma, e nada muda. Nenhum erro, nenhum log. Por isso a dependencia
+ * e garantida em codigo, e nao deixada para um clique que alguem precisa
+ * lembrar de dar em cada ambiente novo.
+ *
+ * @return void
+ */
+function local_marketplace_require_category_themes() {
+    if (empty(get_config('moodle', 'allowcategorythemes'))) {
+        set_config('allowcategorythemes', 1);
+        theme_reset_static_caches();
     }
 }

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Marketplace de cursos: empresas, vendedores e comissão.
+ * Upgrade do local_marketplace.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -24,8 +24,22 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_marketplace';
-$plugin->version   = 2026082403;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+/**
+ * Passos de upgrade.
+ *
+ * @param int $oldversion Versao instalada.
+ * @return bool
+ */
+function xmldb_local_marketplace_upgrade($oldversion) {
+    if ($oldversion < 2026082403) {
+        // O install.php passou a garantir allowcategorythemes, mas ele so roda
+        // em instalacao nova. Sem este passo, todo ambiente que ja tem o plugin
+        // continuaria com o tema por empresa quebrado em silencio.
+        require_once(__DIR__ . '/install.php');
+        local_marketplace_require_category_themes();
+
+        upgrade_plugin_savepoint(true, 2026082403, 'local', 'marketplace');
+    }
+
+    return true;
+}
