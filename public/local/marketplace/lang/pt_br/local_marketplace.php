@@ -76,6 +76,7 @@ $string['errorcannotremoveowner'] = 'O responsável não pode ser removido. Prom
 $string['errorcannotsell'] = 'Esta empresa ainda não pode vender: configure um meio de pagamento primeiro.';
 $string['errorcommissionrange'] = 'Use um número de 0 a 100, ou deixe vazio para herdar o padrão do site.';
 $string['errorcurrencymismatch'] = 'Esta empresa recebe em {$a->expected}, então não pode vender uma oferta com preço em {$a->given}. Para vender em {$a->given}, vincule uma conta Mercado Pago daquele país.';
+$string['errordomainmap'] = 'Nao foi possivel gravar o mapa de dominios dos vendedores. Confira se o diretorio de dados do Moodle tem permissao de escrita.';
 $string['errorhostnametaken'] = 'Este domínio já está vinculado a outra empresa.';
 $string['errormaxcycles'] = 'Use zero para não haver limite, ou um número positivo.';
 $string['errornoaccount'] = 'Esta empresa não tem conta de pagamento. Reinstale ou recrie a empresa.';

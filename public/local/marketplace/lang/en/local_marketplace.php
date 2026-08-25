@@ -76,6 +76,7 @@ $string['errorcannotremoveowner'] = 'The owner cannot be removed. Make someone e
 $string['errorcannotsell'] = 'This company cannot sell yet: configure a payment method first.';
 $string['errorcommissionrange'] = 'Use a number from 0 to 100, or leave it empty to inherit the site default.';
 $string['errorcurrencymismatch'] = 'This company receives in {$a->expected}, so it cannot sell an offer priced in {$a->given}. To sell in {$a->given}, link a Mercado Pago account from that country.';
+$string['errordomainmap'] = 'Could not write the seller domain map. Check that the Moodle data directory is writable.';
 $string['errorhostnametaken'] = 'This domain is already linked to another company.';
 $string['errormaxcycles'] = 'Use zero for no limit, or a positive number.';
 $string['errornoaccount'] = 'This company has no payment account. Reinstall or recreate the company.';

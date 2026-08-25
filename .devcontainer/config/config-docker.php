@@ -39,6 +39,40 @@ $CFG->admin     = getenv('MOODLE_ADMIN') ?: 'admin';
 $CFG->directorypermissions = 0777;
 $CFG->sslproxy  = true;
 
+// -----------------------------------------------------------------------------
+// Dominio por vendedor.
+//
+// O local_marketplace grava um mapa Host -> empresa no dataroot sempre que um
+// dominio muda. Aqui ele e LIDO, e nao consultado no banco, porque este arquivo
+// roda antes do lib/setup.php: $DB ainda nao existe.
+//
+// CLI e cron ficam de fora. Eles nao tem HTTP_HOST, e um e-mail disparado pelo
+// cron precisa sair com o dominio da plataforma - nao com o do ultimo vendedor
+// que por acaso estivesse na fila.
+//
+// NAO defina $CFG->sessioncookiedomain junto com isto. Sem ele o cookie fica
+// escopado por host e a sessao passa a ser por dominio: quem entra em
+// meuscursos.joao.com NAO esta logado em courses.leodg.dev. E o comportamento
+// desejado - dominios de vendedores diferentes nao compartilham sessao - mas
+// precisa estar claro na UX do checkout.
+$CFG->wwwrootdefault = $CFG->wwwroot;
+
+if (PHP_SAPI !== 'cli' && !empty($_SERVER['HTTP_HOST'])) {
+    $marketplacemap = @include($CFG->dataroot . '/marketplace_domains.php');
+    // strtolower porque o navegador pode mandar o Host em qualquer caixa, e a
+    // chave do mapa e gravada em minusculas.
+    $marketplacehost = strtolower($_SERVER['HTTP_HOST']);
+
+    if (is_array($marketplacemap) && isset($marketplacemap[$marketplacehost]['wwwroot'])) {
+        $CFG->wwwroot = $marketplacemap[$marketplacehost]['wwwroot'];
+        // Guardado para o plugin saber de qual empresa e a requisicao sem ter
+        // que reabrir o arquivo depois.
+        $CFG->marketplacecompany = $marketplacemap[$marketplacehost]['company'];
+    }
+    unset($marketplacemap, $marketplacehost);
+}
+// -----------------------------------------------------------------------------
+
 // Debug: respeita MOODLE_DEBUG/MOODLE_DEBUG_DISPLAY do ambiente.
 // DEVELOPER = 32767 (E_ALL); qualquer outro valor cai para NONE.
 $debugenv = strtoupper((string) getenv('MOODLE_DEBUG'));
