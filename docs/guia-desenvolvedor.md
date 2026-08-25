@@ -372,6 +372,37 @@ A escrita é atômica — grava ao lado e move. Um `cp` interrompido deixaria o
 `config.php` pela metade, e `config.php` truncado derruba o site inteiro, não uma
 página.
 
+## Acesso ao banco de fora
+
+O container publica a porta do MariaDB em `127.0.0.1` por padrão — nada exposto.
+
+Para conectar um cliente da sua máquina, o caminho sem alterar nada é o túnel
+SSH:
+
+```bash
+ssh -N -L 3307:127.0.0.1:3307 ubuntu@<VPS>
+```
+
+O cliente aponta para `127.0.0.1:3307` e a autenticação é a do SSH.
+
+Para acesso permanente — BI, integração, replicação — defina a *variable*
+`DB_BIND_ADDR` no environment `development` do GitHub com o IP da interface do
+WireGuard:
+
+```bash
+ip -4 addr show wg0 | grep -oP 'inet \K[\d.]+'
+```
+
+O banco passa a escutar na VPN e continua invisível na internet, sem abrir porta
+em firewall de borda.
+
+> **Não use `0.0.0.0`.** MariaDB exposto na internet é alvo de varredura
+> constante — força bruta em `root` e CVEs conhecidas — e o ganho sobre a VPN é
+> nenhum.
+
+Editar o `.env` direto na VPS não adianta: o deploy reescreve o arquivo inteiro a
+cada execução, pelo mesmo motivo que o `config.php` é gerado.
+
 ## Armadilhas que já custaram tempo
 
 | Sintoma | Causa |
