@@ -67,13 +67,18 @@ O de trabalho é `feature-marketplace`, no branch `feature/paygw-mercadopago`.
 
 **Cada worktree tem o próprio ambiente, e vários rodam ao mesmo tempo.** O
 comando é o `cf` (`.devcontainer/bin/cf`): `cf ls` mostra worktrees, offsets,
-portas e status; `cf new <nome>` cria worktree, ambiente, dados e stack. Cada
-worktree recebe um offset, e dele saem o nome do stack e as portas — offset 0 é
-o principal (`courses-free`, 8080/8443/3307/9004), offset 1 soma 10 a cada uma.
+portas e status; `cf new <nome>` cria worktree, ambiente, dados e stack, e
+ramifica de `origin/dev` por padrão. Cada worktree recebe um offset, e dele saem
+o nome do stack e as portas — offset 0 é o principal (`courses-free`,
+8080/8443/3307/9004), offset 1 soma 10 a cada uma.
 Guia completo em `docs/guia-worktrees.md`.
 
 Não edite `.env` nem portas à mão: o `cf` gera esses arquivos e o `cf doctor`
 reclama quando divergem do registro.
+
+O `cf` do `PATH` é um symlink encadeado que resolve para
+`dev/.devcontainer/bin/cf`. Ao editar o próprio `cf` numa branch, chame pelo
+caminho (`./.devcontainer/bin/cf`) — `cf` puro executa a versão de `dev`.
 
 Moodle 5.2 usa layout `public/` — os plugins ficam em `public/local/…`,
 `public/payment/gateway/…`, e o `config.php` fica na raiz, fora do webroot.

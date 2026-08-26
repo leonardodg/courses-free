@@ -412,21 +412,169 @@ cmd_code() {
 # -----------------------------------------------------------------------------
 # cf new
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# cf use - o stack que ja roda passa a servir o codigo de outra worktree
+# -----------------------------------------------------------------------------
+# Alternativa barata ao stack por worktree. Em vez de subir um segundo ambiente
+# (container, banco, portas e ~900 MB), so troca o bind mount do codigo: mesmo
+# container, mesmo banco, mesmas portas, mesma URL.
+#
+# O preco e o outro lado da mesma moeda: passa a ser UM ambiente de novo. As
+# duas worktrees dividem o banco, entao trocar entre branches com versoes
+# diferentes de plugin pede upgrade.php de ida e de volta.
+#
+# Quando usar cada um:
+#   cf use    - alternar entre features, uma de cada vez. Rapido e leve.
+#   cf new    - precisa das duas no ar ao mesmo tempo, ou dados separados.
+cmd_use() {
+    registry_init
+    local alvo="${1:-}"
+    [ -n "$alvo" ] || die "uso: cf use <worktree>"
+
+    local alvo_path="$CF_ROOT/$alvo"
+    [ -d "$alvo_path" ] || die "worktree '$alvo' nao existe em $alvo_path"
+    [ -f "$alvo_path/.devcontainer/devcontainer.json" ] \
+        || die "'$alvo' nao tem .devcontainer/ - nao da para servir esta worktree"
+
+    # A linha do offset 0 e a fonte da verdade sobre o stack principal: nome,
+    # portas e caminhos de dado. So o wwwroot muda.
+    local atual atual_path stack md dbd
+    atual="$(awk -F'\t' '$2==0 {print $1; exit}' "$CF_REGISTRY")"
+    [ -n "$atual" ] || die "nao ha stack principal no registro. Rode 'cf ls'."
+    atual_path="$(registry_get "$atual" 4)"
+    stack="$(registry_get "$atual" 3)"
+    md="$(registry_get "$atual" 5)"
+    dbd="$(registry_get "$atual" 6)"
+
+    if [ "$atual" = "$alvo" ]; then
+        ok "o stack '$stack' ja serve '$alvo'"
+        return 0
+    fi
+
+    info "stack   : $stack (offset 0, portas inalteradas)"
+    info "de      : $atual"
+    info "para    : $alvo"
+    info "banco   : $dbd  (COMPARTILHADO - nao e copiado)"
+    echo
+
+    # Os arquivos que o git ignora precisam existir na worktree de destino.
+    local f faltando=0
+    for f in "${IGNORED_FILES[@]}"; do
+        [ -e "$alvo_path/$f" ] && continue
+        if [ -e "$atual_path/$f" ]; then
+            mkdir -p "$(dirname "$alvo_path/$f")"
+            cp -a "$atual_path/$f" "$alvo_path/$f"
+            info "copiado: $f"
+        else
+            warn "ausente na origem: $f"; faltando=1
+        fi
+    done
+    [ "$faltando" -eq 1 ] && warn "algum arquivo local faltou; o stack pode nao subir"
+
+    mkdir -p "$alvo_path/phpu_moodledata"
+
+    # O .env do destino recebe os valores do principal, sem STACK_NAME: o
+    # default de base.yml resolve para courses-free e o stack continua sendo o
+    # mesmo. So o wwwroot aponta para o novo codigo.
+    local http https db xdebug
+    http="$(port_http 0)"; https="$(port_https 0)"
+    db="$(port_db 0)";     xdebug="$(port_xdebug 0)"
+
+    info "gerando o .env de '$alvo'"
+    cat > "$alvo_path/.env" <<EOF
+# GERADO POR "cf use $alvo". Este e o stack PRINCIPAL servindo esta worktree.
+#
+# Sem STACK_NAME de proposito: o default de base.yml resolve para
+# "courses-free", entao continua sendo o mesmo stack de sempre - o mesmo
+# container, o mesmo banco e as mesmas portas. So o codigo mudou.
+
+MOODLE_HOST_WWWROOT=$alvo_path
+MOODLE_HOST_DATA=$md
+DB_HOST_DATA=$dbd
+
+MOODLE_DOCKER_WWWROOT=/var/www/html
+MOODLE_DOCKER_DATA=/var/www/moodledata
+APACHE_DOCUMENT_ROOT=/var/www/html/public
+
+MOODLE_IMAGE=leodg/courses-free:development
+
+MOODLE_HTTP_PORT=$http
+MOODLE_HTTPS_PORT=$https
+DB_PORT=$db
+XDEBUG_PORT=$xdebug
+
+MOODLE_DBNAME=moodle
+EOF
+    ln -sfn ../../.env "$alvo_path/.devcontainer/compose/.env"
+
+    local devenv="$alvo_path/.devcontainer/env/dev.env"
+    [ -f "$devenv" ] && sed -i \
+        -e "s#^MOODLE_URL=.*#MOODLE_URL=https://localhost:$https#" \
+        -e "s#^MOODLE_HOST_WWWROOT=.*#MOODLE_HOST_WWWROOT=$alvo_path#" \
+        -e "s#^MOODLE_HOST_DATA=.*#MOODLE_HOST_DATA=$md#" \
+        "$devenv"
+
+    # Derruba a partir da worktree ANTIGA: e ela que o compose conhece hoje.
+    # Sem -v, que apagaria o volume do cache do composer sem motivo.
+    if [ -d "$atual_path" ]; then
+        info "parando o stack (servia '$atual')"
+        dc "$atual_path" down 2>/dev/null || true
+    fi
+
+    # O offset 0 passa a ser a nova worktree.
+    registry_del "$atual"
+    registry_add "$alvo" 0 "$stack" "$alvo_path" "$md" "$dbd"
+
+    # O .env da worktree antiga fica para tras com as portas do principal. Nao
+    # apagamos - pode conter ajuste local - mas ela sai do registro, entao um
+    # "cf up <antiga>" para com "nao esta no registro" em vez de disputar as
+    # portas com o stack que agora serve outra coisa.
+    warn "'$atual' saiu do registro; o .env dela continua no disco"
+
+    echo
+    cmd_up "$alvo"
+
+    # A branch nova pode trazer plugin que o banco compartilhado nao conhece.
+    local cli
+    info "sincronizando o banco com o codigo de '$alvo'"
+    cli="$(moodle_cli_path "$alvo_path" upgrade.php)" \
+        && dc "$alvo_path" exec -T moodle php "$cli" --non-interactive < /dev/null \
+        || warn "upgrade.php reclamou; veja 'cf logs $alvo'"
+    cli="$(moodle_cli_path "$alvo_path" purge_caches.php)" \
+        && dc "$alvo_path" exec -T moodle php "$cli" < /dev/null || true
+
+    echo
+    ok "'$stack' agora serve '$alvo' em https://localhost:$https"
+}
+
 cmd_new() {
     registry_init
-    local name="" from="" seed="clone" open_code=1
+    # Por padrao REAPROVEITA o stack que ja roda, so trocando o codigo montado.
+    #
+    # O caro e o stack, nao a worktree: cada um novo custa container, banco,
+    # portas e ~900 MB, e a maior parte do tempo se trabalha numa feature de
+    # cada vez. Stack proprio e a excecao - quando se precisa das duas no ar
+    # junto, ou de bancos separados - e ai vem o --new-stack.
+    local name="" from="" seed="clone" open_code=1 novo_stack=0
 
     while [ $# -gt 0 ]; do
         case "$1" in
             --from)   from="${2:-}"; shift 2 ;;
             --seed)   seed="${2:-}"; shift 2 ;;
             --no-code) open_code=0; shift ;;
+            --new-stack|--novo-stack) novo_stack=1; shift ;;
+            --reuse|--use) novo_stack=0; shift ;;   # explicito, mesmo sendo o padrao
             -*)       die "opcao desconhecida: $1" ;;
             *)        [ -z "$name" ] && name="$1" || die "nome ja informado"; shift ;;
         esac
     done
-    [ -n "$name" ] || die "uso: cf new <nome> [--from <branch>] [--seed clone|fresh|share] [--no-code]"
+    [ -n "$name" ] || die "uso: cf new <nome> [--new-stack] [--from <branch>] [--seed clone|fresh|share] [--no-code]"
     case "$seed" in clone|fresh|share) ;; *) die "--seed aceita clone, fresh ou share" ;; esac
+
+    # --seed so faz sentido criando banco proprio; reaproveitando, o banco e o
+    # que ja esta la. Avisar em vez de aceitar em silencio algo que nao ocorre.
+    [ "$novo_stack" -eq 0 ] && [ "$seed" != "clone" ] \
+        && warn "--seed $seed ignorado: sem --new-stack o banco e o do stack atual"
 
     local wt_path="$CF_ROOT/$name"
     [ -e "$wt_path" ] && die "'$wt_path' ja existe"
@@ -439,7 +587,22 @@ cmd_new() {
     src_path="$(wt_path_of "$src_name")"
     [ -d "$src_path" ] || die "worktree principal '$src_name' nao existe em $src_path"
 
-    [ -n "$from" ] || from="$(git -C "$src_path" branch --show-current)"
+    # Default: a branch de integracao. E de onde o fluxo do projeto manda
+    # ramificar (feature -> dev -> deploy), e desde que .devcontainer/ chegou na
+    # dev ela tem o ambiente completo.
+    #
+    # Antes o default era a branch da worktree principal. Era o unico jeito
+    # quando so as branches de feature tinham .devcontainer/, mas virou uma
+    # armadilha: a principal fica em qualquer branch, inclusive uma ja merjeada,
+    # e a feature nova nasceria de uma base arbitraria sem ninguem notar.
+    if [ -z "$from" ]; then
+        if git -C "$src_path" cat-file -e "origin/dev:.devcontainer/devcontainer.json" 2>/dev/null; then
+            from="origin/dev"
+        else
+            from="$(git -C "$src_path" branch --show-current)"
+            warn "origin/dev sem .devcontainer/; usando '$from' como base"
+        fi
+    fi
 
     # --- espaco em disco -----------------------------------------------------
     local free_gb
@@ -448,20 +611,47 @@ cmd_new() {
         || die "so ha ${free_gb}GB livres; uma feature custa ~1GB (piso: ${MIN_FREE_GB}GB)"
 
     # --- a base tem ambiente? ------------------------------------------------
-    # Falha AQUI, antes de criar qualquer coisa. Ramificar de dev ou main produz
-    # uma worktree sem .devcontainer, ou seja, sem ambiente nenhum - e o erro so
-    # apareceria varios passos adiante, com a worktree ja criada pela metade.
+    # Falha AQUI, antes de criar qualquer coisa. Uma worktree sem .devcontainer/
+    # nao tem ambiente nenhum, e o erro so apareceria varios passos adiante, com
+    # ela ja criada pela metade - o que e pior que nao criar, porque parece
+    # pronta.
+    #
+    # Hoje a 'dev' tem o ambiente, entao isto so dispara com um --from explicito
+    # apontando para uma base antiga: 'main' (que segue sem .devcontainer/) ou
+    # uma tag/branch anterior a promocao da infraestrutura.
     if ! git -C "$src_path" cat-file -e "$from:.devcontainer/devcontainer.json" 2>/dev/null; then
-        die "a branch '$from' nao tem .devcontainer/.
+        die "a branch '$from' nao tem .devcontainer/, ou seja, nao tem ambiente.
 
-  A infraestrutura vive nas branches de feature; 'dev' e 'main' ainda nao a
-  receberam. Enquanto isso, ramifique de uma branch que a tenha:
+  Ramifique da branch de integracao, que e o default:
 
-      cf new $name --from $(git -C "$src_path" branch --show-current)
+      cf new $name
 
-  A correcao definitiva e promover .devcontainer/ para 'dev' num PR proprio."
+  'main' nao serve como base: esta fora do fluxo do projeto
+  (feature -> dev -> deploy) e nao recebeu a infraestrutura."
     fi
 
+    # ---------------------------------------------------------------------
+    # Caminho padrao: worktree nova, stack existente.
+    # ---------------------------------------------------------------------
+    if [ "$novo_stack" -eq 0 ]; then
+        info "worktree : $name"
+        info "branch   : feature/$name  a partir de $from"
+        info "stack    : reaproveitando o que ja roda (use --new-stack para um proprio)"
+        echo
+        info "criando a worktree"
+        git -C "$CF_ROOT" worktree add "$wt_path" -b "feature/$name" "$from" \
+            || die "git worktree add falhou"
+
+        # O cf use faz o resto: copia os arquivos ignorados, gera o .env com as
+        # portas e os dados do stack atual, troca o bind do codigo e sobe.
+        cmd_use "$name"
+        [ "$open_code" -eq 1 ] && cmd_code "$name"
+        return 0
+    fi
+
+    # ---------------------------------------------------------------------
+    # Caminho --new-stack: ambiente isolado, para rodar em paralelo.
+    # ---------------------------------------------------------------------
     local offset; offset="$(registry_next_offset)"
     local http https db xdebug
     http="$(port_http "$offset")";  https="$(port_https "$offset")"
@@ -471,7 +661,7 @@ cmd_new() {
 
     info "worktree : $name  (offset $offset)"
     info "branch   : feature/$name  a partir de $from"
-    info "stack    : $stack"
+    info "stack    : $stack  (proprio, roda junto com os outros)"
     info "portas   : http $http | https $https | db $db | xdebug $xdebug"
     info "dados    : $data_root"
     echo
@@ -900,9 +1090,25 @@ usage() {
     cat <<'EOF'
 cf - fluxo de worktrees do courses-free
 
-  cf new <nome> [--from <branch>] [--seed clone|fresh|share] [--no-code]
-        Cria worktree e branch, copia a configuracao local, aloca portas,
-        clona o banco, sobe o stack e abre o VS Code dentro do container.
+Notacao: <obrigatorio>, [opcional]. "worktree" e o NOME da worktree, a mesma
+coluna WORKTREE que o "cf ls" mostra - por exemplo: paygw-pix.
+
+  cf new <nome> [--new-stack] [--from <branch>] [--seed clone|fresh|share]
+                [--no-code]
+        Cria worktree e branch a partir de origin/dev, copia a configuracao
+        local e abre o VS Code dentro do container.
+
+        Por padrao REAPROVEITA o stack que ja roda: mesmo container, mesmo
+        banco, mesmas portas - so o codigo montado muda. Barato e instantaneo,
+        mas e um ambiente de cada vez.
+
+        Com --new-stack, sobe um ambiente proprio (container, banco e portas
+        separados, ~900 MB) que roda em PARALELO com os outros. Use quando
+        precisar das duas features no ar ao mesmo tempo, ou de bancos
+        separados. --seed so tem efeito neste modo.
+
+  cf use <worktree>          o stack atual passa a servir esta worktree
+                             (mesmo banco e portas; so troca o codigo)
 
   cf ls                      worktrees, offsets, stacks, status e URLs
   cf up      [worktree]      sobe o stack
@@ -916,7 +1122,8 @@ cf - fluxo de worktrees do courses-free
   cf rm <worktree> [--force] remove worktree, branch, dados e stack
   cf doctor                  confere ferramentas, disco, cert, .env e portas
 
-Sem <worktree>, usa a worktree do diretorio atual.
+Omitindo o nome, o comando age sobre a worktree do diretorio atual. Dentro de
+paygw-pix/, "cf up" sobe aquele ambiente; de fora, seria "cf up paygw-pix".
 
 Offset N -> stack courses-free-<nome>, portas 8080+N*10 (http), 8443+N*10
 (https), 3307+N*10 (banco) e 9004+N*10 (xdebug). O offset 0 e o stack
@@ -928,6 +1135,7 @@ main() {
     local cmd="${1:-}"; [ $# -gt 0 ] && shift || true
     case "$cmd" in
         new)      cmd_new "$@" ;;
+        use)      cmd_use "$@" ;;
         ls|list)  cmd_ls "$@" ;;
         up)       cmd_up "$@" ;;
         down)     cmd_down "$@" ;;
