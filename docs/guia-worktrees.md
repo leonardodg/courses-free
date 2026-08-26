@@ -280,13 +280,40 @@ estava rodando — o padrão da extensão com compose é parar os serviços.
 O script é **versionado no repositório**, em `.devcontainer/bin/cf`. Ou seja,
 ele viaja com a branch e toda worktree tem a sua cópia.
 
-Para digitar `cf` de qualquer diretório, sem caminho, exponha um symlink no
-`PATH`:
+Para digitar `cf` de qualquer diretório, a instalação usa **dois** symlinks
+encadeados:
+
+```
+~/.local/bin/cf
+   └─> ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf     (ponto fixo)
+          └─> ../../dev/.devcontainer/bin/cf                        (qual versão)
+```
 
 ```bash
-ln -sfn ~/localhost/gitworktree-bare-moodle/<worktree>/.devcontainer/bin/cf \
-        ~/.local/bin/cf
+# ponto fixo na raiz, apontando para a worktree que fornece o cf
+mkdir -p ~/localhost/gitworktree-bare-moodle/.devcontainer/bin
+ln -sfn ../../dev/.devcontainer/bin/cf \
+        ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf
+
+# o PATH aponta para o ponto fixo, e nunca mais muda
+ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf ~/.local/bin/cf
 ```
+
+**Por que dois em vez de um.** O script mora *dentro* de uma worktree, e
+worktree é coisa descartável — apontar o `PATH` direto para uma delas significa
+que apagá-la faz o comando sumir sem explicação. Com a indireção, trocar de
+worktree é mexer em **um** symlink na raiz; o `~/.local/bin/cf` fica intacto.
+O `readlink -f` percorre a cadeia inteira, então o `cf` continua descobrindo a
+raiz corretamente.
+
+**Por que `dev` e não `main`.** `main` não tem `.devcontainer/` — está 108
+commits atrás e fora do caminho normal deste projeto, onde o fluxo é
+`feature → dev → deploy`, sem PR `dev`→`main`. `dev` é a branch de integração:
+sempre tem a versão mais recente do `cf` que passou por PR.
+
+> **Efeito colateral:** o `cf` do `PATH` passa a ser o de `dev`. Para exercitar
+> uma versão em desenvolvimento, chame pelo caminho:
+> `./.devcontainer/bin/cf doctor` de dentro da worktree da feature.
 
 `~/.local/bin` já entra no `PATH` nesta máquina, pelo `~/.profile` (padrão do
 Ubuntu) e pelo `~/.bashrc`. Em outra máquina, confira:
@@ -295,14 +322,10 @@ Ubuntu) e pelo `~/.bashrc`. Em outra máquina, confira:
 case ":$PATH:" in *":$HOME/.local/bin:"*) echo ok;; *) echo "falta no PATH";; esac
 ```
 
-O `cf` resolve o symlink para descobrir a raiz (`readlink -f` sobre o próprio
-`$0`), então o link funciona apontando para qualquer worktree.
-
-> **Aponte para a worktree principal.** O link entra *dentro* de uma worktree;
-> se ela for removida, o link fica pendurado e o `cf` some do `PATH` sem
-> explicação. O `cf rm` detecta esse caso e reaponta sozinho para a principal
-> antes de apagar, e o `cf doctor` avisa se o link estiver mal apontado ou
-> quebrado.
+O `cf doctor` avisa se o link resolver para dentro de uma worktree **removível**
+— ou seja, registrada com offset diferente de 0, que o `cf rm` pode apagar.
+Worktree permanente (`dev`, `main`) e a principal não disparam o aviso. E o
+`cf rm` reaponta o link sozinho se ele vier da worktree que está prestes a sair.
 
 ### CLI do Dev Containers
 

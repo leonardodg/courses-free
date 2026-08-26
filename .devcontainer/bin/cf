@@ -808,17 +808,28 @@ cmd_doctor() {
         if [ -L "$no_path" ]; then
             # Nao ha checagem de link pendurado aqui: "command -v" ja falha
             # nesse caso (o alvo nao existe, logo nao e executavel), e a
-            # situacao cai no else abaixo. So resta avisar sobre um link que
-            # resolve, mas para uma worktree removivel.
-            local alvo principal
+            # situacao cai no else abaixo.
+            #
+            # O que interessa avisar: o link resolve para dentro de uma worktree
+            # que o "cf rm" pode APAGAR. Sao exatamente as registradas com
+            # offset diferente de 0. Worktree permanente (dev, main) nao esta no
+            # registro, e a principal (offset 0) o proprio cf rm recusa remover -
+            # nos dois casos o link e estavel.
+            local alvo removivel=""
             alvo="$(readlink -f "$no_path")"
-            principal="$(awk -F'\t' '$2==0 {print $4; exit}' "$CF_REGISTRY" 2>/dev/null)"
-            case "$alvo" in
-                "$principal"/*) ok "aponta para a worktree principal" ;;
-                *) note "aponta para $alvo"
-                   note "  se essa worktree for removida, o cf some do PATH."
-                   note "  prefira a principal: ln -sfn $principal/.devcontainer/bin/cf $no_path" ;;
-            esac
+            while IFS=$'\t' read -r r_nome r_off _ r_path _ _; do
+                [[ "$r_nome" =~ ^# ]] && continue
+                [ -z "$r_nome" ] || [ "$r_off" = "0" ] && continue
+                case "$alvo" in "$r_path"/*) removivel="$r_nome" ;; esac
+            done < "$CF_REGISTRY"
+
+            if [ -n "$removivel" ]; then
+                note "aponta para dentro da worktree '$removivel', que e removivel."
+                note "  se ela sair, o cf some do PATH. Prefira uma permanente:"
+                note "  ln -sfn $CF_ROOT/.devcontainer/bin/cf $no_path"
+            else
+                printf '  %sok%s alvo estavel: %s\n' "$C_GRN" "$C_OFF" "$alvo"
+            fi
         fi
     else
         # Cobre os dois casos: nunca instalado, e symlink pendurado porque a
