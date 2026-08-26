@@ -10,7 +10,17 @@
 # Projeto tem um unico ambiente (development), rodando na VPS Oracle.
 # =============================================================================
 
-name: courses-free
+# Nome do projeto compose. O default preserva o stack principal: sem STACK_NAME
+# definido, nada muda em relacao ao que sempre rodou.
+#
+# Cada worktree que quer subir em paralelo define seu proprio STACK_NAME no .env
+# da raiz (courses-free-<worktree>), e com isso ganha containers, rede e volumes
+# proprios. Sem isso, subir de outra worktree nao cria um segundo ambiente:
+# RECRIA o mesmo container apontando para outro codigo.
+#
+# Nao usamos COMPOSE_PROJECT_NAME direto para o nome ficar visivel aqui, e nao
+# escondido num env que quem le o arquivo nao ve.
+name: ${STACK_NAME:-courses-free}
 
 # =============================================================================
 #                           SHARED RESOURCES
@@ -20,6 +30,12 @@ volumes:
   # pasta conhecida do host (DB_HOST_DATA / MOODLE_HOST_DATA no .env), para o
   # dado ficar num caminho previsivel na VPS e o backup ser um tar da pasta.
   composer_cache:
+    # Nome fixo, ao contrario dos demais: o cache do Composer e conteudo
+    # imutavel enderecado por hash, entao todos os stacks do projeto podem
+    # dividir o mesmo e evitar baixar tudo de novo a cada worktree nova.
+    # O prefixo courses-free_ mantem a protecao contra colidir com o volume
+    # homonimo de outro projeto, que e o motivo do comentario em build-dev.yml.
+    name: courses-free_composer_cache
 
 secrets:
   db_root_password:

@@ -207,6 +207,31 @@ RUN apt-get update \
 RUN npm install -g grunt-cli \
     && grunt --version
 
+# -----------------------------------------------------------------------
+# Historico de shell persistente.
+#
+# Isto substitui a feature "stuartleeks/dev-container-features/shell-history"
+# que estava no devcontainer.json. O motivo nao e economia: TODA feature
+# declarada faz a CLI do Dev Containers construir uma IMAGEM DERIVADA para
+# injeta-la, e ela refaz esse build para cada pasta nova. Com worktrees, isso
+# significa um rebuild a cada feature que se comeca - o incomodo que este
+# trabalho existe para eliminar.
+#
+# As outras duas features sairam sem substituto:
+#   git:1          - redundante, o apt-get acima ja instala git e git-man.
+#   common-utils:2 - traz zsh/oh-my-zsh e mexe em usuario. O devcontainer.json
+#                    fixa remoteUser www-data e terminal bash; nao agregava.
+#
+# O diretorio vira ponto de montagem de um volume nomeado (ver devcontainer.json),
+# entao o historico sobrevive a recriacao do container. Antes era um bind em
+# ../../moodle-academy-bashhistory, pasta do projeto anterior.
+# -----------------------------------------------------------------------
+ENV HISTFILE=/commandhistory/.bash_history \
+    PROMPT_COMMAND="history -a"
+RUN mkdir -p /commandhistory \
+    && touch /commandhistory/.bash_history \
+    && chown -R www-data:www-data /commandhistory
+
 COPY .devcontainer/php/opcache-dev.ini /usr/local/etc/php/conf.d/moodle-opcache.ini
 
 # -----------------------------------------------------------------------
