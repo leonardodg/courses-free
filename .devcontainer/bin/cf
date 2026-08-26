@@ -1129,11 +1129,18 @@ cmd_doctor() {
             # offset diferente de 0. Worktree permanente (dev, main) nao esta no
             # registro, e a principal (offset 0) o proprio cf rm recusa remover -
             # nos dois casos o link e estavel.
+            # "Removivel" = o que o cf rm de fato apaga. Ele recusa duas: a que o
+            # stack principal serve (offset 0) e a worktree de repouso. Esta
+            # ultima aparece no registro com offset "-" depois de uma troca, e
+            # sem esta excecao o doctor reclamaria de um link apontando para
+            # dev - que e justamente o alvo recomendado.
             local alvo removivel=""
             alvo="$(readlink -f "$no_path")"
             while IFS=$'\t' read -r r_nome r_off _ r_path _ _; do
                 [[ "$r_nome" =~ ^# ]] && continue
-                [ -z "$r_nome" ] || [ "$r_off" = "0" ] && continue
+                [ -z "$r_nome" ] && continue
+                [ "$r_off" = "0" ] && continue
+                [ "$r_nome" = "$CF_BASE_WT" ] && continue
                 case "$alvo" in "$r_path"/*) removivel="$r_nome" ;; esac
             done < "$CF_REGISTRY"
 
@@ -1190,10 +1197,31 @@ cmd_doctor() {
         local env_stack env_http
         env_stack="$(grep -E '^STACK_NAME=' "$wt_path/.env" | cut -d= -f2- || true)"
         env_http="$(grep -E '^MOODLE_HTTP_PORT=' "$wt_path/.env" | cut -d= -f2- || true)"
-        [ "$off" = "0" ] || [ "$env_stack" = "$stack" ] \
-            || note "$name: STACK_NAME do .env ('$env_stack') difere do registro ('$stack')"
-        [ "$env_http" = "$(port_http "$off")" ] \
-            || note "$name: porta http do .env ($env_http) nao bate com o offset $off ($(port_http "$off"))"
+
+        # As checagens de stack e porta valem por offset:
+        #
+        #   0    stack principal. STACK_NAME tem que estar AUSENTE - e o default
+        #        de base.yml que resolve para courses-free - e as portas sao as
+        #        da base.
+        #   N>0  stack proprio. STACK_NAME tem que bater com o registro, e as
+        #        portas saem do offset.
+        #   -    sem stack proprio. Foi servida pelo principal, entao herda o
+        #        mesmo arranjo do offset 0: sem STACK_NAME, portas da base.
+        #        Comparar com o registro aqui nao faz sentido, e "port_http -"
+        #        e conta invalida.
+        local off_efetivo="$off"
+        [ "$off" = "-" ] && off_efetivo=0
+
+        if [ "$off" = "0" ] || [ "$off" = "-" ]; then
+            [ -z "$env_stack" ] \
+                || note "$name: nao deveria definir STACK_NAME ('$env_stack'); usa o stack principal"
+        else
+            [ "$env_stack" = "$stack" ] \
+                || note "$name: STACK_NAME do .env ('$env_stack') difere do registro ('$stack')"
+        fi
+
+        [ "$env_http" = "$(port_http "$off_efetivo")" ] \
+            || note "$name: porta http do .env ($env_http) nao bate com o offset $off ($(port_http "$off_efetivo"))"
 
         for f in "${IGNORED_FILES[@]}"; do
             [ -e "$wt_path/$f" ] || note "$name: falta $f"
