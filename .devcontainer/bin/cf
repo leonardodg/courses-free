@@ -986,11 +986,18 @@ cmd_rm() {
     fi
 
     # Trabalho nao salvo e o unico dado insubstituivel aqui.
+    #
+    # O aviso e sobre ESTA worktree, entao a contagem parte de HEAD e nao de
+    # --branches. Com --branches o git varre TODAS as branches do repositorio -
+    # num bare repo compartilhado por varias worktrees, isso acusava commits
+    # pendentes de outra branch qualquer e assustava a toa na hora de remover.
     if [ -d "$wt_path" ]; then
-        local dirty; dirty="$(git -C "$wt_path" status --porcelain | wc -l)"
-        local unpushed; unpushed="$(git -C "$wt_path" log --branches --not --remotes --oneline 2>/dev/null | wc -l)"
+        local dirty unpushed
+        dirty="$(git -C "$wt_path" status --porcelain | wc -l)"
+        unpushed="$(git -C "$wt_path" log --oneline HEAD --not --remotes 2>/dev/null | wc -l)"
         [ "$dirty"    -gt 0 ] && warn "$dirty arquivo(s) com alteracao nao commitada"
-        [ "$unpushed" -gt 0 ] && warn "$unpushed commit(s) nao enviados para o remoto"
+        [ "$unpushed" -gt 0 ] \
+            && warn "$unpushed commit(s) de '$branch_prevista' fora do remoto"
     fi
 
     # Os dados so sao desta worktree se estiverem sob CF_DATA_ROOT, que e onde
