@@ -51,6 +51,8 @@ services:
       - ../php/opcache-dev.ini:/usr/local/etc/php/conf.d/opcache.ini:ro
       - ../php/php-dev-custom.ini:/usr/local/etc/php/conf.d/zzz-custom.ini:ro
       - ../apache/moodle-dev-performance.conf:/etc/apache2/conf-enabled/moodle-performance.conf:ro
+      # phpu_moodledata e uploads.ini NAO entram aqui: este arquivo e o mesmo que
+      # a VPS carrega (base.yml:db.yml:dev.yml no deploy.yml). Ver local-dev.yml.
 
     deploy:
       resources:

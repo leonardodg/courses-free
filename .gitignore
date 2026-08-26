@@ -79,5 +79,15 @@ tsconfig.aliases.json
 # .env da raiz: variaveis de interpolacao do compose, com caminhos da maquina.
 /.env
 
+# Symlink para o /.env acima, criado pelo "cf".
+# A extensao Dev Containers monta o proprio "docker compose -f ..." sem passar
+# --env-file, e o compose entao procura o .env no diretorio do PRIMEIRO arquivo
+# compose - este aqui - em vez da raiz do repo. Sem o link, o Reopen in Container
+# falha com "required variable DB_HOST_DATA is missing a value".
+.devcontainer/compose/.env
+
+# Dataroot do PHPUnit, por worktree (montado por compose/local-dev.yml).
+/phpu_moodledata/
+
 # Mapa de dominios por vendedor, gerado pelo local_marketplace em runtime.
 .devcontainer/marketplace_domains.php

@@ -309,19 +309,44 @@ jobs:
           printf "%b\n" "$RESUMO"
 
   # ===========================================================================
+  # IMAGEM MULTI-ARQUITETURA
+  # ===========================================================================
+  # A VPS Oracle e aarch64 (Ampere), mas quem desenvolve esta em x86_64. Com a
+  # imagem publicada so em arm64, "docker compose pull" na maquina de
+  # desenvolvimento falhava com:
+  #
+  #     no matching manifest for linux/amd64 in the manifest list entries
+  #
+  # e o unico caminho local era compilar ("cf build").
+  #
+  # A saida NAO e "platforms: linux/amd64,linux/arm64" num job so: isso poe o
+  # amd64 sob emulacao QEMU, que num build de Moodle custa dezenas de minutos -
+  # exatamente o que o runner ARM nativo foi escolhido para evitar.
+  #
+  # Em vez disso: cada arquitetura compila no SEU runner nativo e empurra por
+  # DIGEST (sem tag), e um terceiro job funde os dois digests numa unica tag
+  # multi-arch. Cada runner faz so o seu trabalho, em paralelo, sem emulacao.
+  # Gratuito porque o repositorio e publico.
   image:
-    name: Build e push da imagem (arm64)
+    name: Build da imagem (${{ matrix.arch }})
     needs: validate
     if: github.event_name != 'pull_request'
-    # A VPS Oracle e aarch64 (Ampere). Buildar na ubuntu-latest, que e x86_64,
-    # geraria uma imagem que nao roda la. Runner ARM nativo evita a emulacao
-    # QEMU, que num build de Moodle custa dezenas de minutos.
-    # Gratuito porque o repositorio e publico.
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     # Obrigatorio: DOCKER_USERNAME e DOCKER_TOKEN vivem no environment.
     environment: development
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
     env:
-      IMAGE: ${{ vars.DOCKER_USERNAME }}/courses-free:development
+      # Sem tag: o push-by-digest publica no repositorio, nao numa tag.
+      REPO: ${{ vars.DOCKER_USERNAME }}/courses-free
     steps:
       - uses: actions/checkout@v4
 
@@ -332,26 +357,114 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - uses: docker/build-push-action@v6
+      - name: Build e push por digest
+        id: build
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: .devcontainer/build/moodle.Dockerfile
           target: development
-          platforms: linux/arm64
-          push: true
-          tags: |
-            ${{ env.IMAGE }}
-            ${{ vars.DOCKER_USERNAME }}/courses-free:${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.IMAGE }}
-          cache-to: type=inline
+          platforms: ${{ matrix.platform }}
+          # name-canonical grava o nome do repositorio no manifesto, que o
+          # imagetools do job seguinte precisa para resolver o digest.
+          outputs: type=image,name=${{ env.REPO }},push-by-digest=true,name-canonical=true,push=true
+          # Cache no GitHub Actions, nao no Docker Hub.
+          #
+          # O "type=inline" de antes nao serve com push-by-digest: sem tag no
+          # push, nao ha onde embutir o cache. A alternativa obvia seria uma tag
+          # de cache no registro, mas isso criaria mais duas tags grandes no
+          # Docker Hub - o oposto do que se quer, ja que o repositorio estava
+          # acumulando uma tag de ~585 MB por commit.
+          #
+          # O scope separa os caches: sem ele as duas arquiteturas disputariam a
+          # mesma entrada e cada build invalidaria o cache da outra.
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
           build-args: |
             ENVIRONMENT=development
             TZ=America/Sao_Paulo
 
+      - name: Guardar o digest
+        run: |
+          mkdir -p /tmp/digests
+          # O conteudo nao importa: o job seguinte le o digest do NOME do arquivo.
+          touch "/tmp/digests/${{ steps.build.outputs.digest }}"
+        shell: bash
+
+      - uses: actions/upload-artifact@v4
+        with:
+          # Um artefato por arquitetura: o upload-artifact@v4 recusa nomes
+          # repetidos entre jobs da mesma matriz.
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ===========================================================================
+  image-manifest:
+    name: Publicar manifesto multi-arch
+    needs: image
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: development
+    env:
+      REPO: ${{ vars.DOCKER_USERNAME }}/courses-free
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Fundir os digests numa tag multi-arch
+        working-directory: /tmp/digests
+        run: |
+          set -euo pipefail
+          # Cada arquivo tem por NOME o digest de uma arquitetura.
+          referencias=""
+          for f in *; do
+            referencias="$referencias ${REPO}@sha256:${f#sha256:}"
+          done
+          echo "fundindo:$referencias"
+          # Uma tag so, "development".
+          #
+          # Havia tambem uma tag por SHA de commit. Como cada push publica ~585
+          # MB, o repositorio acumulou dezenas delas em poucos dias, sem que
+          # nada as consumisse: o deploy usa :development, e para voltar a uma
+          # versao anterior o digest continua acessivel
+          # (docker pull leodg/courses-free@sha256:...), que e o identificador
+          # imutavel de verdade.
+          # shellcheck disable=SC2086
+          docker buildx imagetools create --tag "${REPO}:development" $referencias
+
+      - name: Conferir que a tag tem as duas arquiteturas
+        run: |
+          set -euo pipefail
+          # O deploy depende deste job. Se o manifesto sair com uma arquitetura
+          # so, a VPS ou a maquina de desenvolvimento fica sem imagem - melhor
+          # falhar aqui do que no "docker compose pull" do deploy.
+          arquiteturas=$(docker buildx imagetools inspect "${REPO}:development" --raw \
+            | jq -r '.manifests[].platform | select(.os != "unknown") | .architecture' \
+            | sort -u | tr '\n' ' ')
+          echo "arquiteturas publicadas: $arquiteturas"
+          for esperada in amd64 arm64; do
+            case "$arquiteturas" in
+              *"$esperada"*) ;;
+              *) echo "::error::manifesto sem $esperada"; exit 1 ;;
+            esac
+          done
+
   # ===========================================================================
   deploy:
     name: Deploy na VPS Oracle
-    needs: image
+    needs: image-manifest
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: development
