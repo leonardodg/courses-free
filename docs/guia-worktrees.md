@@ -359,25 +359,33 @@ COMPOSE_ENV_FILE=.env docker compose config
 
 ## 10. A imagem: a VPS é ARM, sua máquina não
 
-O CI compila em `ubuntu-24.04-arm` com `platforms: linux/arm64`
-(`deploy.yml:340`), porque a VPS Oracle é Ampere. O manifesto publicado de
-`leodg/courses-free:development` **só tem `linux/arm64`**.
-
-Consequência para quem desenvolve em x86_64:
+A VPS Oracle é Ampere (aarch64); quem desenvolve está em x86_64. O CI compilava
+**só** `linux/arm64`, então em amd64 o `pull` batia em:
 
 ```
-$ docker compose pull
 Error response from daemon: no matching manifest for linux/amd64 ...
 ```
 
-Isso não é defeito de configuração — **`pull` não funciona nesta máquina, e não
-vai funcionar**. Localmente a imagem vem de `cf build`, que é a única fonte:
+e a única fonte local da imagem era `cf build`.
+
+O `deploy.yml` agora publica **multi-arquitetura**: cada arquitetura compila no
+seu runner nativo (`ubuntu-latest` e `ubuntu-24.04-arm`) e empurra por digest,
+e um job `image-manifest` funde os dois numa tag só. Não se usa
+`platforms: linux/amd64,linux/arm64` num job único de propósito — isso poria o
+amd64 sob QEMU, que num build de Moodle custa dezenas de minutos.
+
+> **Vale a partir do primeiro build depois do merge.** Enquanto a tag publicada
+> não tiver amd64, use `cf build`. Confira com:
+>
+> ```bash
+> docker buildx imagetools inspect leodg/courses-free:development
+> ```
+
+Local, para reconstruir de propósito (depois de mexer no Dockerfile):
 
 ```bash
-cf build            # reconstrói leodg/courses-free:development para amd64
+cf build
 ```
-
-Na VPS é o contrário: o deploy faz `docker compose pull` e nunca compila.
 
 Antes de reconstruir, vale marcar a imagem que funciona, para ter para onde
 voltar:
@@ -386,9 +394,9 @@ voltar:
 docker tag leodg/courses-free:development leodg/courses-free:backup-$(date +%F)
 ```
 
-> É por isso que o CRLF da §11 era grave e ao mesmo tempo invisível: em amd64
-> **todo** ambiente local depende de um build local, e um build local com CRLF
-> produz um ENTRYPOINT que não executa.
+> É por isso que o CRLF da §11 passou tanto tempo escondido: enquanto o `pull`
+> não funcionou em amd64, **todo** ambiente local dependeu de um build local — e
+> um build local com CRLF produz um `ENTRYPOINT` que não executa.
 
 ---
 
