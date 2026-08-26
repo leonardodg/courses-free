@@ -388,7 +388,13 @@ jobs:
         run: |
           mkdir -p /tmp/digests
           # O conteudo nao importa: o job seguinte le o digest do NOME do arquivo.
-          touch "/tmp/digests/${{ steps.build.outputs.digest }}"
+          #
+          # O prefixo "sha256:" TEM que sair. O upload-artifact@v4 recusa dois
+          # pontos em nome de arquivo (junto com " < > | * ? \r \n), por causa
+          # de sistemas de arquivos como o NTFS. Com o digest cru, o passo falha
+          # com "The path for one of the files in artifact is not valid".
+          digest='${{ steps.build.outputs.digest }}'
+          touch "/tmp/digests/${digest#sha256:}"
         shell: bash
 
       - uses: actions/upload-artifact@v4
