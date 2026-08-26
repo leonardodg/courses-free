@@ -275,17 +275,39 @@ estava rodando — o padrão da extensão com compose é parar os serviços.
 
 ---
 
-## 7. Instalação numa máquina nova
+## 7. Onde o `cf` mora, e como chamá-lo sem caminho
+
+O script é **versionado no repositório**, em `.devcontainer/bin/cf`. Ou seja,
+ele viaja com a branch e toda worktree tem a sua cópia.
+
+Para digitar `cf` de qualquer diretório, sem caminho, exponha um symlink no
+`PATH`:
 
 ```bash
-# o cf mora no repo; exponha no PATH
 ln -sfn ~/localhost/gitworktree-bare-moodle/<worktree>/.devcontainer/bin/cf \
         ~/.local/bin/cf
+```
 
-# CLI do Dev Containers
+`~/.local/bin` já entra no `PATH` nesta máquina, pelo `~/.profile` (padrão do
+Ubuntu) e pelo `~/.bashrc`. Em outra máquina, confira:
+
+```bash
+case ":$PATH:" in *":$HOME/.local/bin:"*) echo ok;; *) echo "falta no PATH";; esac
+```
+
+O `cf` resolve o symlink para descobrir a raiz (`readlink -f` sobre o próprio
+`$0`), então o link funciona apontando para qualquer worktree.
+
+> **Aponte para a worktree principal.** O link entra *dentro* de uma worktree;
+> se ela for removida, o link fica pendurado e o `cf` some do `PATH` sem
+> explicação. O `cf rm` detecta esse caso e reaponta sozinho para a principal
+> antes de apagar, e o `cf doctor` avisa se o link estiver mal apontado ou
+> quebrado.
+
+### CLI do Dev Containers
+
+```bash
 sudo npm install -g @devcontainers/cli
-
-cf doctor
 ```
 
 Sem sudo, dá para instalar num prefixo do próprio usuário:
@@ -298,8 +320,14 @@ ln -sfn ~/.local/share/devcontainers-cli/node_modules/.bin/devcontainer \
 
 Não faça as duas: `~/.local/bin` vem antes no `PATH` e sombreia a global.
 
-O `cf` descobre a raiz a partir do próprio caminho (resolvendo o symlink), então
-o link pode apontar para qualquer worktree.
+### Conferindo
+
+```bash
+cf doctor
+```
+
+A primeira seção da saída é a instalação do próprio `cf`: onde está o script,
+sob que nome ele responde no `PATH` e se o symlink aponta para lugar seguro.
 
 ### O registro
 
