@@ -692,6 +692,30 @@ restore_pending() {
     ok "banco restaurado"
 }
 
+# Apaga um diretorio de dados de stack.
+#
+# Nao da para fazer so com "rm -rf": o dbdata pertence ao uid 999 (o mysql do
+# container do MariaDB) e o moodledata ao 33 (www-data), ambos criados pelo
+# docker. O usuario do host nao tem escrita nesses diretorios e o rm falha no
+# meio, deixando ~175 MB orfaos - foi o que aconteceu na primeira versao.
+#
+# Um container descartavel monta o diretorio PAI e apaga de dentro, como root.
+# Sem sudo, sem pedir senha, e usando algo que ja precisa estar instalado.
+remove_data_dir() {
+    local dir="$1"
+    [ -n "$dir" ] && [ -d "$dir" ] || return 0
+
+    rm -rf "$dir" 2>/dev/null && [ ! -d "$dir" ] && return 0
+
+    local parent base
+    parent="$(dirname "$dir")"; base="$(basename "$dir")"
+    # --rm e um nome fixo evitam deixar lixo se algo falhar no meio.
+    docker run --rm -v "$parent:/target" alpine:latest \
+        rm -rf "/target/$base" >/dev/null 2>&1 || true
+
+    [ -d "$dir" ] && warn "sobrou dado em $dir" || ok "dados apagados"
+}
+
 # -----------------------------------------------------------------------------
 # cf rm
 # -----------------------------------------------------------------------------
@@ -736,8 +760,7 @@ cmd_rm() {
     git -C "$CF_ROOT" worktree remove --force "$wt_path" 2>/dev/null || rm -rf "$wt_path"
     git -C "$CF_ROOT" branch -D "feature/$name" 2>/dev/null || true
     info "apagando os dados"
-    rm -rf "$(dirname "$data_md")" 2>/dev/null \
-        || { sudo -n rm -rf "$(dirname "$data_md")" 2>/dev/null || warn "sobrou dado em $(dirname "$data_md") (permissao)"; }
+    remove_data_dir "$(dirname "$data_md")"
     registry_del "$name"
     rm -f "$CF_STATE/pending-restore-$name" "$CF_STATE/seed-$name.sql"
     ok "'$name' removida; offset $offset liberado"
