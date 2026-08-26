@@ -261,16 +261,23 @@ cmd_ls() {
         [[ "$name" =~ ^# ]] && continue
         [ -z "$name" ] && continue
 
-        if [ -d "$wt_path" ]; then
+        if [ ! -d "$wt_path" ]; then
+            status="${C_RED}sumiu${C_OFF}"; branch="-"; url="-"
+        elif [ "$off" = "-" ]; then
+            # Worktree registrada sem stack proprio: existe no disco, mas nao ha
+            # ambiente servindo o codigo dela agora. Nao consultar o compose
+            # aqui - o .env dela aponta para o stack principal, e o "ps" diria
+            # "up" por causa do container de OUTRA worktree.
+            status="${C_DIM}sem stack${C_OFF}"; url="-"
+            branch="$(git -C "$wt_path" branch --show-current 2>/dev/null || echo '?')"
+        else
             n_up="$(dc "$wt_path" ps -q 2>/dev/null | wc -l)"
             if [ "$n_up" -ge 2 ]; then status="${C_GRN}up${C_OFF}"
             elif [ "$n_up" -ge 1 ]; then status="${C_YEL}parcial${C_OFF}"
             else status="${C_DIM}down${C_OFF}"; fi
             branch="$(git -C "$wt_path" branch --show-current 2>/dev/null || echo '?')"
-        else
-            status="${C_RED}sumiu${C_OFF}"; branch="-"
+            url="https://localhost:$(port_https "$off")"
         fi
-        url="https://localhost:$(port_https "$off")"
 
         printf '%-22s %-6s %-26s %-16s %s\n' "$name" "$off" "$stack" "$status" "$url"
         printf '  %s%s%s\n' "$C_DIM" "$branch" "$C_OFF"
@@ -521,15 +528,16 @@ EOF
         dc "$atual_path" down 2>/dev/null || true
     fi
 
-    # O offset 0 passa a ser a nova worktree.
+    # O offset 0 passa a ser a nova worktree; a anterior fica registrada com
+    # offset "-", que significa "sem stack proprio".
+    #
+    # Tirar a anterior do registro seria mais simples e estava errado: ela
+    # deixava de existir para o cf, e "cf rm" respondia "nao esta no registro" -
+    # sem como limpar a worktree pelo proprio comando que a criou.
     registry_del "$atual"
+    registry_del "$alvo"
     registry_add "$alvo" 0 "$stack" "$alvo_path" "$md" "$dbd"
-
-    # O .env da worktree antiga fica para tras com as portas do principal. Nao
-    # apagamos - pode conter ajuste local - mas ela sai do registro, entao um
-    # "cf up <antiga>" para com "nao esta no registro" em vez de disputar as
-    # portas com o stack que agora serve outra coisa.
-    warn "'$atual' saiu do registro; o .env dela continua no disco"
+    registry_add "$atual" "-" "-" "$atual_path" "$md" "$dbd"
 
     echo
     cmd_up "$alvo"
@@ -555,12 +563,13 @@ cmd_new() {
     # portas e ~900 MB, e a maior parte do tempo se trabalha numa feature de
     # cada vez. Stack proprio e a excecao - quando se precisa das duas no ar
     # junto, ou de bancos separados - e ai vem o --new-stack.
-    local name="" from="" seed="clone" open_code=1 novo_stack=0
+    local name="" from="" seed="clone" open_code=1 novo_stack=0 branch=""
 
     while [ $# -gt 0 ]; do
         case "$1" in
             --from)   from="${2:-}"; shift 2 ;;
             --seed)   seed="${2:-}"; shift 2 ;;
+            --branch) branch="${2:-}"; shift 2 ;;
             --no-code) open_code=0; shift ;;
             --new-stack|--novo-stack) novo_stack=1; shift ;;
             --reuse|--use) novo_stack=0; shift ;;   # explicito, mesmo sendo o padrao
@@ -568,8 +577,34 @@ cmd_new() {
             *)        [ -z "$name" ] && name="$1" || die "nome ja informado"; shift ;;
         esac
     done
-    [ -n "$name" ] || die "uso: cf new <nome> [--new-stack] [--from <branch>] [--seed clone|fresh|share] [--no-code]"
+    [ -n "$name" ] || die "uso: cf new <nome|prefixo/nome> [--branch <branch>] [--new-stack] [--from <branch>] [--seed clone|fresh|share] [--no-code]"
     case "$seed" in clone|fresh|share) ;; *) die "--seed aceita clone, fresh ou share" ;; esac
+
+    # --- nome da PASTA x nome da BRANCH --------------------------------------
+    # Sao duas coisas diferentes e o cf confundia as duas: cravava "feature/" na
+    # branch, entao "cf new fix-docs" produzia a branch feature/fix-docs - um
+    # conserto classificado como feature. (Esta branch existe no repo. Foi assim
+    # que o problema apareceu.)
+    #
+    # Regra:
+    #   cf new paygw-pix                 pasta paygw-pix   branch feature/paygw-pix
+    #   cf new fix/tls-porta             pasta fix-tls-porta   branch fix/tls-porta
+    #   cf new x --branch hotfix/y       pasta x           branch hotfix/y
+    #
+    # Ou seja: barra no nome significa "isto e a branch inteira", e a pasta sai
+    # dela trocando barra por hifen. Sem barra, mantem-se o default feature/,
+    # que cobre o caso comum sem obrigar a digitar o prefixo.
+    if [ -z "$branch" ]; then
+        case "$name" in
+            */*) branch="$name"; name="${name//\//-}" ;;
+            *)   branch="feature/$name" ;;
+        esac
+    fi
+
+    git check-ref-format --branch "$branch" >/dev/null 2>&1 \
+        || die "'$branch' nao e um nome de branch valido"
+    git -C "$CF_ROOT" show-ref --verify --quiet "refs/heads/$branch" \
+        && die "a branch '$branch' ja existe"
 
     # --seed so faz sentido criando banco proprio; reaproveitando, o banco e o
     # que ja esta la. Avisar em vez de aceitar em silencio algo que nao ocorre.
@@ -635,11 +670,11 @@ cmd_new() {
     # ---------------------------------------------------------------------
     if [ "$novo_stack" -eq 0 ]; then
         info "worktree : $name"
-        info "branch   : feature/$name  a partir de $from"
+        info "branch   : $branch  a partir de $from"
         info "stack    : reaproveitando o que ja roda (use --new-stack para um proprio)"
         echo
         info "criando a worktree"
-        git -C "$CF_ROOT" worktree add "$wt_path" -b "feature/$name" "$from" \
+        git -C "$CF_ROOT" worktree add "$wt_path" -b "$branch" "$from" \
             || die "git worktree add falhou"
 
         # O cf use faz o resto: copia os arquivos ignorados, gera o .env com as
@@ -660,7 +695,7 @@ cmd_new() {
     local data_root="$CF_DATA_ROOT/$name"
 
     info "worktree : $name  (offset $offset)"
-    info "branch   : feature/$name  a partir de $from"
+    info "branch   : $branch  a partir de $from"
     info "stack    : $stack  (proprio, roda junto com os outros)"
     info "portas   : http $http | https $https | db $db | xdebug $xdebug"
     info "dados    : $data_root"
@@ -668,7 +703,7 @@ cmd_new() {
 
     # --- 1. worktree ---------------------------------------------------------
     info "criando a worktree"
-    git -C "$CF_ROOT" worktree add "$wt_path" -b "feature/$name" "$from" \
+    git -C "$CF_ROOT" worktree add "$wt_path" -b "$branch" "$from" \
         || die "git worktree add falhou"
 
     # A partir daqui, qualquer falha deve desfazer o que foi criado: uma worktree
@@ -679,7 +714,7 @@ cmd_new() {
         cleanup_done=1
         warn "desfazendo o que foi criado para '$name'"
         git -C "$CF_ROOT" worktree remove --force "$wt_path" 2>/dev/null || true
-        git -C "$CF_ROOT" branch -D "feature/$name" 2>/dev/null || true
+        git -C "$CF_ROOT" branch -D "$branch" 2>/dev/null || true
         rm -rf "$data_root"
     }
     trap cleanup_new ERR INT TERM
@@ -917,11 +952,16 @@ cmd_rm() {
     require_registered "$name"
 
     local offset; offset="$(registry_get "$name" 2)"
-    [ "$offset" = "0" ] && die "'$name' e o stack principal (offset 0); nao removo por aqui"
+    [ "$offset" = "0" ] \
+        && die "'$name' e a worktree que o stack principal serve agora.
+  Troque para outra antes de remover esta:  cf use <outra>"
 
-    local wt_path data_md
+    local wt_path data_md branch_prevista=""
     wt_path="$(wt_path_of "$name")"
     data_md="$(registry_get "$name" 5)"
+    # Lida da worktree, nao deduzida do nome: com "cf new fix/tls" a pasta e
+    # fix-tls e a branch e fix/tls.
+    [ -d "$wt_path" ] && branch_prevista="$(git -C "$wt_path" branch --show-current 2>/dev/null || true)"
 
     # Se o cf do PATH for um symlink para DENTRO desta worktree, remove-la
     # deixaria o link pendurado e o comando sumiria do PATH - inclusive o
@@ -953,12 +993,31 @@ cmd_rm() {
         [ "$unpushed" -gt 0 ] && warn "$unpushed commit(s) nao enviados para o remoto"
     fi
 
+    # Os dados so sao desta worktree se estiverem sob CF_DATA_ROOT, que e onde
+    # o --new-stack cria banco proprio.
+    #
+    # Uma worktree que apenas foi SERVIDA pelo stack principal tem, na linha do
+    # registro, os caminhos do principal - moodledata-courses-free e
+    # dbdata-courses-free. Apagar por ali destruiria o banco principal a partir
+    # de um "cf rm" numa worktree secundaria. E o pior tipo de bug: o comando
+    # parece local e o estrago e global.
+    local dados_proprios=0 dados_dir=""
+    dados_dir="$(dirname "$data_md")"
+    case "$dados_dir" in
+        "$CF_DATA_ROOT"/*) dados_proprios=1 ;;
+    esac
+
     echo
     warn "isto remove, sem volta:"
     printf '     worktree : %s\n' "$wt_path"
-    printf '     branch   : feature/%s\n' "$name"
-    printf '     dados    : %s\n' "$(dirname "$data_md")"
-    printf '     stack    : courses-free-%s (containers e volumes)\n' "$name"
+    printf '     branch   : %s\n' "${branch_prevista:-<lida da worktree>}"
+    if [ "$dados_proprios" -eq 1 ]; then
+        printf '     dados    : %s\n' "$dados_dir"
+        printf '     stack    : %s (containers e volumes)\n' "$(registry_get "$name" 3)"
+    else
+        printf '     dados    : %s\n' "PRESERVADOS (sao do stack principal)"
+        printf '     stack    : %s\n' "nenhum proprio"
+    fi
     echo
 
     if [ "$force" -eq 0 ]; then
@@ -967,12 +1026,35 @@ cmd_rm() {
         [ "$answer" = "$name" ] || die "cancelado"
     fi
 
-    [ -d "$wt_path" ] && { info "derrubando o stack"; dc "$wt_path" down -v 2>/dev/null || true; }
+    # So derruba stack se esta worktree TIVER um proprio.
+    #
+    # Numa worktree com offset "-", o .env carrega as portas e o nome do stack
+    # PRINCIPAL - foi ele que a serviu. Um "compose down -v" ali derrubaria o
+    # ambiente principal e apagaria os volumes dele, a partir de um comando que
+    # so deveria mexer numa worktree secundaria.
+    if [ "$dados_proprios" -eq 1 ] && [ -d "$wt_path" ]; then
+        info "derrubando o stack"
+        dc "$wt_path" down -v 2>/dev/null || true
+    fi
+
+    local branch="$branch_prevista"
     info "removendo a worktree"
     git -C "$CF_ROOT" worktree remove --force "$wt_path" 2>/dev/null || rm -rf "$wt_path"
-    git -C "$CF_ROOT" branch -D "feature/$name" 2>/dev/null || true
-    info "apagando os dados"
-    remove_data_dir "$(dirname "$data_md")"
+    if [ -n "$branch" ]; then
+        if git -C "$CF_ROOT" branch -D "$branch" 2>/dev/null; then
+            info "branch '$branch' removida"
+        else
+            warn "branch '$branch' nao removida (talvez tenha commit nao merjeado)"
+        fi
+    else
+        warn "nao identifiquei a branch da worktree; confira com 'git branch'"
+    fi
+    if [ "$dados_proprios" -eq 1 ]; then
+        info "apagando os dados"
+        remove_data_dir "$dados_dir"
+    else
+        info "dados preservados: sao do stack principal, nao desta worktree"
+    fi
     registry_del "$name"
     rm -f "$CF_STATE/pending-restore-$name" "$CF_STATE/seed-$name.sql"
     ok "'$name' removida; offset $offset liberado"
@@ -1093,10 +1175,18 @@ cf - fluxo de worktrees do courses-free
 Notacao: <obrigatorio>, [opcional]. "worktree" e o NOME da worktree, a mesma
 coluna WORKTREE que o "cf ls" mostra - por exemplo: paygw-pix.
 
-  cf new <nome> [--new-stack] [--from <branch>] [--seed clone|fresh|share]
-                [--no-code]
+  cf new <nome|prefixo/nome> [--branch <branch>] [--new-stack]
+                [--from <branch>] [--seed clone|fresh|share] [--no-code]
         Cria worktree e branch a partir de origin/dev, copia a configuracao
         local e abre o VS Code dentro do container.
+
+        A PASTA e a BRANCH sao coisas diferentes. Barra no nome quer dizer
+        "isto e a branch inteira", e a pasta sai dela com hifen no lugar da
+        barra. Sem barra, a branch ganha o prefixo feature/:
+
+            cf new paygw-pix         pasta paygw-pix      branch feature/paygw-pix
+            cf new fix/tls-porta     pasta fix-tls-porta  branch fix/tls-porta
+            cf new x --branch hotfix/y   pasta x          branch hotfix/y
 
         Por padrao REAPROVEITA o stack que ja roda: mesmo container, mesmo
         banco, mesmas portas - so o codigo montado muda. Barato e instantaneo,

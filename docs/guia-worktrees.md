@@ -81,7 +81,7 @@ worktree** — a mesma coluna `WORKTREE` que o `cf ls` mostra, por exemplo
 
 | Comando | O que faz |
 |---|---|
-| `cf new <nome> [--new-stack] [--from <branch>] [--seed <modo>] [--no-code]` | cria worktree e ambiente |
+| `cf new <nome> [opções]` | cria worktree e ambiente (opções logo abaixo) |
 | `cf use <worktree>` | o stack atual passa a servir outra worktree |
 | `cf ls` | worktrees, offsets, stacks, status e URLs |
 | `cf up [worktree]` | sobe o stack |
@@ -139,12 +139,44 @@ o stack que agora serve outra coisa.
 
 ### Opções do `cf new`
 
-`--from <branch>` — base da nova branch. O padrão é **`origin/dev`**, a branch de
-integração (ver §8).
+| Opção | Padrão | O que faz |
+|---|---|---|
+| `--branch <branch>` | `feature/<nome>` | nome da branch, quando difere do da pasta |
+| `--from <branch>` | `origin/dev` | de onde a branch nova sai |
+| `--new-stack` | desligado | ambiente próprio em vez de reaproveitar o atual |
+| `--seed <modo>` | `clone` | de onde vêm os dados (só com `--new-stack`) |
+| `--no-code` | desligado | **não** abre o VS Code ao final |
 
-`--new-stack` — ambiente próprio em vez de reaproveitar o atual.
+#### Nome da pasta ≠ nome da branch
 
-`--seed <modo>` — de onde vêm os dados:
+São duas coisas, e o `cf` deixava isso confuso: cravava `feature/` em tudo, então
+`cf new fix-docs` criava a branch `feature/fix-docs` — um conserto classificado
+como feature.
+
+**Barra no nome significa "isto é a branch inteira"**, e a pasta sai dela
+trocando barra por hífen:
+
+```bash
+cf new paygw-pix              # pasta paygw-pix       branch feature/paygw-pix
+cf new fix/tls-porta          # pasta fix-tls-porta   branch fix/tls-porta
+cf new x --branch hotfix/y    # pasta x               branch hotfix/y
+```
+
+Sem barra, mantém-se o prefixo `feature/`, que cobre o caso comum sem obrigar a
+digitá-lo. O `cf` recusa nome de branch inválido ou já existente, antes de criar
+qualquer coisa. O `cf rm` **lê a branch da worktree** em vez de deduzi-la do
+nome da pasta, então uma `fix/…` não fica órfã.
+
+#### `--no-code`
+
+O `cf new` termina abrindo o VS Code **dentro** do container. `--no-code` pula
+esse passo — útil em script, por SSH, ou quando você só quer o ambiente no ar
+para rodar teste por linha de comando. A worktree fica pronta do mesmo jeito;
+dá para abrir depois com `cf code <worktree>`.
+
+#### `--seed <modo>`
+
+De onde vêm os dados do banco:
 
 - `clone` (padrão) — `mariadb-dump` do stack principal mais cópia do
   `moodledata`. A feature nasce com os dados de teste. ~30–60 s.
@@ -155,8 +187,6 @@ integração (ver §8).
 
 Só tem efeito com `--new-stack`; sem ele o banco é o do stack atual, e o `cf`
 avisa se você passar `--seed` à toa.
-
-`--no-code` — não abre o VS Code ao final.
 
 ---
 
@@ -580,9 +610,23 @@ Depois do merge do PR:
 cf rm paygw-pix
 ```
 
-Derruba o stack com os volumes, remove a worktree e a branch local, apaga
-`~/localhost/cf-data/paygw-pix/` e libera o offset.
+Remove a worktree e a **branch que ela tem de fato** — lida da worktree, não
+deduzida do nome da pasta, para que uma `fix/…` não fique órfã.
+
+O resto depende de a worktree ter ambiente próprio:
+
+| | Com stack próprio (offset ≥ 1) | Sem stack (offset `-`) |
+|---|---|---|
+| Containers e volumes | derrubados | **intocados** |
+| `~/localhost/cf-data/<nome>/` | apagado | não existe |
+| Dados do stack principal | — | **preservados** |
+
+A distinção não é cosmética. A linha de registro de uma worktree sem stack
+aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a serviu.
+Apagar por ali destruiria o banco principal a partir de um comando que parece
+local. O `cf rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba stack
+quando existe um próprio.
 
 Antes de remover, avisa se houver alteração não commitada ou commit não enviado,
-e pede o nome da worktree por extenso. O offset 0 é recusado — o ambiente
-principal não se remove por aqui.
+e pede o nome da worktree por extenso (`--force` pula). **A worktree que o stack
+principal serve agora é recusada** — troque antes com `cf use <outra>`.
