@@ -215,9 +215,34 @@ Containers:
 vscode-remote://dev-container+<caminho-do-host-em-hex>/var/www/html
 ```
 
-### Por que não há mais rebuild
+### O que sobrou de build, e o que não sobrou
 
-Duas coisas faziam o "Reopen in Container" reconstruir a imagem a cada worktree:
+Sendo preciso: **abrir uma worktree já criada custa ~1 segundo** e reaproveita o
+container. O que existe é um custo único, na *criação* de cada worktree.
+
+| Momento | Antes | Agora |
+|---|---|---|
+| `cf new` (uma vez por worktree) | build completo da imagem | camada de UID, ~726 MB |
+| Reopen in Container | build completo de novo | ~1 s, container reaproveitado |
+
+A camada de UID vem de `updateRemoteUserUID`, ligado por padrão quando o
+`remoteUser` não é root: a CLI deriva uma imagem que remapeia `www-data` de uid
+33 para o seu uid 1000, com um `chown -R` da árvore inteira. É por worktree,
+porque o nome da imagem carrega o hash do caminho da pasta.
+
+Dá para eliminá-la com `"updateRemoteUserUID": false`, **mas não vale**: o repo
+é bind-mount com dono `leodg` (1000) e modo 644/755, então `www-data` como uid
+33 cairia em "outros" e o VS Code não conseguiria **salvar arquivo nenhum**.
+
+Verifique quando desconfiar:
+
+```bash
+docker images | grep vsc-      # uma por worktree; não deve crescer sozinha
+```
+
+### Duas causas de rebuild que foram removidas
+
+Estas sim reconstruíam a imagem **a cada abertura**:
 
 1. **`features` no `devcontainer.json`.** Toda feature declarada obriga a CLI do
    Dev Containers a construir uma **imagem derivada** para injetá-la, e ela
@@ -332,15 +357,58 @@ COMPOSE_ENV_FILE=.env docker compose config
 
 ---
 
-## 10. Armadilhas
+## 10. A imagem: a VPS é ARM, sua máquina não
+
+O CI compila em `ubuntu-24.04-arm` com `platforms: linux/arm64`
+(`deploy.yml:340`), porque a VPS Oracle é Ampere. O manifesto publicado de
+`leodg/courses-free:development` **só tem `linux/arm64`**.
+
+Consequência para quem desenvolve em x86_64:
+
+```
+$ docker compose pull
+Error response from daemon: no matching manifest for linux/amd64 ...
+```
+
+Isso não é defeito de configuração — **`pull` não funciona nesta máquina, e não
+vai funcionar**. Localmente a imagem vem de `cf build`, que é a única fonte:
+
+```bash
+cf build            # reconstrói leodg/courses-free:development para amd64
+```
+
+Na VPS é o contrário: o deploy faz `docker compose pull` e nunca compila.
+
+Antes de reconstruir, vale marcar a imagem que funciona, para ter para onde
+voltar:
+
+```bash
+docker tag leodg/courses-free:development leodg/courses-free:backup-$(date +%F)
+```
+
+> É por isso que o CRLF da §11 era grave e ao mesmo tempo invisível: em amd64
+> **todo** ambiente local depende de um build local, e um build local com CRLF
+> produz um ENTRYPOINT que não executa.
+
+---
+
+## 11. Armadilhas
 
 **Fim de linha.** O git global tem `core.autocrlf=true`, ajuste de Windows: o
 checkout escreve **CRLF** no working tree mesmo com LF gravado no repositório.
-Script com CRLF não executa no Linux — o `moodle-entrypoint` viraria
-`#!/bin/bash\r` e o container morreria no exec. Passava despercebido porque a
-imagem em uso vem do CI (Linux, LF) por `docker compose pull`; só um build local
-expunha a falha. `.devcontainer/.gitattributes` força `eol=lf` nos arquivos que
-entram na imagem, e o atributo tem precedência sobre `core.autocrlf`.
+Script com CRLF não executa no Linux — o `moodle-entrypoint` é o `ENTRYPOINT` da
+imagem, com CRLF vira `#!/bin/bash\r`, o kernel procura um interpretador com
+`\r` no nome e o container morre no `exec`, sem subir.
+
+Some com uma execução de:
+
+```bash
+git -C <worktree> ls-files --eol .devcontainer/bin/ | head
+```
+
+`.devcontainer/.gitattributes` força `eol=lf` nos arquivos que entram na imagem,
+e o atributo tem precedência sobre `core.autocrlf`. Como em amd64 todo ambiente
+local depende de um build local (§10), isso vale para **todo** build daqui.
 
 Ele fica em `.devcontainer/` e não na raiz porque o `.gitattributes` da raiz é do
 Moodle upstream, e este projeto faz merge de `upstream/MOODLE_502_STABLE` com
@@ -370,7 +438,7 @@ O `cf new` recusa abaixo de 5 GB livres, e `cf doctor` avisa antes.
 
 ---
 
-## 11. Encerrando uma feature
+## 12. Encerrando uma feature
 
 Depois do merge do PR:
 
