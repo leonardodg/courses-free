@@ -733,6 +733,28 @@ cmd_rm() {
     wt_path="$(wt_path_of "$name")"
     data_md="$(registry_get "$name" 5)"
 
+    # Se o cf do PATH for um symlink para DENTRO desta worktree, remove-la
+    # deixaria o link pendurado e o comando sumiria do PATH - inclusive o
+    # "cf doctor" que diagnosticaria o problema. Repontar antes de apagar.
+    if command -v cf >/dev/null 2>&1; then
+        local no_path alvo principal
+        no_path="$(command -v cf)"
+        alvo="$(readlink -f "$no_path" 2>/dev/null || true)"
+        case "$alvo" in
+            "$wt_path"/*)
+                principal="$(awk -F'\t' '$2==0 {print $4; exit}' "$CF_REGISTRY")"
+                if [ -n "$principal" ] && [ -x "$principal/.devcontainer/bin/cf" ]; then
+                    info "o cf do PATH vinha desta worktree; repontando para '$principal'"
+                    ln -sfn "$principal/.devcontainer/bin/cf" "$no_path"
+                else
+                    die "o cf do PATH ($no_path) aponta para dentro de '$name'.
+  Remover agora deixaria o comando quebrado. Reaponte antes:
+      ln -sfn <outra-worktree>/.devcontainer/bin/cf $no_path"
+                fi
+                ;;
+        esac
+    fi
+
     # Trabalho nao salvo e o unico dado insubstituivel aqui.
     if [ -d "$wt_path" ]; then
         local dirty; dirty="$(git -C "$wt_path" status --porcelain | wc -l)"
@@ -773,6 +795,49 @@ cmd_doctor() {
     registry_init
     local problems=0
     note() { warn "$*"; problems=$((problems + 1)); }
+
+    # O doctor tem que conferir a si mesmo antes de conferir o resto: o jeito
+    # normal de instalar e um symlink em ~/.local/bin apontando para
+    # <worktree>/.devcontainer/bin/cf. Se aquela worktree for removida, o link
+    # fica pendurado e o comando some do PATH sem explicacao.
+    info "instalacao do proprio cf"
+    printf '  %s  script : %s\n' "$C_DIM$C_OFF" "$SELF"
+    if command -v cf >/dev/null 2>&1; then
+        local no_path; no_path="$(command -v cf)"
+        ok "no PATH como $no_path"
+        if [ -L "$no_path" ]; then
+            # Nao ha checagem de link pendurado aqui: "command -v" ja falha
+            # nesse caso (o alvo nao existe, logo nao e executavel), e a
+            # situacao cai no else abaixo.
+            #
+            # O que interessa avisar: o link resolve para dentro de uma worktree
+            # que o "cf rm" pode APAGAR. Sao exatamente as registradas com
+            # offset diferente de 0. Worktree permanente (dev, main) nao esta no
+            # registro, e a principal (offset 0) o proprio cf rm recusa remover -
+            # nos dois casos o link e estavel.
+            local alvo removivel=""
+            alvo="$(readlink -f "$no_path")"
+            while IFS=$'\t' read -r r_nome r_off _ r_path _ _; do
+                [[ "$r_nome" =~ ^# ]] && continue
+                [ -z "$r_nome" ] || [ "$r_off" = "0" ] && continue
+                case "$alvo" in "$r_path"/*) removivel="$r_nome" ;; esac
+            done < "$CF_REGISTRY"
+
+            if [ -n "$removivel" ]; then
+                note "aponta para dentro da worktree '$removivel', que e removivel."
+                note "  se ela sair, o cf some do PATH. Prefira uma permanente:"
+                note "  ln -sfn $CF_ROOT/.devcontainer/bin/cf $no_path"
+            else
+                printf '  %sok%s alvo estavel: %s\n' "$C_GRN" "$C_OFF" "$alvo"
+            fi
+        fi
+    else
+        # Cobre os dois casos: nunca instalado, e symlink pendurado porque a
+        # worktree que ele apontava foi removida.
+        note "nao responde no PATH (nao instalado, ou symlink pendurado)."
+        note "  instale/conserte com:"
+        note "  ln -sfn $SELF ~/.local/bin/cf"
+    fi
 
     info "ferramentas"
     for t in docker git code; do

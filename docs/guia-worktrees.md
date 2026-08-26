@@ -275,17 +275,62 @@ estava rodando — o padrão da extensão com compose é parar os serviços.
 
 ---
 
-## 7. Instalação numa máquina nova
+## 7. Onde o `cf` mora, e como chamá-lo sem caminho
+
+O script é **versionado no repositório**, em `.devcontainer/bin/cf`. Ou seja,
+ele viaja com a branch e toda worktree tem a sua cópia.
+
+Para digitar `cf` de qualquer diretório, a instalação usa **dois** symlinks
+encadeados:
+
+```
+~/.local/bin/cf
+   └─> ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf     (ponto fixo)
+          └─> ../../dev/.devcontainer/bin/cf                        (qual versão)
+```
 
 ```bash
-# o cf mora no repo; exponha no PATH
-ln -sfn ~/localhost/gitworktree-bare-moodle/<worktree>/.devcontainer/bin/cf \
-        ~/.local/bin/cf
+# ponto fixo na raiz, apontando para a worktree que fornece o cf
+mkdir -p ~/localhost/gitworktree-bare-moodle/.devcontainer/bin
+ln -sfn ../../dev/.devcontainer/bin/cf \
+        ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf
 
-# CLI do Dev Containers
+# o PATH aponta para o ponto fixo, e nunca mais muda
+ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf ~/.local/bin/cf
+```
+
+**Por que dois em vez de um.** O script mora *dentro* de uma worktree, e
+worktree é coisa descartável — apontar o `PATH` direto para uma delas significa
+que apagá-la faz o comando sumir sem explicação. Com a indireção, trocar de
+worktree é mexer em **um** symlink na raiz; o `~/.local/bin/cf` fica intacto.
+O `readlink -f` percorre a cadeia inteira, então o `cf` continua descobrindo a
+raiz corretamente.
+
+**Por que `dev` e não `main`.** `main` não tem `.devcontainer/` — está 108
+commits atrás e fora do caminho normal deste projeto, onde o fluxo é
+`feature → dev → deploy`, sem PR `dev`→`main`. `dev` é a branch de integração:
+sempre tem a versão mais recente do `cf` que passou por PR.
+
+> **Efeito colateral:** o `cf` do `PATH` passa a ser o de `dev`. Para exercitar
+> uma versão em desenvolvimento, chame pelo caminho:
+> `./.devcontainer/bin/cf doctor` de dentro da worktree da feature.
+
+`~/.local/bin` já entra no `PATH` nesta máquina, pelo `~/.profile` (padrão do
+Ubuntu) e pelo `~/.bashrc`. Em outra máquina, confira:
+
+```bash
+case ":$PATH:" in *":$HOME/.local/bin:"*) echo ok;; *) echo "falta no PATH";; esac
+```
+
+O `cf doctor` avisa se o link resolver para dentro de uma worktree **removível**
+— ou seja, registrada com offset diferente de 0, que o `cf rm` pode apagar.
+Worktree permanente (`dev`, `main`) e a principal não disparam o aviso. E o
+`cf rm` reaponta o link sozinho se ele vier da worktree que está prestes a sair.
+
+### CLI do Dev Containers
+
+```bash
 sudo npm install -g @devcontainers/cli
-
-cf doctor
 ```
 
 Sem sudo, dá para instalar num prefixo do próprio usuário:
@@ -298,8 +343,14 @@ ln -sfn ~/.local/share/devcontainers-cli/node_modules/.bin/devcontainer \
 
 Não faça as duas: `~/.local/bin` vem antes no `PATH` e sombreia a global.
 
-O `cf` descobre a raiz a partir do próprio caminho (resolvendo o symlink), então
-o link pode apontar para qualquer worktree.
+### Conferindo
+
+```bash
+cf doctor
+```
+
+A primeira seção da saída é a instalação do próprio `cf`: onde está o script,
+sob que nome ele responde no `PATH` e se o symlink aponta para lugar seguro.
 
 ### O registro
 
