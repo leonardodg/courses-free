@@ -48,6 +48,15 @@ CF_STATE="$CF_ROOT/.cf"
 CF_REGISTRY="$CF_STATE/registry.tsv"
 CF_DATA_ROOT="${CF_DATA_ROOT:-$HOME/localhost/cf-data}"
 
+# Worktree de repouso: para onde o stack principal volta DEPOIS DE QUALQUER
+# "cf rm". Precisa ser permanente (nunca removida por cf rm) e ter
+# .devcontainer/.
+#
+# E "dev", nao "main": main nao tem .devcontainer/ nenhum e esta 108 commits
+# atras - o stack nao sobe nela. Alem disso dev e a branch de integracao, de
+# onde o cf new ramifica, entao o repouso e o mesmo ponto de partida.
+CF_BASE_WT="dev"
+
 # Portas base do offset 0. Mudar aqui desloca todos os stacks de uma vez.
 BASE_HTTP=8080; BASE_HTTPS=8443; BASE_DB=3307; BASE_XDEBUG=9004
 
@@ -952,9 +961,19 @@ cmd_rm() {
     require_registered "$name"
 
     local offset; offset="$(registry_get "$name" 2)"
-    [ "$offset" = "0" ] \
-        && die "'$name' e a worktree que o stack principal serve agora.
-  Troque para outra antes de remover esta:  cf use <outra>"
+
+    [ "$name" = "$CF_BASE_WT" ] \
+        && die "'$name' e a worktree de repouso; nao removo por aqui"
+
+    # Todo "cf rm" termina com o stack principal servindo a worktree de repouso.
+    #
+    # Quando a removida E a servida, isto e obrigatorio: o codigo montado no
+    # container vai sumir do disco. Nos demais casos e uma escolha - volta-se ao
+    # ponto de partida conhecido depois de qualquer remocao, em vez de o estado
+    # final depender de qual worktree se removeu.
+    [ -f "$CF_ROOT/$CF_BASE_WT/.devcontainer/devcontainer.json" ] \
+        || die "a worktree de repouso '$CF_BASE_WT' nao tem .devcontainer/.
+  Sem ela nao ha para onde apontar o stack depois de remover."
 
     local wt_path data_md branch_prevista=""
     wt_path="$(wt_path_of "$name")"
@@ -1031,6 +1050,22 @@ cmd_rm() {
         local answer
         read -r -p "digite o nome da worktree para confirmar: " answer
         [ "$answer" = "$name" ] || die "cancelado"
+    fi
+
+    # Se o stack principal esta servindo ESTA worktree, ele precisa passar a
+    # servir outra antes de o codigo sumir do disco - senao fica montado num
+    # caminho que deixou de existir.
+    #
+    # So neste caso. Worktree com stack proprio nao encosta no principal: o
+    # container dela e outro, e o principal segue rodando o que ja rodava.
+    # Mexer nele seria interromper trabalho sem necessidade.
+    if [ "$offset" = "0" ]; then
+        echo
+        info "o stack principal serve '$name'; movendo para '$CF_BASE_WT' antes de remover"
+        cmd_use "$CF_BASE_WT"
+        echo
+        # A troca reclassificou esta worktree para offset "-".
+        offset="$(registry_get "$name" 2)"
     fi
 
     # So derruba stack se esta worktree TIVER um proprio.
