@@ -620,17 +620,22 @@ jobs:
             # local-tls.yml, que nao entra no COMPOSE_FILE da VPS.
             DB_PORT=3307
             XDEBUG_PORT=9004
-            # Em que interface o banco escuta.
+            # Interface do Apache (8095) e do Xdebug (9004). FIXO em 127.0.0.1:
+            # o nginx da VPS e quem fala com o container, e publicar a porta
+            # alta em outra interface contorna o proxy e o TLS. O Xdebug entao
+            # e execucao remota de codigo para quem alcancar a porta.
+            BIND_ADDR=127.0.0.1
+            # Interface do banco. Variavel separada de proposito - ver o
+            # comentario em .devcontainer/compose/db.yml.
             #
-            # Padrao 127.0.0.1: so o nginx local alcanca, nada exposto. Para
-            # acessar de fora, defina a variable DB_BIND_ADDR no environment
-            # com o IP da interface do WireGuard - assim o banco fica visivel
-            # na VPN e invisivel na internet, sem abrir porta em firewall de
-            # borda.
+            # Padrao 127.0.0.1: so quem esta na VPS alcanca. Para acesso pela
+            # VPN, defina a variable DB_BIND_ADDR no environment com o IP da
+            # interface do WireGuard: o banco fica visivel na VPN e invisivel
+            # no IP publico, sem depender de firewall de borda.
             #
-            # NAO use 0.0.0.0 aqui. MariaDB exposto na internet e alvo de
-            # varredura constante, e o ganho sobre a VPN e nenhum.
-            BIND_ADDR=${{ vars.DB_BIND_ADDR != '' && vars.DB_BIND_ADDR || '127.0.0.1' }}
+            # 0.0.0.0 aqui publica o MariaDB em todas as interfaces, a publica
+            # inclusive, e o db.yml define MARIADB_ROOT_HOST="%".
+            DB_BIND_ADDR=${{ vars.DB_BIND_ADDR != '' && vars.DB_BIND_ADDR || '127.0.0.1' }}
             MOODLE_DBNAME=${{ vars.MOODLE_DBNAME }}
             EOF
 
