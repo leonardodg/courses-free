@@ -368,10 +368,18 @@ jobs:
           # name-canonical grava o nome do repositorio no manifesto, que o
           # imagetools do job seguinte precisa para resolver o digest.
           outputs: type=image,name=${{ env.REPO }},push-by-digest=true,name-canonical=true,push=true
-          # Cache por arquitetura, em tag propria. O "type=inline" de antes nao
-          # serve aqui: sem tag no push, nao ha onde embutir o cache.
-          cache-from: type=registry,ref=${{ env.REPO }}:cache-${{ matrix.arch }}
-          cache-to: type=registry,ref=${{ env.REPO }}:cache-${{ matrix.arch }},mode=max
+          # Cache no GitHub Actions, nao no Docker Hub.
+          #
+          # O "type=inline" de antes nao serve com push-by-digest: sem tag no
+          # push, nao ha onde embutir o cache. A alternativa obvia seria uma tag
+          # de cache no registro, mas isso criaria mais duas tags grandes no
+          # Docker Hub - o oposto do que se quer, ja que o repositorio estava
+          # acumulando uma tag de ~585 MB por commit.
+          #
+          # O scope separa os caches: sem ele as duas arquiteturas disputariam a
+          # mesma entrada e cada build invalidaria o cache da outra.
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
           build-args: |
             ENVIRONMENT=development
             TZ=America/Sao_Paulo
@@ -425,11 +433,16 @@ jobs:
             referencias="$referencias ${REPO}@sha256:${f#sha256:}"
           done
           echo "fundindo:$referencias"
+          # Uma tag so, "development".
+          #
+          # Havia tambem uma tag por SHA de commit. Como cada push publica ~585
+          # MB, o repositorio acumulou dezenas delas em poucos dias, sem que
+          # nada as consumisse: o deploy usa :development, e para voltar a uma
+          # versao anterior o digest continua acessivel
+          # (docker pull leodg/courses-free@sha256:...), que e o identificador
+          # imutavel de verdade.
           # shellcheck disable=SC2086
-          docker buildx imagetools create \
-            --tag "${REPO}:development" \
-            --tag "${REPO}:${{ github.sha }}" \
-            $referencias
+          docker buildx imagetools create --tag "${REPO}:development" $referencias
 
       - name: Conferir que a tag tem as duas arquiteturas
         run: |
