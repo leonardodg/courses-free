@@ -81,3 +81,6 @@ tsconfig.aliases.json
 
 # Mapa de dominios por vendedor, gerado pelo local_marketplace em runtime.
 .devcontainer/marketplace_domains.php
+
+# Grafo de conhecimento gerado pelo graphify. Regeneravel, ~1 MB.
+/graphify-out/

@@ -152,9 +152,15 @@ Definidas no `.env`. Local e VPS divergem porque as portas ocupadas são outras:
 Local: 80/443/3306/9003 estão com o stack do `ivana-academy`.
 VPS: 8080, 8081 e 8082 estão com outros serviços.
 
-`BIND_ADDR` controla em que interface publicar. **Na VPS tem que ser `127.0.0.1`**,
-senão `137.131.141.93:8095` responde direto e contorna o nginx e o TLS — e o
-MariaDB fica acessível de fora.
+`BIND_ADDR` controla a interface do Apache e do Xdebug. **Na VPS tem que ser
+`127.0.0.1`**, senão `137.131.141.93:8095` responde direto e contorna o nginx e o
+TLS, e a porta do Xdebug fica alcançável de fora.
+
+`DB_BIND_ADDR` controla a do banco, e é uma variável separada justamente para
+que liberar o banco não arraste as outras duas. `127.0.0.1` é o padrão; para
+acessar o MariaDB de fora da VPS, use o IP da interface do WireGuard
+(`ip -4 addr show wg0`) — o banco passa a escutar só na VPN e continua invisível
+no IP público.
 
 `MOODLE_URL` tem que bater **exatamente** com a forma de acesso, porta inclusa —
 o Moodle reescreve toda URL absoluta para o `wwwroot`. Local: `https://courses.leodg.dev:8443`.
