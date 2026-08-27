@@ -49,47 +49,161 @@ cf new paygw-pix
 
 Isso faz, em ordem:
 
-1. confere espaço em disco (piso de 5 GB — uma feature custa ~1 GB);
-2. confere que a branch base tem `.devcontainer/` (ver §8);
-3. `git worktree add ../paygw-pix -b feature/paygw-pix <base>`;
-4. copia os cinco conjuntos de arquivos gitignored da worktree principal;
-5. **gera** o `.env` com o stack e as portas do offset alocado;
-6. ajusta `MOODLE_URL` e os caminhos no `dev.env` copiado;
-7. clona banco e `moodledata` do stack principal;
-8. sobe o stack;
-9. abre o VS Code **dentro** do container.
+1. confere que a branch base (`origin/dev`) tem `.devcontainer/` — ver §8;
+2. `git worktree add ../paygw-pix -b feature/paygw-pix origin/dev`;
+3. copia os cinco conjuntos de arquivos gitignored;
+4. **gera** o `.env` apontando o código para a worktree nova;
+5. ajusta `MOODLE_URL` e os caminhos no `dev.env` copiado;
+6. faz o stack que já roda passar a servir esse código;
+7. roda `upgrade.php` e `purge_caches.php`;
+8. abre o VS Code **dentro** do container.
 
-Ao final o site responde em `https://localhost:8453`, com os mesmos cursos e
-usuários do ambiente principal.
+Ao final o site responde em `https://localhost:8443` — a URL de sempre, o mesmo
+banco de sempre — agora servindo o código da feature nova. Nenhum container novo
+foi criado.
+
+Para um ambiente **isolado**, que roda em paralelo com o atual:
+
+```bash
+cf new paygw-pix --new-stack
+```
+
+Aí sim vêm container, banco e portas próprios, e o site fica em
+`https://localhost:8453`. Ver a comparação em §3.
 
 ---
 
 ## 3. Comandos
 
+Notação: `<obrigatório>`, `[opcional]`. Onde aparece `[worktree]`, é o **nome da
+worktree** — a mesma coluna `WORKTREE` que o `cf ls` mostra, por exemplo
+`paygw-pix`.
+
 | Comando | O que faz |
 |---|---|
-| `cf new <nome> [--from <branch>] [--seed <modo>] [--no-code]` | cria worktree, ambiente, dados e stack |
+| `cf new <nome> [opções]` | cria worktree e ambiente (opções logo abaixo) |
+| `cf use <worktree>` | o stack atual passa a servir outra worktree |
 | `cf ls` | worktrees, offsets, stacks, status e URLs |
-| `cf up [wt]` | sobe o stack |
-| `cf down [wt]` | para o stack |
-| `cf restart [wt]` | `down` e `up` |
-| `cf code [wt]` | abre o VS Code dentro do container |
-| `cf shell [wt]` | `bash` no container, como `1000:33` |
-| `cf logs [wt]` | segue os logs |
+| `cf up [worktree]` | sobe o stack |
+| `cf down [worktree]` | para o stack |
+| `cf restart [worktree]` | `down` e `up` |
+| `cf code [worktree]` | abre o VS Code dentro do container |
+| `cf shell [worktree]` | `bash` no container, como `1000:33` |
+| `cf logs [worktree]` | segue os logs |
 | `cf cli <script.php> [args]` | roda um `admin/cli` do Moodle |
-| `cf build [wt]` | reconstrói a imagem (único que carrega `build-dev.yml`) |
-| `cf rm <wt> [--force]` | remove worktree, branch, dados e stack |
+| `cf build [worktree]` | reconstrói a imagem (único que carrega `build-dev.yml`) |
+| `cf rm <worktree> [--force]` | remove worktree, branch, dados e stack |
 | `cf doctor` | confere ferramentas, disco, certificado, `.env` e portas |
 
-**Sem `<wt>`, o comando usa a worktree do diretório atual.** Estando dentro de
-`paygw-pix/`, `cf up` sobe aquele ambiente.
+**Omitindo o nome, o comando age sobre a worktree do diretório atual.** Estando
+dentro de `paygw-pix/`, `cf up` sobe aquele ambiente; de fora, seria
+`cf up paygw-pix`.
+
+### Lendo o `cf ls`
+
+```
+WORKTREE               OFFSET STACK                      STATUS  URL
+paygw-pix              0      courses-free               up      https://localhost:8443
+  feature/paygw-pix
+relatorios             1      courses-free-relatorios    up      https://localhost:8453
+  feature/relatorios
+fix-tls                -      -                          sem stack   -
+  fix/tls
+dev                    -      -                          sem stack   -
+  dev
+```
+
+A coluna `OFFSET` diz o estado da worktree, e é o que determina o que cada
+comando faz com ela:
+
+| Offset | Significa | Consequência |
+|---|---|---|
+| `0` | é quem o **stack principal serve agora** | é o site em 8443 |
+| `≥ 1` | tem **stack próprio**, rodando em paralelo | portas próprias, banco próprio |
+| `-` | existe no disco, **sem ambiente servindo** | `cf use` a coloca no ar |
+
+Uma worktree com `-` não está quebrada — só não é a que o container está
+servindo no momento. A segunda linha de cada entrada é a **branch**, que pode
+diferir do nome da pasta (ver §3, opções do `cf new`).
+
+### Dois modos: trocar o código, ou subir um ambiente novo
+
+Esta é a decisão mais importante ao começar uma feature, e o padrão é o barato.
+
+| | **Padrão** (`cf new`, `cf use`) | **`cf new --new-stack`** |
+|---|---|---|
+| Container | o que já roda | novo |
+| Banco | **o mesmo** | próprio |
+| Portas | 8080/8443/3307/9004 | offset próprio |
+| Custo | ~0 | ~900 MB, ~1 min |
+| Em paralelo? | não, um de cada vez | **sim** |
+
+**O padrão só troca o bind mount do código.** Mesmo container, mesmo banco,
+mesma URL — o que muda é qual worktree o Apache serve. É instantâneo e não
+consome nada.
+
+```bash
+cf new fix-docs        # worktree nova, servida pelo stack que já roda
+cf use paygw-pix       # volta o stack para outra worktree existente
+```
+
+Use `--new-stack` quando precisar das **duas features no ar ao mesmo tempo**
+(comparar comportamento lado a lado, deixar uma rodando enquanto trabalha na
+outra) ou de **bancos separados**:
+
+```bash
+cf new paygw-pix --new-stack
+```
+
+> **O banco é compartilhado no modo padrão.** Trocar entre branches com versões
+> diferentes de plugin faz o Moodle pedir `upgrade.php` de ida e de volta — o
+> `cf use` roda isso sozinho ao trocar. Se as migrações forem destrutivas,
+> prefira `--new-stack`.
+
+Ao trocar, a worktree anterior **sai do registro** (o `.env` dela fica no disco).
+Um `cf up` nela para com "não está no registro", em vez de disputar as portas com
+o stack que agora serve outra coisa.
 
 ### Opções do `cf new`
 
-`--from <branch>` — base da nova branch. O padrão é a branch da worktree
-principal, não `dev` (ver §8).
+| Opção | Padrão | O que faz |
+|---|---|---|
+| `--branch <branch>` | `feature/<nome>` | nome da branch, quando difere do da pasta |
+| `--from <branch>` | `origin/dev` | de onde a branch nova sai |
+| `--new-stack` | desligado | ambiente próprio em vez de reaproveitar o atual |
+| `--seed <modo>` | `clone` | de onde vêm os dados (só com `--new-stack`) |
+| `--no-code` | desligado | **não** abre o VS Code ao final |
 
-`--seed <modo>` — de onde vêm os dados:
+#### Nome da pasta ≠ nome da branch
+
+São duas coisas, e o `cf` deixava isso confuso: cravava `feature/` em tudo, então
+`cf new fix-docs` criava a branch `feature/fix-docs` — um conserto classificado
+como feature.
+
+**Barra no nome significa "isto é a branch inteira"**, e a pasta sai dela
+trocando barra por hífen:
+
+```bash
+cf new paygw-pix              # pasta paygw-pix       branch feature/paygw-pix
+cf new fix/tls-porta          # pasta fix-tls-porta   branch fix/tls-porta
+cf new x --branch hotfix/y    # pasta x               branch hotfix/y
+```
+
+Sem barra, mantém-se o prefixo `feature/`, que cobre o caso comum sem obrigar a
+digitá-lo. O `cf` recusa nome de branch inválido ou já existente, antes de criar
+qualquer coisa. O `cf rm` **lê a branch da worktree** em vez de deduzi-la do
+nome da pasta, então uma `fix/…` não fica órfã.
+
+#### `--no-code`
+
+O `cf new` termina abrindo o VS Code **dentro** do container. `--no-code` pula
+esse passo — útil em script, por SSH, ou quando você só quer o ambiente no ar
+para rodar teste por linha de comando. A worktree fica pronta do mesmo jeito;
+dá para abrir depois com `cf code <worktree>`.
+
+#### `--seed <modo>`
+
+De onde vêm os dados do banco:
 
 - `clone` (padrão) — `mariadb-dump` do stack principal mais cópia do
   `moodledata`. A feature nasce com os dados de teste. ~30–60 s.
@@ -98,7 +212,8 @@ principal, não `dev` (ver §8).
 - `share` — aponta para os dados do principal. **Os dois stacks disputam o mesmo
   schema**: um `upgrade.php` num afeta o outro. Só para inspeção rápida.
 
-`--no-code` — não abre o VS Code ao final.
+Só tem efeito com `--new-stack`; sem ele o banco é o do stack atual, e o `cf`
+avisa se você passar `--seed` à toa.
 
 ---
 
@@ -364,18 +479,27 @@ qual worktree é a principal pelo bind mount do container que está no ar.
 
 ---
 
-## 8. Limitação conhecida: `dev` não tem `.devcontainer/`
+## 8. De qual branch a feature nasce
 
-O `README` manda ramificar de `dev`, mas `.devcontainer/` só existe nas branches
-de feature. Ramificar de `dev` ou `main` produz uma worktree **sem ambiente
-nenhum**.
+O default do `--from` é **`origin/dev`**, a branch de integração — o mesmo ponto
+que o fluxo do projeto usa (`feature → dev → deploy`). Na prática:
 
-O `cf new` detecta isso **antes de criar qualquer coisa** e falha com o comando
-correto a usar. Uma worktree meio provisionada é pior que nenhuma, porque parece
-pronta.
+```bash
+cf new paygw-pix                 # nasce de origin/dev
+cf new paygw-pix --from outra    # só quando você tem motivo
+```
 
-A correção definitiva é promover `.devcontainer/` para `dev` num PR próprio.
-Enquanto isso não acontece, ramifique de uma branch que já a tenha.
+> Isto mudou. Enquanto `.devcontainer/` existia apenas nas branches de feature,
+> o default era a branch da worktree principal — único jeito de funcionar na
+> época, mas uma armadilha: a principal fica em qualquer branch, inclusive uma
+> já merjeada, e a feature nasceria de uma base arbitrária sem ninguém notar.
+
+**`main` não serve como base.** Continua sem `.devcontainer/` e está fora do
+fluxo normal, onde não há PR `dev`→`main`.
+
+O `cf new` confere que a base tem `.devcontainer/devcontainer.json` **antes de
+criar qualquer coisa** e para com a mensagem do que fazer. Uma worktree meio
+provisionada é pior que nenhuma, porque parece pronta.
 
 ---
 
@@ -410,29 +534,34 @@ COMPOSE_ENV_FILE=.env docker compose config
 
 ## 10. A imagem: a VPS é ARM, sua máquina não
 
-A VPS Oracle é Ampere (aarch64); quem desenvolve está em x86_64. O CI compilava
-**só** `linux/arm64`, então em amd64 o `pull` batia em:
+A VPS Oracle é Ampere (aarch64); quem desenvolve está em x86_64.
 
+`leodg/courses-free:development` é **multi-arquitetura**: o `docker compose pull`
+funciona nas duas pontas, e cada uma recebe a sua imagem. Confira com:
+
+```bash
+docker buildx imagetools inspect leodg/courses-free:development
+#   Platform: linux/amd64
+#   Platform: linux/arm64
 ```
-Error response from daemon: no matching manifest for linux/amd64 ...
-```
 
-e a única fonte local da imagem era `cf build`.
+### Como o CI faz isso
 
-O `deploy.yml` agora publica **multi-arquitetura**: cada arquitetura compila no
-seu runner nativo (`ubuntu-latest` e `ubuntu-24.04-arm`) e empurra por digest,
-e um job `image-manifest` funde os dois numa tag só. Não se usa
-`platforms: linux/amd64,linux/arm64` num job único de propósito — isso poria o
-amd64 sob QEMU, que num build de Moodle custa dezenas de minutos.
+Cada arquitetura compila no **seu runner nativo** (`ubuntu-latest` e
+`ubuntu-24.04-arm`) e empurra por digest; um job `image-manifest` funde os dois
+numa tag só e **falha se faltar alguma arquitetura**, antes de o deploy rodar.
 
-> **Vale a partir do primeiro build depois do merge.** Enquanto a tag publicada
-> não tiver amd64, use `cf build`. Confira com:
->
-> ```bash
-> docker buildx imagetools inspect leodg/courses-free:development
-> ```
+Não se usa `platforms: linux/amd64,linux/arm64` num job único de propósito —
+isso poria o amd64 sob QEMU, que num build de Moodle custa dezenas de minutos.
 
-Local, para reconstruir de propósito (depois de mexer no Dockerfile):
+> Nem sempre foi assim. O CI publicava só `linux/arm64`, e em amd64 o `pull`
+> batia em `no matching manifest for linux/amd64`, deixando o `cf build` como
+> única fonte local da imagem.
+
+### Quando ainda usar `cf build`
+
+Depois de mexer no `Dockerfile` e antes de o CI publicar, para testar a imagem
+localmente:
 
 ```bash
 cf build
@@ -446,8 +575,11 @@ docker tag leodg/courses-free:development leodg/courses-free:backup-$(date +%F)
 ```
 
 > É por isso que o CRLF da §11 passou tanto tempo escondido: enquanto o `pull`
-> não funcionou em amd64, **todo** ambiente local dependeu de um build local — e
-> um build local com CRLF produz um `ENTRYPOINT` que não executa.
+> não funcionou em amd64, **todo** ambiente local dependia de um build local — e
+> um build local com CRLF produz um `ENTRYPOINT` que não executa. Com o `pull`
+> funcionando, o build local ficou raro, então a proteção do `.gitattributes`
+> importa mais, não menos: quando você precisar dele, vai ser justamente numa
+> hora em que não quer descobrir isso.
 
 ---
 
@@ -466,8 +598,8 @@ git -C <worktree> ls-files --eol .devcontainer/bin/ | head
 ```
 
 `.devcontainer/.gitattributes` força `eol=lf` nos arquivos que entram na imagem,
-e o atributo tem precedência sobre `core.autocrlf`. Como em amd64 todo ambiente
-local depende de um build local (§10), isso vale para **todo** build daqui.
+e o atributo tem precedência sobre `core.autocrlf` — vale para qualquer clone,
+em qualquer máquina, sem depender de configuração do usuário.
 
 Ele fica em `.devcontainer/` e não na raiz porque o `.gitattributes` da raiz é do
 Moodle upstream, e este projeto faz merge de `upstream/MOODLE_502_STABLE` com
@@ -505,9 +637,38 @@ Depois do merge do PR:
 cf rm paygw-pix
 ```
 
-Derruba o stack com os volumes, remove a worktree e a branch local, apaga
-`~/localhost/cf-data/paygw-pix/` e libera o offset.
+Remove a worktree e a **branch que ela tem de fato** — lida da worktree, não
+deduzida do nome da pasta, para que uma `fix/…` não fique órfã.
 
-Antes de remover, avisa se houver alteração não commitada ou commit não enviado,
-e pede o nome da worktree por extenso. O offset 0 é recusado — o ambiente
-principal não se remove por aqui.
+O resto depende do estado da worktree, que o `cf ls` mostra na coluna `OFFSET`:
+
+| | Stack próprio (`≥ 1`) | Servida agora (`0`) | Sem stack (`-`) |
+|---|---|---|---|
+| Containers e volumes | derrubados | — | **intocados** |
+| `~/localhost/cf-data/<nome>/` | apagado | não existe | não existe |
+| Dados do stack principal | — | **preservados** | **preservados** |
+| Stack principal | **intocado** | movido para `dev` | **intocado** |
+
+**Só a worktree servida move o stack.** É obrigatório: o código montado no
+container vai sumir do disco. Nos outros dois casos o principal segue rodando o
+que rodava — remover uma worktree não é motivo para interromper o trabalho em
+outra.
+
+A distinção de dados não é cosmética. A linha de registro de uma worktree sem
+stack aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a
+serviu. Apagar por ali destruiria o banco principal a partir de um comando que
+parece local. O `cf rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba
+stack quando existe um próprio.
+
+Antes de remover, avisa se houver alteração não commitada ou commit da **própria
+branch** fora do remoto, e pede o nome da worktree por extenso (`--force` pula).
+
+### A worktree de repouso
+
+`dev` é para onde o stack volta quando a worktree servida é removida, e por isso
+**o `cf rm` a recusa**. Ela é a escolha natural: é a branch de integração, tem
+`.devcontainer/`, e é de onde o `cf new` ramifica — o repouso é o mesmo ponto de
+partida.
+
+`main` não serve: não tem `.devcontainer/` e está 108 commits atrás, então o
+stack não subiria nela.
