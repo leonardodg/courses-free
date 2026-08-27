@@ -75,6 +75,42 @@ conta própria e independente; a comissão é rastreável no extrato dos dois la
   disso são **R$ 24,38**. Por isso o relatório guarda o valor devolvido pelo
   gateway em vez de recalcular
 
+## A baixa manual, e o que ela custa
+
+Descoberto testando contra a API em 2026-08-27, e vale registrar porque é
+consequência direta desta decisão.
+
+Como a cobrança nasce na conta do vendedor, **é ele quem controla a baixa
+manual**. Se ele marcar a cobrança como recebida em dinheiro (`receiveInCash`),
+o Asaas cancela o split — dinheiro que não passou por ele não tem como ser
+dividido — e a plataforma não recebe nada:
+
+```
+status ........ RECEIVED_IN_CASH
+split ......... CANCELLED
+valor ......... 24.38     (atribuído, e nunca transferido)
+```
+
+O caminho existe e é simples: o vendedor pede ao aluno que pague por fora, dá
+baixa manual, e usa a plataforma como vitrine sem pagar comissão.
+
+**A decisão é entregar o curso e registrar R$ 0,00.** O aluno pagou — negar
+acesso o puniria pelo que o vendedor fez —, e a plataforma de fato não recebeu
+nada, então o relatório precisa dizer isso. Matrícula sem comissão não é
+problema a resolver aqui.
+
+O que **não** é aceitável é o relatório mentir. A primeira versão calculava a
+comissão pelo percentual e anunciava R$ 25,00 que nunca chegariam; hoje
+`fee_from()` lê o split da própria resposta e descarta as entradas `CANCELLED` e
+`REFUSED`. Cada entrega com comissão zero registra um `debugging()`.
+
+> Relatório financeiro que discorda do extrato é pior que nenhum. Este
+> discordaria em silêncio.
+
+Isto vale para qualquer gateway em que o vendedor é o dono da cobrança — ou
+seja, para todos, por causa desta decisão. É o preço da regra fiscal, e está
+pago conscientemente.
+
 ## Como saber que erramos
 
 Se um vendedor receber uma nota fiscal emitida pela plataforma referente ao curso
@@ -84,6 +120,10 @@ Se o onboarding se mostrar inviável na prática — vendedores desistindo por n
 conseguirem gerar chave ou cadastrar recebedor —, o custo da regra fiscal supera
 o benefício e o modelo precisa ser rediscutido com o contador, não com o
 desenvolvedor.
+
+Se as entregas com comissão zero deixarem de ser exceção — dá para contar pelo
+relatório, que agora mostra R$ 0,00 nelas —, a baixa manual virou canal de fuga
+e a decisão de entregar o curso mesmo assim precisa ser revista.
 
 ## Verificado
 
