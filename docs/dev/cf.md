@@ -1,0 +1,453 @@
+# `cf` — ambientes de desenvolvimento por worktree
+
+`cf` abrevia **courses-free**, o nome do projeto. É o comando que cria, serve e
+remove os ambientes Docker de cada worktree do repositório.
+
+- **Onde mora:** `.devcontainer/bin/cf`, versionado — cada worktree tem a sua cópia
+- **Como responde no PATH:** `~/.local/bin/cf` → `<raiz>/.devcontainer/bin/cf` → `dev/.devcontainer/bin/cf`
+- **Ajuda rápida:** `cf --help` · **Manual:** `man cf` (ver [instalação](#manual-do-sistema))
+
+> Este documento cobre o `cf` em si. Para o fluxo de trabalho com worktrees —
+> portas, VS Code, a VPS, armadilhas — veja
+> [`guia-worktrees.md`](guia-worktrees.md).
+
+---
+
+## 1. O problema
+
+Abrir uma feature exigia oito passos manuais. `git worktree add` entrega só o
+código versionado; tudo que faz o ambiente subir está no `.gitignore`:
+
+| Arquivo | Por que é ignorado |
+|---|---|
+| `/.env` | caminhos absolutos da máquina |
+| `/config.php` | gerado a partir de `config-docker.php` |
+| `.devcontainer/secrets/` | senhas do banco |
+| `.devcontainer/certs/develop-local.{crt,key}` | par do mkcert |
+| `.devcontainer/env/{db,dev}.env` | credenciais e URL do site |
+
+Pior: o ambiente era **único por construção**. `base.yml` fixava
+`name: courses-free` e o `.env` fixava as portas, então subir o compose de outra
+worktree não criava um segundo ambiente — **recriava o mesmo container**
+apontando para outro código.
+
+```bash
+cf new paygw-pix
+```
+
+---
+
+## 2. O modelo mental
+
+Duas coisas independentes, e confundi-las é a origem de quase toda dúvida:
+
+**Worktree** é uma pasta com um checkout do repositório. É barata: ~600 MB de
+arquivos, criada em segundos.
+
+**Stack** é o par de containers (Moodle + MariaDB) que serve *uma* worktree. É
+cara: ~900 MB com o banco, portas próprias, um minuto para subir.
+
+**Várias worktrees podem existir para um stack só.** O container monta o código
+de uma delas por vez; trocar é remontar, não recriar. Daí os dois modos:
+
+| | `cf new <nome>` (padrão) | `cf new <nome> --new-stack` |
+|---|---|---|
+| Container | o que já roda | novo |
+| Banco | **o mesmo** | próprio |
+| Portas | 8080/8443/3307/9004 | offset próprio |
+| Custo | ~0 | ~900 MB, ~1 min |
+| Em paralelo? | não, um de cada vez | **sim** |
+
+Use `--new-stack` quando precisar das **duas features no ar ao mesmo tempo** ou
+de **bancos separados**. Fora isso, o padrão.
+
+### Offset
+
+Cada worktree registrada tem um **offset**, que define seu estado e suas portas:
+
+| Offset | Significa | Portas |
+|---|---|---|
+| `0` | é quem o stack principal **serve agora** | 8080 / 8443 / 3307 / 9004 |
+| `≥ 1` | tem **stack próprio**, rodando em paralelo | base + N×10 |
+| `-` | existe no disco, **sem ambiente servindo** | — |
+
+Offset `-` não é erro: é só uma worktree que não é a atual. `cf use` a coloca no
+ar.
+
+O offset 0 é o ambiente que sempre existiu. `base.yml` usa
+`name: ${STACK_NAME:-courses-free}`, então **sem `STACK_NAME` nada muda** — é
+assim que a VPS continua idêntica.
+
+---
+
+## 3. Comandos
+
+Notação: `<obrigatório>`, `[opcional]`. Onde aparece `[worktree]` é o **nome da
+pasta** — a coluna `WORKTREE` do `cf ls`.
+
+**Omitindo o nome, o comando age sobre a worktree do diretório atual.** Dentro de
+`paygw-pix/`, `cf up` sobe aquele ambiente; de fora, `cf up paygw-pix`.
+
+### Ciclo de vida
+
+| Comando | O que faz |
+|---|---|
+| `cf new <nome> [opções]` | cria worktree + branch e coloca no ar |
+| `cf use <worktree>` | o stack atual passa a servir outra worktree |
+| `cf rm <worktree> [--force]` | remove worktree, branch e (se houver) stack e dados |
+
+### Operação
+
+| Comando | O que faz |
+|---|---|
+| `cf ls` | worktrees, offsets, stacks, status e URLs |
+| `cf up [worktree]` | sobe o stack |
+| `cf down [worktree]` | para o stack |
+| `cf restart [worktree]` | `down` e `up` — é o que adota imagem nova |
+| `cf logs [worktree]` | segue os logs |
+| `cf doctor` | confere instalação, disco, certificado, `.env` e portas |
+
+### Trabalho
+
+| Comando | O que faz |
+|---|---|
+| `cf code [worktree]` | abre o VS Code **dentro** do container |
+| `cf shell [worktree]` | `bash` no container, como `1000:33` |
+| `cf cli <script.php> [args]` | roda um `admin/cli` do Moodle |
+| `cf build [worktree]` | reconstrói a imagem (único que carrega `build-dev.yml`) |
+
+---
+
+## 4. `cf new`
+
+```
+cf new <nome|prefixo/nome> [--branch <b>] [--from <b>] [--new-stack]
+                           [--seed clone|fresh|share] [--no-code]
+```
+
+| Opção | Padrão | O que faz |
+|---|---|---|
+| `--branch <b>` | `feature/<nome>` | nome da branch, quando difere do da pasta |
+| `--from <b>` | `origin/dev` | de onde a branch nova sai |
+| `--new-stack` | desligado | ambiente próprio em vez de reaproveitar o atual |
+| `--seed <modo>` | `clone` | de onde vêm os dados (só com `--new-stack`) |
+| `--no-code` | desligado | **não** abre o VS Code ao final |
+
+### Nome da pasta ≠ nome da branch
+
+**Barra no nome significa "isto é a branch inteira"**, e a pasta sai dela
+trocando barra por hífen:
+
+```bash
+cf new paygw-pix              # pasta paygw-pix       branch feature/paygw-pix
+cf new fix/tls-porta          # pasta fix-tls-porta   branch fix/tls-porta
+cf new x --branch hotfix/y    # pasta x               branch hotfix/y
+```
+
+Sem barra, mantém-se o prefixo `feature/`, que cobre o caso comum sem obrigar a
+digitá-lo.
+
+> Antes o `feature/` era cravado, então `cf new fix-docs` criava
+> `feature/fix-docs` — um conserto classificado como feature. A branch existe
+> neste repositório; foi assim que o problema apareceu.
+
+O `cf` recusa nome de branch inválido ou já existente **antes de criar qualquer
+coisa**. O `cf rm` **lê a branch da worktree** em vez de deduzi-la do nome da
+pasta, então uma `fix/…` não fica órfã.
+
+### `--from`
+
+O padrão é `origin/dev`, a branch de integração — o mesmo ponto que o fluxo do
+projeto usa (`feature → dev → deploy`).
+
+**`main` não serve como base:** continua sem `.devcontainer/` e está fora do
+fluxo normal, onde não há PR `dev`→`main`. O `cf new` confere que a base tem
+`.devcontainer/devcontainer.json` e para com a mensagem do que fazer. Uma
+worktree meio provisionada é pior que nenhuma, porque parece pronta.
+
+### `--seed`
+
+Só tem efeito com `--new-stack`; sem ele o banco é o do stack atual, e o `cf`
+avisa se você passar à toa.
+
+- **`clone`** (padrão) — `mariadb-dump` do stack principal mais cópia do
+  `moodledata`. A feature nasce com os dados de teste. ~30–60 s.
+- **`fresh`** — `install_database.php` do zero. Mais lento e sem dados, mas
+  exercita a migração do plugin em base virgem, que é o que a VPS vai ver.
+- **`share`** — aponta para os dados do principal. **Os dois stacks disputam o
+  mesmo schema**: um `upgrade.php` num afeta o outro. Só para inspeção rápida.
+
+### `--no-code`
+
+O `cf new` termina abrindo o VS Code dentro do container. Isto pula o passo —
+útil em script, por SSH, ou quando você só quer o ambiente no ar para rodar
+teste por linha de comando. Dá para abrir depois com `cf code <worktree>`.
+
+### O que ele faz, em ordem
+
+1. confere que a base tem `.devcontainer/`
+2. `git worktree add ../<nome> -b <branch> <base>`
+3. copia os cinco conjuntos de arquivos gitignored
+4. **gera** o `.env` (não copia com `sed`) apontando o código para a worktree nova
+5. ajusta `MOODLE_URL` e os caminhos no `dev.env` copiado
+6. coloca no ar — reaproveitando o stack, ou subindo um próprio com `--new-stack`
+7. roda `upgrade.php` e `purge_caches.php`
+8. abre o VS Code dentro do container
+
+---
+
+## 5. `cf use`
+
+```bash
+cf use <worktree>
+```
+
+O stack principal passa a servir o código de outra worktree. Mesmo container,
+mesmo banco, mesmas portas, mesma URL — **só o bind mount do código muda**.
+
+A worktree anterior passa a offset `-`; a nova assume o `0`. Como o banco é
+compartilhado, o `cf use` roda `upgrade.php` ao trocar: uma branch pode trazer
+plugin que a outra não conhece.
+
+> Se as migrações entre as duas branches forem destrutivas, prefira
+> `--new-stack` — bancos separados não se atropelam.
+
+---
+
+## 6. `cf rm`
+
+```bash
+cf rm <worktree> [--force]
+```
+
+Remove a worktree e a **branch que ela tem de fato** — lida da worktree, não
+deduzida do nome da pasta.
+
+O resto depende do offset:
+
+| | Stack próprio (`≥ 1`) | Servida agora (`0`) | Sem stack (`-`) |
+|---|---|---|---|
+| Containers e volumes | derrubados | — | **intocados** |
+| `~/localhost/cf-data/<nome>/` | apagado | não existe | não existe |
+| Dados do stack principal | — | **preservados** | **preservados** |
+| Stack principal | **intocado** | movido para `dev` | **intocado** |
+
+**Só a worktree servida move o stack**, e por obrigação: o código montado no
+container vai sumir do disco. Nos outros casos o principal segue rodando —
+remover uma worktree não é motivo para interromper o trabalho em outra.
+
+A distinção de dados não é cosmética. A linha de registro de uma worktree sem
+stack aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a
+serviu. Apagar por ali destruiria o banco principal a partir de um comando que
+parece local. O `cf rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba
+stack quando existe um próprio.
+
+Antes de remover, avisa se houver alteração não commitada ou commit da **própria
+branch** fora do remoto, e pede o nome por extenso (`--force` pula).
+
+**`dev` é recusada** — é a worktree de repouso, para onde o stack volta.
+
+---
+
+## 7. `cf doctor`
+
+Primeiro comando a rodar quando algo estiver estranho. Confere, nesta ordem:
+
+1. **A própria instalação** — onde está o script, sob que nome responde no PATH,
+   e se o symlink aponta para lugar seguro
+2. **Ferramentas** — `docker`, `git`, `code`, `devcontainer`
+3. **Disco** — piso de 5 GB (uma feature custa ~1 GB)
+4. **Certificado** — validade do par mkcert
+5. **Worktrees** — `.env` coerente com o registro, arquivos gitignored presentes
+6. **Portas** — offsets únicos
+
+Saída limpa termina com `ok nenhum problema`.
+
+---
+
+## 8. Onde o `cf` guarda estado
+
+`<raiz>/.cf/registry.tsv` — um TSV com uma linha por worktree:
+
+```
+nome  offset  stack  wwwroot  moodledata  dbdata
+```
+
+Fica **fora de qualquer worktree** porque é estado da *máquina*, não do código:
+não deve ser commitado nem sumir quando uma worktree é removida.
+
+Na primeira execução o `cf` adota o ambiente existente como offset 0,
+descobrindo qual worktree é a principal **pelo bind mount do container que está
+no ar** — não por varredura de disco, que acertaria por acaso.
+
+> Não edite `.env` nem portas à mão: o `cf` gera esses arquivos e o `cf doctor`
+> reclama quando divergem do registro.
+
+---
+
+## 9. Instalação
+
+```bash
+# ponto fixo na raiz, apontando para a worktree que fornece o cf
+mkdir -p ~/localhost/gitworktree-bare-moodle/.devcontainer/bin
+ln -sfn ../../dev/.devcontainer/bin/cf \
+        ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf
+
+# o PATH aponta para o ponto fixo, e nunca mais muda
+ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf ~/.local/bin/cf
+
+# CLI do Dev Containers
+sudo npm install -g @devcontainers/cli
+
+cf doctor
+```
+
+**Por que dois symlinks.** O script mora *dentro* de uma worktree, e worktree é
+descartável — apontar o PATH direto para uma delas significa que apagá-la faz o
+comando sumir. Com a indireção, trocar de worktree é mexer em **um** symlink na
+raiz; o `~/.local/bin/cf` fica intacto.
+
+**Por que `dev`.** `main` não tem `.devcontainer/` e está bem atrás. `dev` é a
+branch de integração: sempre tem a versão mais recente do `cf` que passou por PR.
+
+> **Efeito colateral:** o `cf` do PATH é o de `dev`. Para exercitar uma versão em
+> desenvolvimento, chame pelo caminho: `./.devcontainer/bin/cf` de dentro da
+> worktree da feature.
+
+### Manual do sistema
+
+```bash
+sudo install -m 644 docs/man/cf.1 /usr/local/share/man/man1/cf.1
+sudo mandb -q
+man cf
+```
+
+Sem `sudo`, num diretório do usuário:
+
+```bash
+mkdir -p ~/.local/share/man/man1
+install -m 644 docs/man/cf.1 ~/.local/share/man/man1/cf.1
+mandb -q ~/.local/share/man
+```
+
+---
+
+## 10. Receitas
+
+**Começar uma feature**
+
+```bash
+cf new paygw-pix
+```
+
+**Alternar entre duas features**
+
+```bash
+cf use paygw-pix
+cf use relatorios
+```
+
+**Comparar duas features lado a lado**
+
+```bash
+cf new relatorios --new-stack     # 8463, banco próprio
+# a atual continua em 8443
+```
+
+**Rodar um CLI do Moodle**
+
+```bash
+cf cli upgrade.php --non-interactive
+cf cli purge_caches.php
+```
+
+**Rodar os testes** (dentro do container, como `1000:33`)
+
+```bash
+cf shell
+php vendor/bin/phpunit --testsuite local_marketplace_testsuite
+```
+
+**Adotar uma imagem nova**
+
+```bash
+cf restart      # up sozinho reaproveita o container existente
+```
+
+**Encerrar uma feature depois do merge**
+
+```bash
+cf rm paygw-pix
+```
+
+---
+
+## 11. Problemas conhecidos
+
+**`cf: command not found`** — o symlink ficou pendurado, provavelmente porque a
+worktree que ele apontava foi removida. O `cf doctor` diagnostica, mas ele
+próprio some junto; conserte pela indireção:
+
+```bash
+ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf ~/.local/bin/cf
+```
+
+**`arithmetic syntax error: operand expected`** — versão antiga do `cf` lendo um
+registro escrito por uma versão nova. Atualize a worktree que fornece o comando:
+
+```bash
+cd ~/localhost/gitworktree-bare-moodle/dev && git pull --ff-only origin dev
+```
+
+**`required variable DB_HOST_DATA is missing a value`** — falta o symlink que
+torna o `.env` visível para a extensão do VS Code. Ela monta o próprio
+`docker compose -f …` **sem `--env-file`**, e o compose procura o `.env` no
+diretório do primeiro arquivo compose. `cf up` recria o link; se precisar à mão:
+
+```bash
+ln -sfn ../../.env <worktree>/.devcontainer/compose/.env
+```
+
+**Site em HTTP 500, `invaliddatarootpermissions`** — algum processo criou
+diretório com dono root no `moodledata`. O entrypoint corrige no boot; para
+resolver com o container no ar:
+
+```bash
+docker exec -u root <container> chown -R www-data:www-data /var/www/moodledata
+```
+
+**`Could not open input file: …/admin/cli/…`** — nesta base o `admin/` fica na
+**raiz** do repositório, não em `public/`. O `cf cli` procura nos dois lugares;
+se você chamou `php` direto, ajuste o caminho.
+
+**O VS Code reconstrói a imagem** — não deveria. Confira que o
+`devcontainer.json` não voltou a ter `features` nem `build-dev.yml`, e que só
+existe uma imagem `vsc-*` por worktree:
+
+```bash
+docker images | grep vsc-
+```
+
+---
+
+## 12. Limites conhecidos
+
+- **Um ambiente por vez no modo padrão.** Banco compartilhado; alternar entre
+  branches com versões diferentes de plugin roda `upgrade.php` nos dois sentidos.
+- **`--new-stack` custa ~900 MB** por feature. O `cf new` recusa abaixo de 5 GB
+  livres.
+- **Uma camada de UID de ~726 MB por worktree**, criada uma vez, do
+  `updateRemoteUserUID`. Desligá-la eliminaria a camada, mas o repo é bind mount
+  com dono 1000 e modo 644 — `www-data` como uid 33 cairia em "outros" e o VS
+  Code não salvaria arquivo nenhum.
+- **`main` não é utilizável** como base nem como repouso enquanto não tiver
+  `.devcontainer/`.
+
+---
+
+## Ver também
+
+- [`guia-worktrees.md`](guia-worktrees.md) — o fluxo completo: portas, `.env`,
+  VS Code, a VPS, armadilhas
+- [`../architecture/estrutura-do-repositorio.md`](../architecture/estrutura-do-repositorio.md) — o bare repo e as worktrees
+- `cf --help` — referência rápida, sempre em dia com o script
