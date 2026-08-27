@@ -221,11 +221,35 @@ class payment_processor {
     }
 
     /**
-     * O status do Asaas significa "dinheiro entrou"?
+     * Este EVENTO de webhook merece uma consulta a API?
+     *
+     * Cuidado com a diferenca, que custou uma volta: o nome do EVENTO nao e o
+     * mesmo do STATUS da cobranca. Existe o status RECEIVED_IN_CASH, mas nao
+     * existe evento PAYMENT_RECEIVED_IN_CASH - o Asaas responde "O evento
+     * [PAYMENT_RECEIVED_IN_CASH] e invalido" a quem tentar cadastrar. Receber
+     * em dinheiro chega como PAYMENT_RECEIVED, com o status na cobranca.
+     *
+     * Por isso a lista aqui e curta e a de is_paid() e maior: uma fala de
+     * eventos, a outra de status.
+     *
+     * Estorno e desfazimento (PAYMENT_REFUNDED, PAYMENT_RECEIVED_IN_CASH_UNDONE)
+     * ficam de fora de proposito: revogar acesso e decisao de negocio deste
+     * projeto, tomada em entitlement::revoke(), e nunca por automacao.
+     *
+     * @param string $event
+     * @return bool
+     */
+    public static function is_relevant_event(string $event): bool {
+        return in_array(strtoupper($event), ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED'], true);
+    }
+
+    /**
+     * O STATUS do Asaas significa "dinheiro entrou"?
      *
      * RECEIVED e o valor creditado; CONFIRMED e o cartao autorizado, com o
-     * credito ainda por cair. Os dois liberam o acesso: segurar o curso ate a
-     * liquidacao puniria o aluno por um prazo bancario.
+     * credito ainda por cair; RECEIVED_IN_CASH e a baixa manual, que e como o
+     * sandbox confirma cobranca. Os tres liberam o acesso: segurar o curso ate
+     * a liquidacao puniria o aluno por um prazo bancario.
      *
      * @param string $status
      * @return bool

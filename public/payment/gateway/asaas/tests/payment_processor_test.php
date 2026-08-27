@@ -62,6 +62,37 @@ final class payment_processor_test extends \advanced_testcase {
     }
 
     /**
+     * Evento de webhook nao e status de cobranca.
+     *
+     * A confusao custou uma volta: existe o STATUS RECEIVED_IN_CASH, mas nao
+     * existe o EVENTO PAYMENT_RECEIVED_IN_CASH. O Asaas recusa quem tenta
+     * cadastra-lo com "O evento [PAYMENT_RECEIVED_IN_CASH] e invalido", e a
+     * baixa manual chega como PAYMENT_RECEIVED.
+     *
+     * @return void
+     */
+    public function test_relevant_events_are_not_statuses(): void {
+        $this->assertTrue(payment_processor::is_relevant_event('PAYMENT_RECEIVED'));
+        $this->assertTrue(payment_processor::is_relevant_event('PAYMENT_CONFIRMED'));
+
+        $this->assertFalse(
+            payment_processor::is_relevant_event('PAYMENT_RECEIVED_IN_CASH'),
+            'este evento nao existe no Asaas'
+        );
+        $this->assertFalse(
+            payment_processor::is_relevant_event('RECEIVED_IN_CASH'),
+            'isto e um status, nao um evento'
+        );
+        $this->assertFalse(payment_processor::is_relevant_event('PAYMENT_CREATED'));
+        $this->assertFalse(payment_processor::is_relevant_event('PAYMENT_OVERDUE'));
+        $this->assertFalse(
+            payment_processor::is_relevant_event('PAYMENT_REFUNDED'),
+            'estorno nao revoga acesso por automacao'
+        );
+        $this->assertFalse(payment_processor::is_relevant_event(''));
+    }
+
+    /**
      * Quais status liberam o acesso.
      *
      * CONFIRMED e o cartao autorizado com o credito ainda por cair. Segurar o

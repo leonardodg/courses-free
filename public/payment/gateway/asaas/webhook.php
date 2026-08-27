@@ -76,9 +76,8 @@ $asaaspaymentid = (string) ($payload['payment']['id'] ?? '');
 
 // Eventos que nao mudam o direito do aluno saem com 200 para o Asaas parar de
 // reenviar. 4xx aqui viraria fila de retentativa por um evento que nunca nos
-// interessou.
-$relevant = ['PAYMENT_RECEIVED', 'PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED_IN_CASH'];
-if (!in_array($event, $relevant, true) || $asaaspaymentid === '') {
+// interessou - e com envio sequencial, uma fila travada.
+if (!payment_processor::is_relevant_event($event) || $asaaspaymentid === '') {
     paygw_asaas_respond(200, 'ignored');
 }
 
