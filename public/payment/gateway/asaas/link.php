@@ -108,8 +108,10 @@ if ($data = $form->get_data()) {
     // E contraintuitivo: por instinto ele cadastraria o proprio site. Sem esta
     // checagem o erro apareceria como recusa da cobranca inteira, com o aluno
     // ja no checkout, e com uma mensagem que nao diz de qual dominio se trata.
-    if (\paygw_asaas\payment_processor::use_callback()
-            && !asaas_client::same_host((string) ($me['site'] ?? ''), $CFG->wwwroot)) {
+    $needsdomain = \paygw_asaas\payment_processor::use_callback()
+        && !asaas_client::same_host((string) ($me['site'] ?? ''), $CFG->wwwroot);
+
+    if ($needsdomain) {
         redirect(
             $url,
             get_string('errornosite', 'paygw_asaas', (object) [
