@@ -99,6 +99,33 @@ worktree** — a mesma coluna `WORKTREE` que o `cf ls` mostra, por exemplo
 dentro de `paygw-pix/`, `cf up` sobe aquele ambiente; de fora, seria
 `cf up paygw-pix`.
 
+### Lendo o `cf ls`
+
+```
+WORKTREE               OFFSET STACK                      STATUS  URL
+paygw-pix              0      courses-free               up      https://localhost:8443
+  feature/paygw-pix
+relatorios             1      courses-free-relatorios    up      https://localhost:8453
+  feature/relatorios
+fix-tls                -      -                          sem stack   -
+  fix/tls
+dev                    -      -                          sem stack   -
+  dev
+```
+
+A coluna `OFFSET` diz o estado da worktree, e é o que determina o que cada
+comando faz com ela:
+
+| Offset | Significa | Consequência |
+|---|---|---|
+| `0` | é quem o **stack principal serve agora** | é o site em 8443 |
+| `≥ 1` | tem **stack próprio**, rodando em paralelo | portas próprias, banco próprio |
+| `-` | existe no disco, **sem ambiente servindo** | `cf use` a coloca no ar |
+
+Uma worktree com `-` não está quebrada — só não é a que o container está
+servindo no momento. A segunda linha de cada entrada é a **branch**, que pode
+diferir do nome da pasta (ver §3, opções do `cf new`).
+
 ### Dois modos: trocar o código, ou subir um ambiente novo
 
 Esta é a decisão mais importante ao começar uma feature, e o padrão é o barato.
@@ -613,20 +640,35 @@ cf rm paygw-pix
 Remove a worktree e a **branch que ela tem de fato** — lida da worktree, não
 deduzida do nome da pasta, para que uma `fix/…` não fique órfã.
 
-O resto depende de a worktree ter ambiente próprio:
+O resto depende do estado da worktree, que o `cf ls` mostra na coluna `OFFSET`:
 
-| | Com stack próprio (offset ≥ 1) | Sem stack (offset `-`) |
-|---|---|---|
-| Containers e volumes | derrubados | **intocados** |
-| `~/localhost/cf-data/<nome>/` | apagado | não existe |
-| Dados do stack principal | — | **preservados** |
+| | Stack próprio (`≥ 1`) | Servida agora (`0`) | Sem stack (`-`) |
+|---|---|---|---|
+| Containers e volumes | derrubados | — | **intocados** |
+| `~/localhost/cf-data/<nome>/` | apagado | não existe | não existe |
+| Dados do stack principal | — | **preservados** | **preservados** |
+| Stack principal | **intocado** | movido para `dev` | **intocado** |
 
-A distinção não é cosmética. A linha de registro de uma worktree sem stack
-aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a serviu.
-Apagar por ali destruiria o banco principal a partir de um comando que parece
-local. O `cf rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba stack
-quando existe um próprio.
+**Só a worktree servida move o stack.** É obrigatório: o código montado no
+container vai sumir do disco. Nos outros dois casos o principal segue rodando o
+que rodava — remover uma worktree não é motivo para interromper o trabalho em
+outra.
 
-Antes de remover, avisa se houver alteração não commitada ou commit não enviado,
-e pede o nome da worktree por extenso (`--force` pula). **A worktree que o stack
-principal serve agora é recusada** — troque antes com `cf use <outra>`.
+A distinção de dados não é cosmética. A linha de registro de uma worktree sem
+stack aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a
+serviu. Apagar por ali destruiria o banco principal a partir de um comando que
+parece local. O `cf rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba
+stack quando existe um próprio.
+
+Antes de remover, avisa se houver alteração não commitada ou commit da **própria
+branch** fora do remoto, e pede o nome da worktree por extenso (`--force` pula).
+
+### A worktree de repouso
+
+`dev` é para onde o stack volta quando a worktree servida é removida, e por isso
+**o `cf rm` a recusa**. Ela é a escolha natural: é a branch de integração, tem
+`.devcontainer/`, e é de onde o `cf new` ramifica — o repouso é o mesmo ponto de
+partida.
+
+`main` não serve: não tem `.devcontainer/` e está 108 commits atrás, então o
+stack não subiria nela.
