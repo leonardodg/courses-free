@@ -8,6 +8,7 @@ split de pagamento pelo Mercado Pago.
 | Se você quer… | Vá para |
 |---|---|
 | montar o ambiente e começar a codar | [`dev/cf.md`](dev/cf.md) e [`dev/guia-worktrees.md`](dev/guia-worktrees.md) |
+| mandar a mudança para produção | [`dev/fluxo-de-contribuicao.md`](dev/fluxo-de-contribuicao.md) |
 | entender **por que** o sistema é assim | [`architecture/decisoes-marketplace.md`](architecture/decisoes-marketplace.md) |
 | saber o que existe e o que falta | [`architecture/estado-e-proximas-fases.md`](architecture/estado-e-proximas-fases.md) |
 | mexer nas tabelas | [`data-model/marketplace.md`](data-model/marketplace.md) |
