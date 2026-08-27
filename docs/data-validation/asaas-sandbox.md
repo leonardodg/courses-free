@@ -1,0 +1,376 @@
+# Testar o Asaas em homologação
+
+Como provar que o `paygw_asaas` funciona — incluindo **o split**, que é o coração
+do modelo e nunca foi visto funcionar neste projeto.
+
+Serve para os dois caminhos: o script que faz tudo de uma vez, e o passo a passo
+manual com `curl` para quando algo der errado e você precisar ver onde.
+
+> **Credenciais não vivem neste arquivo.** Ele está versionado e o repositório
+> está no GitHub. As chaves ficam em `.devcontainer/secrets/asaas-sandbox.env`,
+> que o `.gitignore` cobre (`.gitignore:70`). O modelo do arquivo está
+> [abaixo](#onde-ficam-as-credenciais).
+
+---
+
+## O que você precisa antes de começar
+
+### Duas contas, e por quê
+
+O split só pode ser provado com **duas contas distintas**. Com uma só, o Asaas
+recusa:
+
+> Não é permitido split para sua própria carteira.
+
+Que é exatamente o erro do Mercado Pago em outra roupagem — lá vendedor e
+marketplace eram a mesma conta, o `marketplace_fee` não transferiu nada, e
+ninguém percebeu porque não houve erro.
+
+| Papel | Conta | Como obter |
+|---|---|---|
+| **Plataforma** | recebe a comissão pelo split | conta sandbox **pessoa jurídica** |
+| **Vendedor** | emite a cobrança, fica com o líquido, emite a nota | subconta criada via API |
+
+### A conta da plataforma precisa ser CNPJ
+
+Conta pessoa física **não cria subconta**:
+
+```
+POST /accounts → 403
+"Contas de pessoa física (CPF) não podem criar subcontas no Asaas.
+ Apenas contas de pessoa jurídica (CNPJ) podem acessar essa funcionalidade."
+```
+
+Para homologação, crie a conta em [sandbox.asaas.com](https://sandbox.asaas.com/)
+com um CNPJ gerado aleatoriamente — é artifício de ambiente de teste, sancionado
+pelo próprio suporte do Asaas.
+
+**Isto é limitação só do teste.** Em produção não há subconta no caminho: o
+vendedor tem conta Asaas própria e independente, e apenas cola a chave dele no
+Moodle. É o que atende a regra fiscal do projeto — a plataforma não emite nota
+por outra empresa.
+
+> Em produção, uma conta independente pode precisar de **liberação do gerente de
+> contas do Asaas** para fazer split para uma carteira externa. Confirme isso
+> antes de prometer prazo a um vendedor.
+
+### Cadastre o domínio da plataforma na conta do vendedor
+
+Em **Minha Conta → Informações**, campo do site: `https://courses.leodg.dev`.
+
+Parece errado e não é. O Asaas exige que a URL de retorno use **o mesmo domínio
+cadastrado na conta que emite a cobrança**:
+
+> É necessário enviar uma URL que use o mesmo domínio cadastrado nas suas Minha
+> Conta na aba Informações.
+
+Como a cobrança nasce na conta do **vendedor** e o retorno aponta para a
+**plataforma**, é o domínio da plataforma que precisa estar lá — não o site
+próprio do vendedor, que é o que qualquer um cadastraria por instinto.
+
+Sem isso o Asaas recusa **a cobrança inteira**, não só o retorno. Quem não puder
+cadastrar o domínio desliga *Trazer o aluno de volta* nas configurações do
+gateway e continua vendendo; o aluno é que volta pela fatura.
+
+---
+
+## Onde ficam as credenciais
+
+Crie `.devcontainer/secrets/asaas-sandbox.env` na worktree (o diretório inteiro
+está no `.gitignore`):
+
+```bash
+# Chaves de HOMOLOGACAO (prefixo aact_hmlg_). Nao servem em producao, e a base
+# tambem muda. Painel: https://sandbox.asaas.com/
+ASAAS_ENV=sandbox
+ASAAS_BASE_URL=https://api-sandbox.asaas.com/v3
+
+# Conta da PLATAFORMA - pessoa juridica, recebe a comissao via split.
+ASAAS_PLATFORM_API_KEY='$aact_hmlg_...'
+ASAAS_PLATFORM_WALLET_ID=
+
+# Conta do VENDEDOR - subconta criada pelo script, cria a cobranca e fica
+# com o liquido. A apiKey so e devolvida UMA vez, na criacao.
+ASAAS_SELLER_API_KEY=
+ASAAS_SELLER_WALLET_ID=
+
+# O mesmo segredo dos dois lados: no webhook do Asaas e no Moodle.
+ASAAS_WEBHOOK_TOKEN=
+```
+
+Carregar num shell:
+
+```bash
+set -a && . .devcontainer/secrets/asaas-sandbox.env && set +a
+```
+
+---
+
+## Caminho rápido: o script
+
+Faz a prova inteira sem passar pelo Moodle — cria a subconta, o aluno, a
+cobrança com split, confirma o pagamento e mostra os dois saldos.
+
+```bash
+set -a && . .devcontainer/secrets/asaas-sandbox.env && set +a
+export MOODLE_SITE=https://courses.leodg.dev
+python3 docs/data-validation/scripts/provar-split-asaas.py
+```
+
+Sem dependência externa — só a biblioteca padrão do Python.
+
+Ele imprime a **chave do vendedor** no fim. Guarde: o Asaas só devolve a `apiKey`
+na criação da subconta. É essa chave que você cola no Moodle para vincular a
+conta do vendedor.
+
+Passando `ASAAS_WEBHOOK_TOKEN`, a subconta já nasce com o webhook cadastrado e
+ativo — `POST /accounts` aceita `site` e `webhooks` no mesmo corpo.
+
+---
+
+## Caminho manual, com `curl`
+
+Para quando você precisa ver exatamente onde parou.
+
+### 1. Conferir a conta da plataforma
+
+```bash
+curl -s -H "access_token: $ASAAS_PLATFORM_API_KEY" \
+  "$ASAAS_BASE_URL/myAccount" | python3 -m json.tool | head -20
+```
+
+Confira `"personType": "JURIDICA"`. Se vier `FISICA`, a criação de subconta vai
+falhar com 403.
+
+### 2. Descobrir a carteira da plataforma
+
+```bash
+curl -s -H "access_token: $ASAAS_PLATFORM_API_KEY" "$ASAAS_BASE_URL/wallets?limit=1"
+```
+
+O `data[0].id` é o `walletId` que recebe a comissão. É ele que vai na
+configuração do Moodle.
+
+### 3. Criar a subconta do vendedor
+
+```bash
+curl -s -X POST "$ASAAS_BASE_URL/accounts" \
+  -H "access_token: $ASAAS_PLATFORM_API_KEY" -H "Content-Type: application/json" \
+  -d '{
+    "name":"Vendedor Teste",
+    "email":"vendedor.teste@example.com",
+    "cpfCnpj":"<CPF sintetico com digito valido>",
+    "birthDate":"1990-05-10",
+    "mobilePhone":"48999998888",
+    "incomeValue":5000,
+    "address":"Rua Teste","addressNumber":"100",
+    "province":"Centro","postalCode":"88058400",
+    "site":"https://courses.leodg.dev"
+  }'
+```
+
+A resposta traz `walletId` e `apiKey`. **A `apiKey` vem uma vez só** — grave no
+arquivo de secrets na hora.
+
+### 4. Criar o aluno, com CPF
+
+Use a chave **do vendedor** daqui em diante.
+
+```bash
+curl -s -X POST "$ASAAS_BASE_URL/customers" \
+  -H "access_token: $ASAAS_SELLER_API_KEY" -H "Content-Type: application/json" \
+  -d '{"name":"Aluno Teste","email":"aluno@example.com","cpfCnpj":"<CPF sintetico>"}'
+```
+
+O CPF é obrigatório. O Asaas cria o cliente sem ele, mas **recusa emitir
+cobrança** de cliente sem documento — o erro só apareceria no passo seguinte.
+
+### 5. A cobrança com split
+
+```bash
+curl -s -X POST "$ASAAS_BASE_URL/payments" \
+  -H "access_token: $ASAAS_SELLER_API_KEY" -H "Content-Type: application/json" \
+  -d "{
+    \"customer\":\"<cus_...>\",
+    \"billingType\":\"PIX\",
+    \"value\":100.00,
+    \"dueDate\":\"$(date -d '+3 days' +%Y-%m-%d)\",
+    \"externalReference\":\"prova-split-1\",
+    \"callback\":{\"successUrl\":\"https://courses.leodg.dev/payment/gateway/asaas/return.php?ref=prova-split-1\",\"autoRedirect\":true},
+    \"split\":[{\"walletId\":\"$ASAAS_PLATFORM_WALLET_ID\",\"percentualValue\":25}]
+  }"
+```
+
+Repare em `netValue`: o Asaas tira a própria taxa **antes** de dividir, então 25%
+incidem sobre o líquido e não sobre os R$ 100. Não recalcule a comissão no
+relatório — use o que o gateway devolveu.
+
+### 6. Ver o QR Code
+
+```bash
+curl -s -H "access_token: $ASAAS_SELLER_API_KEY" \
+  "$ASAAS_BASE_URL/payments/<pay_...>/pixQrCode"
+```
+
+No `payload` aparece o **nome do recebedor**. É a prova visível de quem o banco
+do comprador enxerga como vendedor — e quem, portanto, emite a nota.
+
+### 7. Confirmar o pagamento
+
+O sandbox não tem Pix de verdade; a baixa é manual.
+
+```bash
+curl -s -X POST "$ASAAS_BASE_URL/payments/<pay_...>/receiveInCash" \
+  -H "access_token: $ASAAS_SELLER_API_KEY" -H "Content-Type: application/json" \
+  -d "{\"paymentDate\":\"$(date +%Y-%m-%d)\",\"value\":100.00,\"notifyCustomer\":false}"
+```
+
+Status vira `RECEIVED_IN_CASH`.
+
+### 8. Conferir o split
+
+```bash
+curl -s -H "access_token: $ASAAS_SELLER_API_KEY" \
+  "$ASAAS_BASE_URL/payments/<pay_...>" | python3 -c \
+  "import json,sys; print(json.dumps(json.load(sys.stdin).get('split'), indent=2))"
+```
+
+E os dois saldos:
+
+```bash
+for K in "$ASAAS_SELLER_API_KEY" "$ASAAS_PLATFORM_API_KEY"; do
+  curl -s -H "access_token: $K" "$ASAAS_BASE_URL/finance/balance"; echo
+done
+```
+
+**Se o split aparecer com a carteira da plataforma e um valor, o coração do
+modelo está provado pela primeira vez neste projeto.**
+
+---
+
+## Configurar o webhook no painel
+
+*Integrações → Webhooks → Adicionar Webhook.*
+
+| Campo | Valor |
+|---|---|
+| Este Webhook ficará ativo? | **ligado** |
+| Nome | `Moodle CoursesFree` |
+| URL | `https://courses.leodg.dev/payment/gateway/asaas/webhook.php` |
+| E-mail | o seu — é assim que você descobre uma fila travada |
+| Versão da API | **3** |
+| Token de autenticação | *Gerar Token*, e **copiar** |
+| Tipo de envio | **Sequencial** |
+| Fila de sincronização | **ligada** |
+
+**Eventos — apenas dois:**
+
+- `PAYMENT_RECEIVED`
+- `PAYMENT_CONFIRMED`
+
+Não existe `PAYMENT_RECEIVED_IN_CASH`. Existe o **status** `RECEIVED_IN_CASH`,
+mas o **evento** correspondente não — a baixa manual chega como
+`PAYMENT_RECEIVED`. A API é explícita: *"O evento [PAYMENT_RECEIVED_IN_CASH] é
+inválido."*
+
+O plugin responde `200 ignored` a tudo que não sejam esses dois, então marcar
+mais é ruído. `PAYMENT_SPLIT_DONE` é útil para você conferir o split nos *Logs
+de Webhooks*, mas o plugin não o trata.
+
+**Token vazio derruba tudo.** Sem ele o Asaas não manda o header
+`asaas-access-token`, e o `webhook.php` responde `401` a toda entrega. Com envio
+sequencial, a fila trava no primeiro evento.
+
+> Não confunda com **Integrações → Mecanismos de Segurança**, que valida dinheiro
+> **saindo** da conta: transferência, Pix QR Code, pagar contas, recarga.
+> Apontar aquele para o Moodle deixaria os saques do próprio vendedor reféns de
+> o site estar no ar — três falhas e a operação é cancelada. Não encoste nisso.
+
+---
+
+## Configurar o Moodle
+
+**Administração → Meios de pagamento → Asaas:**
+
+| Campo | Valor |
+|---|---|
+| Ambiente | **Homologação** |
+| Wallet ID da plataforma (Homologação) | o `walletId` do passo 2 |
+| Token do webhook (Homologação) | o mesmo token do painel |
+| Forma de pagamento | *Deixar o aluno escolher*, ou *Somente Pix* |
+| Campo de perfil com o documento | nome curto de um campo com o CPF — **obrigatório** |
+
+Homologação e produção têm campos separados de propósito: dá para deixar os dois
+vinculados ao mesmo tempo e alternar num select, sem redigitar nada, e uma chave
+de homologação não tem como ser usada em produção por engano.
+
+**Antes de vincular qualquer conta**, a instalação precisa de chave de cifragem —
+a chave do vendedor é gravada cifrada e o vínculo se recusa a salvar sem ela:
+
+```bash
+docker compose exec -T moodle php /var/www/html/admin/cli/generate_key.php < /dev/null
+```
+
+A chave mora em `moodledata/secret/`. **Inclua esse diretório no backup junto com
+o banco**: se ela sumir, as credenciais de todos os vendedores ficam ilegíveis e
+todo mundo precisa revincular. O `rsync --delete` do deploy não a toca — ele mira
+`${VPS_PATH}/repo`, e o `moodledata` é irmão, não filho.
+
+**Vincular a conta do vendedor:** painel da empresa → botão *Asaas* do país →
+*Vincular conta* → colar a chave do vendedor. O formulário confere a chave contra
+a API, descobre o `walletId` sozinho e cifra antes de gravar. A chave nunca mais
+aparece na tela — só os seis últimos dígitos.
+
+---
+
+## Teste de ponta a ponta pelo Moodle
+
+1. Empresa com conta de pagamento no país `BR` e o gateway Asaas vinculado.
+2. Oferta publicada, em BRL, com preço.
+3. Comissão da empresa em 25%.
+4. Aluno com o CPF preenchido no perfil.
+5. Comprar a oferta → escolher Asaas → cai na fatura do Asaas.
+6. Confirmar a cobrança pelo painel (ou `receiveInCash`).
+7. Conferir, nesta ordem:
+   - **Logs de Webhooks** no Asaas: entrega com `200`
+   - `{payments}` do core com uma linha `gateway = asaas`
+   - `local_marketplace_sale` com a comissão e o id da transação
+   - direito de acesso criado
+   - **aluno matriculado no curso**
+   - relatório da empresa mostrando a venda como `asaas`
+8. Reenviar o mesmo webhook: tem que responder `ignored`, sem duplicar nada.
+
+Pelo CLI:
+
+```bash
+docker compose exec -T moodle \
+  php /var/www/html/public/local/marketplace/cli/status.php < /dev/null
+```
+
+---
+
+## Armadilhas já descobertas
+
+Todas encontradas contra a API real, e todas já tratadas no plugin.
+
+| Sintoma | Causa |
+|---|---|
+| `403` ao criar subconta | Conta da plataforma é pessoa física. Só CNPJ cria subconta |
+| *"Não é permitido split para sua própria carteira"* | Vendedor e plataforma são a mesma conta. O vínculo barra isso antes |
+| *"É necessário preencher o CPF ou CNPJ do cliente"* | O Asaas cria cliente sem documento mas recusa a cobrança dele |
+| *"É necessário enviar uma URL que use o mesmo domínio…"* | O domínio da plataforma não está cadastrado na conta do vendedor |
+| *"O evento [PAYMENT_RECEIVED_IN_CASH] é inválido"* | Nome de evento não é valor de status. Use `PAYMENT_RECEIVED` |
+| Webhook responde `401` em toda entrega | Token vazio de um dos lados, ou divergente |
+| Comissão do relatório diverge do extrato | O split incide sobre o `netValue`. Não recalcule sobre o bruto |
+| Vínculo recusa salvar | Instalação sem chave de cifragem. Rode `generate_key.php` |
+
+---
+
+## O que continua sem prova
+
+- **O split**, até esta página ser executada com duas contas de verdade. É o
+  coração do modelo e a única coisa que separa este projeto de um checkout comum.
+- **Pix de verdade**, com liquidação bancária — o sandbox só faz baixa manual.
+- **Estorno.** `PAYMENT_REFUNDED` e `PAYMENT_RECEIVED_IN_CASH_UNDONE` não revogam
+  acesso: revogação é decisão de negócio, tomada em `entitlement::revoke()`, e
+  nunca por automação. Se isso mudar, é decisão explícita.

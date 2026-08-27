@@ -5,6 +5,11 @@ Como se verifica que o sistema funciona — e o que ainda não foi visto funcion
 | Documento | O que cobre |
 |---|---|
 | [`painel-de-testes.md`](painel-de-testes.md) | caminhos de gestão, CLI, cartões de teste e o que falta provar |
+| [`asaas-sandbox.md`](asaas-sandbox.md) | provar o **split** no Asaas: contas, webhook, script e passo a passo com `curl` |
+
+Scripts em [`scripts/`](scripts/). Credenciais **nunca** entram aqui: ficam em
+`.devcontainer/secrets/`, coberto pelo `.gitignore`. Este repositório está no
+GitHub, e chave de API em markdown versionado é um caminho sem volta.
 
 A distinção que importa neste projeto:
 
