@@ -427,7 +427,7 @@ Todas encontradas contra a API real, e todas já tratadas no plugin.
 |---|---|
 | `403` ao criar subconta | Conta da plataforma é pessoa física. Só CNPJ cria subconta |
 | *"Sua conta precisa estar aprovada"* ao usar Pix | A **subconta** é pessoa física. Crie com CNPJ — e isso apesar de `/myAccount/status` dizer `APPROVED` em tudo |
-| Split sai `CANCELLED` com o valor certo | O pagamento foi baixa manual (`receiveInCash`). Dinheiro que não passou pelo Asaas não tem como ser dividido |
+| Split sai `CANCELLED` com o valor certo | O pagamento foi baixa manual (`receiveInCash`). Dinheiro que não passou pelo Asaas não tem como ser dividido — e a plataforma **não recebe nada**. O relatório mostra R$ 0,00, que é a verdade. Ver [ADR-0003](../adr/0003-quem-cria-a-cobranca-emite-a-nota.md) |
 | `site` volta nulo depois de criar a subconta | Subconta pessoa física não persiste o campo. Com CNPJ ele é gravado |
 | *"Não é permitido split para sua própria carteira"* | Vendedor e plataforma são a mesma conta. O vínculo barra isso antes |
 | *"É necessário preencher o CPF ou CNPJ do cliente"* | O Asaas cria cliente sem documento mas recusa a cobrança dele |
