@@ -8,6 +8,7 @@
 # porque e do que os outros dependem - quem ler o arquivo entende a hierarquia.
 public/local/marketplace
 public/payment/gateway/mercadopago
+public/payment/gateway/asaas
 public/enrol/marketplace
 public/availability/condition/marketplace
 public/blocks/marketplace
