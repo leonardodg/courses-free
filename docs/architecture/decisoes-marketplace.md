@@ -95,6 +95,14 @@ gravar `timeend` em vez de marcar `cancelled`.
 
 ## 5. Mercado Pago: Checkout Pro, e por que a assinatura nativa não serve
 
+> **Superada em 2026-08-27** por [ADR-0001](../adr/0001-gateways-alem-do-mercado-pago.md),
+> [ADR-0002](../adr/0002-conta-de-pagamento-por-pais.md) e
+> [ADR-0003](../adr/0003-quem-cria-a-cobranca-emite-a-nota.md). O que está abaixo
+> continua verdadeiro **sobre o Mercado Pago**, e por isso fica: são os limites
+> que motivaram procurar outro gateway. O que mudou é que ele deixou de ser o
+> único — entraram Asaas e Pagar.me, e o núcleo deixou de conhecer o nome de
+> qualquer um deles.
+
 ### O split só existe em três checkouts
 
 A documentação é explícita: split funciona com **Checkout Pro, Transparente e

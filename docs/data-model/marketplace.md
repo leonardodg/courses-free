@@ -113,8 +113,9 @@ se libera.
 | Campo | Para que serve |
 |---|---|
 | `offertype` | `single` um curso · `bundle` conjunto escolhido · `catalog` tudo da categoria, com cursos novos entrando sozinhos. |
-| `price` | Zero torna gratuita, e ofertas gratuitas não passam pelo Mercado Pago. |
-| `currency` | Validada contra a moeda em que a empresa realmente recebe, descoberta da conta vinculada. |
+| `price` | Zero torna gratuita, e ofertas gratuitas não passam por gateway nenhum. |
+| `country` | ISO-3166 alpha-2. Decide a conta que recebe, a moeda e quais gateways aparecem no checkout. Vive aqui e não na empresa porque `get_payable()` resolve tudo pelo `itemid`, sem saber quem compra. |
+| `currency` | **Derivada** do `country`, em `before_validate()`. Não é escolha: uma conta do país X só recebe na moeda de X, e não há câmbio no caminho do split. |
 | `accessmode` | `lifetime` · `days` · `recurring`. |
 | `accessdays` | Quanto acesso **cada pagamento** libera. |
 | `billingdays` | De quanto em quanto tempo se espera o próximo pagamento. Só em `recurring`. |
@@ -125,6 +126,39 @@ se libera.
 > cortar o aluno. Se fossem o mesmo campo — como eram — a carência não existiria.
 > E `maxcycles` é o que distingue "mensal por 12 meses" de "mensal enquanto
 > quiser".
+
+### `local_marketplace_account`
+
+Conta de pagamento da empresa **em cada país**. Existe porque o `core_payment`
+escopa conta por contexto, e todas as contas de uma empresa vivem no mesmo — o da
+categoria dela. Sem uma chave por país, `account::get_record(['contextid' => …])`
+devolvia *a primeira que aparecesse*, e uma empresa que vende no Brasil e na
+Argentina passava a receber em ordem de id.
+
+| Campo | Para que serve |
+|---|---|
+| `country` | ISO-3166 alpha-2. Único junto com `companyid`. |
+| `accountid` | `payment_accounts.id` do core. A conta em si continua sendo dele — aqui mora só o vínculo. |
+
+Ver [ADR-0002](../adr/0002-conta-de-pagamento-por-pais.md).
+
+### `local_marketplace_sale`
+
+O que o marketplace precisa saber de uma venda e o `core_payment` não guarda.
+Valor, moeda, gateway, comprador e data ficam em `{payments}`, que é a fonte da
+verdade — duplicar daria duas versões do mesmo número financeiro.
+
+| Campo | Para que serve |
+|---|---|
+| `paymentid` | `payments.id` do core, único. Uma venda por pagamento. |
+| `feeamount` | Comissão **efetivamente** enviada, em moeda. Não recalcule a partir do percentual: cada gateway deduz as próprias taxas numa ordem diferente. |
+| `externalid` | Id da transação no gateway, para conciliar com o extrato dele. |
+| `companyid` | Desnormalizado: o relatório filtra por empresa a cada página. |
+
+Existe porque o relatório lia a tabela do `paygw_mercadopago` direto. Com um
+segundo gateway aquilo passaria a **mentir por omissão** — a venda existiria, o
+aluno estaria matriculado, e o total simplesmente não contaria o dinheiro.
+Ver [ADR-0001](../adr/0001-gateways-alem-do-mercado-pago.md).
 
 ### `local_marketplace_entitlement`
 
@@ -155,5 +189,20 @@ Transações. Vive no plugin do gateway, não no marketplace.
 |---|---|
 | `externalreference` | A chave de ligação. O ID do pagamento só existe **depois** que o aluno paga, então precisamos de algo nosso acompanhando desde a criação da preferência. |
 | `accountid` | Conta que recebe. É dela que sai o token para consultar o pagamento. |
-| `feeamount` | `marketplace_fee` enviado. **Não é 25% do líquido**: a taxa do Mercado Pago sai antes e a comissão incide sobre o resto. |
+| `feeamount` | `marketplace_fee` enviado. **Não é 25% do bruto**: a taxa do Mercado Pago sai antes e a comissão incide sobre o resto. |
 | `status` | Espelha o Mercado Pago: `pending` · `approved` · `rejected` · `refunded` · `cancelled`. |
+
+### `paygw_asaas`
+
+Transações do Asaas. Mesma ideia, com duas diferenças que valem.
+
+| Campo | Para que serve |
+|---|---|
+| `environment` | `sandbox` ou `production`. Guardado **na linha** porque uma cobrança criada em homologação não pode ser consultada com a chave de produção: as bases não compartilham dados. |
+| `feepercent` | Percentual resolvido no momento da compra. Guardado porque a comissão da empresa pode mudar depois, e a venda antiga precisa continuar explicável. |
+| `feeamount` | Comissão em moeda, calculada sobre o `netValue` — que é onde o Asaas aplica o split. R$ 100 viram R$ 97,52 líquidos, e 25% disso são R$ 24,38. |
+| `billingtype` | `UNDEFINED` deixa o aluno escolher · `PIX` · `BOLETO` · `CREDIT_CARD`. |
+
+A credencial do vendedor **não** fica aqui: vive cifrada no
+`payment_gateways.config` do core, por ambiente. Ver
+[ADR-0003](../adr/0003-quem-cria-a-cobranca-emite-a-nota.md).

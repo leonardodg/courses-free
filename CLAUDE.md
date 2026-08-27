@@ -1,7 +1,7 @@
 # Marketplace de cursos — contexto para agentes
 
 Plataforma Moodle 5.2 onde qualquer pessoa publica curso gratuito ou pago, com
-split de pagamento pelo Mercado Pago.
+split de pagamento. Três gateways: Mercado Pago, Asaas e Pagar.me.
 
 Este arquivo é carregado automaticamente a cada sessão. Leia antes de propor
 qualquer coisa — várias decisões aqui parecem erradas até você conhecer a razão.
@@ -28,11 +28,23 @@ outro — por isso o país vive na oferta, e planos por país são ofertas separ
 **O Mercado Pago não tem recorrência com split.** `preapproval` não aceita
 `marketplace_fee`, e o Transparente com cartão salvo exige CVV a cada cobrança.
 Assinatura aqui é acesso com prazo mais aviso de vencimento — não débito
-automático.
+automático. Foi o que motivou procurar outro gateway: ver `docs/adr/0001`.
+
+**Quem cria a cobrança é o vendedor.** Não é escolha de arquitetura, é regra
+fiscal: a plataforma não emite nota por outra empresa. A cobrança nasce na conta
+dele, o líquido fica com ele, e o split leva só a comissão. Ver `docs/adr/0003`.
+
+**A comissão incide sobre o líquido, não sobre o bruto.** Cada gateway deduz as
+próprias taxas antes de dividir — no Asaas, R$ 100 viram R$ 97,52 e 25% disso
+são R$ 24,38. Nunca recalcule no relatório: guarde o que o gateway devolveu.
+
+**Baixa manual não prova split.** `receiveInCash` faz o split sair `CANCELLED`
+com o valor certo na tela. Dinheiro que não passou pelo gateway não tem como ser
+dividido.
 
 **O split só ocorre entre contas do mesmo país.** A comissão cai na conta da
-plataforma, e uma conta Mercado Pago só guarda a moeda do próprio país. Não há
-câmbio no caminho.
+plataforma, e uma conta só guarda a moeda do próprio país. Não há câmbio no
+caminho — por isso a oferta tem `country` em ISO, e a moeda é derivada dele.
 
 **São três partes no split:** comprador, vendedor e a **aplicação**. Misturar
 ambientes — aplicação de produção com vendedor de teste — é recusado com "uma das
@@ -43,17 +55,21 @@ partes é de teste". O `test_token` no OAuth resolve.
 ```
 Empresa (local_marketplace_company)
   ├── categoria de curso          → isolamento, contexto, tema
-  ├── conta de pagamento          → contexto da categoria, com OAuth do vendedor
+  ├── contas de pagamento         → UMA POR PAÍS (local_marketplace_account)
   ├── domínio próprio             → mapa Host→empresa lido pelo config.php
-  └── ofertas
-        └── direitos de acesso    → enrol + availability + block leem daqui
+  └── ofertas (cada uma com country ISO)
+        ├── direitos de acesso    → enrol + availability + block leem daqui
+        └── vendas                → local_marketplace_sale, neutra de gateway
 ```
 
-Cinco plugins:
+Seis plugins:
 
-- `local_marketplace` — núcleo. Empresas, ofertas, direitos, relatórios, vitrine,
-  telas de admin, `core_payment\service_provider`
+- `local_marketplace` — núcleo. Empresas, ofertas, direitos, vendas, relatórios,
+  vitrine, telas de admin, `core_payment\service_provider`. **Não sabe o nome de
+  gateway nenhum**: pergunta a cada um que moedas e países atende
 - `paygw_mercadopago` — Checkout Pro com split. Todo HTTP passa por `mp_client`
+- `paygw_asaas` — split em Pix, boleto e cartão. Credencial do vendedor cifrada,
+  ambientes lado a lado, webhook autenticado
 - `enrol_marketplace` — matrícula por diferença, a partir dos direitos
 - `availability_marketplace` — libera seção mediante compra
 - `block_marketplace` — assinaturas do aluno no Dashboard
@@ -148,7 +164,9 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 
 | Sintoma | Causa |
 |---|---|
-| `Section error` | A seção do gateway é `paymentgatewaymercadopago`, não `paygw_mercadopago` |
+| `Section error` | A seção do gateway é `paymentgateway<nome>`, não `paygw_<nome>` |
+| Asaas recusa a cobrança inteira | Conta do vendedor sem o domínio **da plataforma** cadastrado em Minha Conta, ou aluno sem CPF no perfil |
+| Webhook do Asaas respondendo 401 | Token vazio ou divergente entre o painel e a config do Moodle |
 | `No define call` | `requirejs.php` serve `amd/src` quando não há `.map`. **Não há transpilador**: o `src` precisa ser AMD de verdade |
 | Botão exige dois cliques | `cachejs` desligado faz cada módulo AMD virar uma requisição |
 | Upgrade quebra em `messages.php` | `MESSAGE_DEFAULT_LOGGEDIN` não existe no 5.2. Use `MESSAGE_DEFAULT_ENABLED` |
@@ -158,15 +176,16 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. 33 testes, phpcs limpo, CI validando os cinco plugins a cada
-push.
+webhook, matrícula. **105 testes** (63 no núcleo, 34 no Asaas, 8 no MP), phpcs
+limpo, CI validando os plugins a cada push.
 
-**Nunca foi exercitado:** o split. Vendedor e marketplace foram a mesma conta, então
-o `marketplace_fee` não transferiu nada. **É o coração do modelo e continua sem
-prova** — precisa de uma segunda conta Mercado Pago real.
+**O split foi provado** em 2026-08-27, no sandbox do Asaas, com duas contas
+distintas: R$ 100 brutos, R$ 97,52 líquidos, split de 25% = R$ 24,38 atribuído à
+carteira da plataforma. Primeira vez no projeto. Falta vê-lo chegar a `DONE` com
+o saldo se movendo. Roteiro repetível em `docs/data-validation/asaas-sandbox.md`.
 
-**Também sem teste:** Pix e boleto — os caminhos assíncronos, onde o webhook é a
-única fonte da verdade.
+**Continua sem prova:** o split no Mercado Pago, e a compra pelo Moodle com
+comissão maior que zero.
 
 **Fase 3** tem a fundação no ar; falta apontar um domínio real.
 **Fase 5** está bloqueada por decisão de negócio do usuário.

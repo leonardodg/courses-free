@@ -27,13 +27,17 @@ Use [`0000-template.md`](0000-template.md) como ponto de partida.
 
 ## Decisões consolidadas
 
-As decisões estruturais do marketplace estão hoje num documento só, em
+As decisões estruturais do marketplace nasceram num documento só, em
 [`../architecture/decisoes-marketplace.md`](../architecture/decisoes-marketplace.md).
 Cada linha daquela tabela é candidata a virar um ADR próprio — o que se ganha é
-poder superar uma sem mexer nas outras.
+poder superar uma sem mexer nas outras. A §5 daquele documento, sobre o Mercado
+Pago, já foi superada pelos ADRs abaixo.
 
 ## Índice
 
 | # | Decisão | Situação |
 |---|---|---|
-| — | _nenhum ADR individual escrito ainda_ | |
+| [0001](0001-gateways-alem-do-mercado-pago.md) | Mais de um gateway, e o núcleo sem saber o nome de nenhum | Aceita |
+| [0002](0002-conta-de-pagamento-por-pais.md) | País ISO na oferta, e uma conta de pagamento por país | Aceita |
+| [0003](0003-quem-cria-a-cobranca-emite-a-nota.md) | Quem cria a cobrança é o vendedor, porque é ele quem emite a nota | Aceita |
+| [0004](0004-cohort-por-empresa-adiado.md) | Cohort por empresa: adiado, e derivado quando vier | Aceita |

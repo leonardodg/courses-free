@@ -26,9 +26,22 @@ Tres idiomas completos: `en`, `pt_br` e `es`, com 261 chaves cada.
 
 Nao e o mesmo que "nao funciona" - e o que ninguem viu funcionar ainda.
 
-**O split.** Vendedor e marketplace foram a mesma conta no teste, entao o
-`marketplace_fee` nao transferiu nada. Precisa de uma segunda conta Mercado Pago
-real. Ate la, os 25% sao codigo nao exercitado - e sao o coracao do modelo.
+**O split - PROVADO em 2026-08-27**, no sandbox do Asaas, com duas contas
+distintas:
+
+    cobranca ... pay_w1ijat3r74sx4nlp | CONFIRMED
+    bruto ...... R$ 100,00 | liquido R$ 97,52
+    SPLIT ...... carteira da plataforma | AWAITING_CREDIT | 25% | R$ 24,38
+
+Primeira vez no projeto. No Mercado Pago vendedor e marketplace eram a mesma
+conta, entao o `marketplace_fee` nao transferia nada - e nao havia erro, que e
+o pior tipo de falso positivo. Continua sem prova no Mercado Pago, e falta ver o
+split chegar a DONE com o saldo se movendo. Roteiro repetivel em
+`../data-validation/asaas-sandbox.md`.
+
+Descoberta no caminho, que vale mais que a prova: baixa manual (`receiveInCash`)
+faz o split sair CANCELLED com o valor certo na tela. Dinheiro que nao passou
+pelo gateway nao tem como ser dividido.
 
 **Pix e boleto.** Pix exige chave registrada na conta do vendedor; boleto e
 excluido pelo `wallet_purchase` do modo de teste. Sao os caminhos assincronos,
@@ -111,13 +124,19 @@ limite tecnico por curso.
 
 ## Multi-pais
 
-Fundacao pronta: `site_id` gravado por conta vinculada, moeda descoberta da
-conta, dominio de autorizacao derivado do pais, trava recusando vendedor de pais
-diferente.
+**Implementado em 2026-08-27** - ver [ADR-0002](../adr/0002-conta-de-pagamento-por-pais.md).
 
-Falta um par `client_id`/`client_secret` por pais em vez de um unico, e a empresa
-declarar onde opera. Ha trabalho iniciado num `git stash` - `siteid` na oferta e
-tabela `local_marketplace_account`.
+A oferta tem `country` em ISO-3166 alpha-2, e a tabela
+`local_marketplace_account` liga empresa x pais x conta. A moeda deixou de ser
+escolhida e passou a ser derivada do pais, o que torna impossivel - e nao apenas
+invalida - uma oferta em BRL vendendo na Argentina.
+
+A chave e ISO e nao o `siteid` do Mercado Pago: Asaas e Pagar.me so existem no
+Brasil e nao tem codigo de site. A traducao para o vocabulario de cada
+fornecedor fica no cliente HTTP dele.
+
+Falta ainda um par `client_id`/`client_secret` por pais no Mercado Pago, em vez
+de um unico.
 
 Restricao que decidiu o desenho: `core_payment::get_payable()` nao recebe o
 usuario, entao valor, moeda e conta sao funcao pura do `itemid`. Uma oferta nao
