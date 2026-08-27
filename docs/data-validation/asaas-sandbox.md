@@ -29,7 +29,18 @@ ninguém percebeu porque não houve erro.
 | Papel | Conta | Como obter |
 |---|---|---|
 | **Plataforma** | recebe a comissão pelo split | conta sandbox **pessoa jurídica** |
-| **Vendedor** | emite a cobrança, fica com o líquido, emite a nota | subconta criada via API |
+| **Vendedor** | emite a cobrança, fica com o líquido, emite a nota | subconta via API, **também CNPJ** |
+
+**As duas precisam ser CNPJ**, e por motivos diferentes. A plataforma, porque
+conta PF não cria subconta. O vendedor, porque **subconta pessoa física não
+libera Pix**:
+
+> A sua conta ainda não está totalmente aprovada para utilizar o Pix.
+
+E isso apesar de `GET /myAccount/status` responder `APPROVED` em tudo —
+`commercialInfo`, `bankAccountInfo`, `documentation`, `general`. Ela também não
+deixa nem criar chave Pix. Com CNPJ o Pix libera na criação, e de quebra o campo
+`site` é persistido (na subconta PF ele volta nulo, silenciosamente).
 
 ### A conta da plataforma precisa ser CNPJ
 
@@ -89,10 +100,10 @@ ASAAS_BASE_URL=https://api-sandbox.asaas.com/v3
 ASAAS_PLATFORM_API_KEY='$aact_hmlg_...'
 ASAAS_PLATFORM_WALLET_ID=
 
-# Conta do VENDEDOR - subconta criada pelo script, cria a cobranca e fica
+# Conta do VENDEDOR - subconta CNPJ criada pelo script, cria a cobranca e fica
 # com o liquido. A apiKey so e devolvida UMA vez, na criacao.
-ASAAS_SELLER_API_KEY=
-ASAAS_SELLER_WALLET_ID=
+ASAAS_SELLER_PJ_API_KEY=
+ASAAS_SELLER_PJ_WALLET_ID=
 
 # O mesmo segredo dos dois lados: no webhook do Asaas e no Moodle.
 ASAAS_WEBHOOK_TOKEN=
@@ -119,9 +130,15 @@ python3 docs/data-validation/scripts/provar-split-asaas.py
 
 Sem dependência externa — só a biblioteca padrão do Python.
 
-Ele imprime a **chave do vendedor** no fim. Guarde: o Asaas só devolve a `apiKey`
-na criação da subconta. É essa chave que você cola no Moodle para vincular a
-conta do vendedor.
+Ele imprime a **chave do vendedor** no fim. O Asaas só devolve a `apiKey` na
+criação da subconta — passando `ASAAS_SECRETS_FILE` apontando para o arquivo de
+secrets, o script a anexa lá sozinho:
+
+```bash
+export ASAAS_SECRETS_FILE=.devcontainer/secrets/asaas-sandbox.env
+```
+
+É essa chave que você cola no Moodle para vincular a conta do vendedor.
 
 Passando `ASAAS_WEBHOOK_TOKEN`, a subconta já nasce com o webhook cadastrado e
 ativo — `POST /accounts` aceita `site` e `webhooks` no mesmo corpo.
@@ -159,8 +176,8 @@ curl -s -X POST "$ASAAS_BASE_URL/accounts" \
   -d '{
     "name":"Vendedor Teste",
     "email":"vendedor.teste@example.com",
-    "cpfCnpj":"<CPF sintetico com digito valido>",
-    "birthDate":"1990-05-10",
+    "cpfCnpj":"<CNPJ sintetico com digito valido>",
+    "companyType":"MEI",
     "mobilePhone":"48999998888",
     "incomeValue":5000,
     "address":"Rua Teste","addressNumber":"100",
@@ -215,17 +232,40 @@ curl -s -H "access_token: $ASAAS_SELLER_API_KEY" \
 No `payload` aparece o **nome do recebedor**. É a prova visível de quem o banco
 do comprador enxerga como vendedor — e quem, portanto, emite a nota.
 
-### 7. Confirmar o pagamento
+### 7. Pagar de verdade — e por que não com baixa manual
 
-O sandbox não tem Pix de verdade; a baixa é manual.
+**`receiveInCash` não prova split.** A baixa manual diz que o dinheiro foi
+recebido *fora* do Asaas, e dinheiro que não passou por ele não tem como ser
+dividido. O split fica assim:
 
-```bash
-curl -s -X POST "$ASAAS_BASE_URL/payments/<pay_...>/receiveInCash" \
-  -H "access_token: $ASAAS_SELLER_API_KEY" -H "Content-Type: application/json" \
-  -d "{\"paymentDate\":\"$(date +%Y-%m-%d)\",\"value\":100.00,\"notifyCustomer\":false}"
+```
+situacao ...... CANCELLED
+valor ......... 24.38
 ```
 
-Status vira `RECEIVED_IN_CASH`.
+Valor atribuído, split cancelado, saldos em zero. É o tipo de "prova" que passa
+despercebida — foi exatamente assim que o `marketplace_fee` do Mercado Pago
+pareceu funcionar sem transferir nada.
+
+O sandbox também não liquida um Pix de verdade. O que funciona é **cartão
+fictício**, que processa na hora:
+
+```bash
+curl -s -X POST "$ASAAS_BASE_URL/payments" \
+  -H "access_token: $ASAAS_SELLER_API_KEY" -H "Content-Type: application/json" \
+  -d "{
+    \"customer\":\"<cus_...>\",
+    \"billingType\":\"CREDIT_CARD\",
+    \"value\":100.00,
+    \"dueDate\":\"$(date +%Y-%m-%d)\",
+    \"split\":[{\"walletId\":\"$ASAAS_PLATFORM_WALLET_ID\",\"percentualValue\":25}],
+    \"creditCard\":{\"holderName\":\"Aluno Teste\",\"number\":\"5162306219378829\",\"expiryMonth\":\"05\",\"expiryYear\":\"2029\",\"ccv\":\"318\"},
+    \"creditCardHolderInfo\":{\"name\":\"Aluno Teste\",\"email\":\"aluno@example.com\",\"cpfCnpj\":\"<CPF>\",\"postalCode\":\"88058400\",\"addressNumber\":\"100\",\"phone\":\"48999998888\"},
+    \"remoteIp\":\"189.1.1.1\"
+  }"
+```
+
+Status vira `CONFIRMED` na resposta.
 
 ### 8. Conferir o split
 
@@ -243,8 +283,38 @@ for K in "$ASAAS_SELLER_API_KEY" "$ASAAS_PLATFORM_API_KEY"; do
 done
 ```
 
-**Se o split aparecer com a carteira da plataforma e um valor, o coração do
-modelo está provado pela primeira vez neste projeto.**
+As situações do split andam assim:
+
+```
+PENDING → AWAITING_CREDIT → DONE
+```
+
+`CANCELLED` significa que a cobrança não passou pelo Asaas. `AWAITING_CREDIT`
+é o esperado logo após o cartão: atribuído e na fila, aguardando a liquidação
+do cartão para o saldo se mover. Os saldos ficam em zero até lá — isso é
+normal, não é falha.
+
+**Executado em 2026-08-27, e este é o resultado:**
+
+```
+cobranca ... pay_w1ijat3r74sx4nlp | CONFIRMED
+bruto ...... 100.0 | liquido 97.52
+
+SPLIT
+  carteira ........ <carteira da plataforma>
+  e a plataforma? . SIM
+  situacao ........ AWAITING_CREDIT
+  percentual ...... 25.0 %
+  valor ........... 24.38
+```
+
+R$ 97,52 × 25% = **R$ 24,38**. A comissão incide sobre o **líquido**, não sobre
+os R$ 100 — que é exatamente o que `payment_processor::fee_from()` calcula, e a
+razão de o relatório guardar o valor devolvido pelo gateway em vez de recalcular
+25% do bruto.
+
+**É a primeira vez neste projeto que um split é visto sendo atribuído entre duas
+contas distintas.**
 
 ---
 
@@ -356,6 +426,9 @@ Todas encontradas contra a API real, e todas já tratadas no plugin.
 | Sintoma | Causa |
 |---|---|
 | `403` ao criar subconta | Conta da plataforma é pessoa física. Só CNPJ cria subconta |
+| *"Sua conta precisa estar aprovada"* ao usar Pix | A **subconta** é pessoa física. Crie com CNPJ — e isso apesar de `/myAccount/status` dizer `APPROVED` em tudo |
+| Split sai `CANCELLED` com o valor certo | O pagamento foi baixa manual (`receiveInCash`). Dinheiro que não passou pelo Asaas não tem como ser dividido |
+| `site` volta nulo depois de criar a subconta | Subconta pessoa física não persiste o campo. Com CNPJ ele é gravado |
 | *"Não é permitido split para sua própria carteira"* | Vendedor e plataforma são a mesma conta. O vínculo barra isso antes |
 | *"É necessário preencher o CPF ou CNPJ do cliente"* | O Asaas cria cliente sem documento mas recusa a cobrança dele |
 | *"É necessário enviar uma URL que use o mesmo domínio…"* | O domínio da plataforma não está cadastrado na conta do vendedor |
@@ -368,9 +441,13 @@ Todas encontradas contra a API real, e todas já tratadas no plugin.
 
 ## O que continua sem prova
 
-- **O split**, até esta página ser executada com duas contas de verdade. É o
-  coração do modelo e a única coisa que separa este projeto de um checkout comum.
-- **Pix de verdade**, com liquidação bancária — o sandbox só faz baixa manual.
+- **A liquidação do split.** Ele foi visto sendo *atribuído* — `AWAITING_CREDIT`,
+  R$ 24,38 na carteira da plataforma. Falta vê-lo chegar a `DONE` e o saldo se
+  mover, o que depende da liquidação do cartão.
+- **Pix pago de verdade.** A cobrança Pix com split é criada sem problema, mas o
+  sandbox não liquida Pix — a prova saiu por cartão fictício.
+- **O caminho pelo Moodle com split**, de ponta a ponta. A cadeia até a matrícula
+  já foi provada, mas com comissão zero.
 - **Estorno.** `PAYMENT_REFUNDED` e `PAYMENT_RECEIVED_IN_CASH_UNDONE` não revogam
   acesso: revogação é decisão de negócio, tomada em `entitlement::revoke()`, e
   nunca por automação. Se isso mudar, é decisão explícita.

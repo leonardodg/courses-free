@@ -80,6 +80,22 @@ def cpf_sintetico():
     return "".join(map(str, base))
 
 
+def cnpj_sintetico():
+    """CNPJ com digito verificador valido.
+
+    O vendedor precisa ser CNPJ, e nao CPF: subconta pessoa fisica nao libera
+    Pix no sandbox - "A sua conta ainda nao esta totalmente aprovada para
+    utilizar o Pix" - e nem deixa criar chave Pix. Com CNPJ o Pix libera na
+    criacao, e o campo "site" e persistido (na PF volta nulo).
+    """
+    base = [random.randint(0, 9) for _ in range(8)] + [0, 0, 0, 1]
+    for pesos in ([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2],
+                  [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]):
+        resto = sum(d * p for d, p in zip(base, pesos)) % 11
+        base.append(0 if resto < 2 else 11 - resto)
+    return "".join(map(str, base))
+
+
 def passo(numero, texto):
     print(f"\n[{numero}] {texto}")
 
@@ -103,8 +119,8 @@ corpo = {
     "name": f"Vendedor Teste {sufixo}",
     "email": f"vendedor.teste.{sufixo}@example.com",
     "loginEmail": f"vendedor.teste.{sufixo}@example.com",
-    "cpfCnpj": cpf_sintetico(),
-    "birthDate": "1990-05-10",
+    "cpfCnpj": cnpj_sintetico(),
+    "companyType": "MEI",
     "mobilePhone": "48999998888",
     "incomeValue": 5000,
     "address": "Rua Teste",
@@ -137,6 +153,16 @@ print(f"  {vendedor['name']} | carteira {seller_wallet}")
 print(f"  chave do vendedor: {seller_key}")
 print("  GUARDE ESSA CHAVE: o Asaas so a devolve na criacao.")
 
+destino = os.environ.get("ASAAS_SECRETS_FILE", "").strip()
+if destino:
+    with open(destino, "a", encoding="utf-8") as arquivo:
+        arquivo.write(f"\n# Subconta criada em {date.today().isoformat()}\n")
+        arquivo.write(f"ASAAS_SELLER_PJ_API_KEY='{seller_key}'\n")
+        arquivo.write(f"ASAAS_SELLER_PJ_WALLET_ID={seller_wallet}\n")
+    print(f"  anexada em {destino}")
+else:
+    print("  defina ASAAS_SECRETS_FILE para anexa-la ao arquivo de secrets")
+
 if seller_wallet == platform_wallet:
     sys.exit("  as carteiras sao iguais - o split nao teria como ser provado")
 
@@ -154,12 +180,16 @@ print(f"  {aluno['name']} | {aluno['id']}")
 
 # --- 4. A cobranca com split ----------------------------------------------
 
-passo(4, f"Cobranca PIX de R$ {PRICE:.2f} com split de {COMMISSION}% para a plataforma")
+passo(4, f"Cobranca de R$ {PRICE:.2f} com split de {COMMISSION}% para a plataforma")
 # A chave usada aqui e a do VENDEDOR: e o que faz o dinheiro cair na conta
 # dele, aparecer o nome dele no payload do Pix e ser ele quem emite a nota.
 cobranca = call("POST", "/payments", seller_key, {
     "customer": aluno["id"],
-    "billingType": "PIX",
+    # Cartao, e nao Pix, por um motivo que custou uma volta: no sandbox nao ha
+    # como liquidar um Pix de verdade, e a baixa manual (receiveInCash) CANCELA
+    # o split - dinheiro que nao passou pelo Asaas nao tem como ser dividido.
+    # O cartao ficticio processa na hora e o split sai AWAITING_CREDIT.
+    "billingType": "CREDIT_CARD",
     "value": PRICE,
     "dueDate": (date.today() + timedelta(days=3)).isoformat(),
     "description": "Curso Demo - prova de split",
@@ -169,45 +199,49 @@ cobranca = call("POST", "/payments", seller_key, {
         "autoRedirect": True,
     },
     "split": [{"walletId": platform_wallet, "percentualValue": COMMISSION}],
+    "creditCard": {
+        "holderName": "Aluno Teste",
+        "number": "5162306219378829",
+        "expiryMonth": "05",
+        "expiryYear": "2029",
+        "ccv": "318",
+    },
+    "creditCardHolderInfo": {
+        "name": "Aluno Teste",
+        "email": aluno["email"],
+        "cpfCnpj": aluno["cpfCnpj"],
+        "postalCode": "88058400",
+        "addressNumber": "100",
+        "phone": "48999998888",
+    },
+    "remoteIp": "189.1.1.1",
 })
 print(f"  {cobranca['id']} | status {cobranca['status']}")
 print(f"  bruto R$ {cobranca['value']:.2f} | liquido R$ {cobranca.get('netValue', 0):.2f}")
 print(f"  fatura: {cobranca['invoiceUrl']}")
 
-qr = call("GET", f"/payments/{cobranca['id']}/pixQrCode", seller_key)
-payload = qr.get("payload", "")
-print(f"  QR Code emitido: {'sim' if payload else 'NAO'}")
-if payload:
-    # O nome dentro do payload e o do RECEBEDOR. E a prova visivel de quem o
-    # banco do comprador enxerga como vendedor - e quem, portanto, emite a nota.
-    print(f"  recebedor no payload do Pix: {payload[70:110]}")
 
-# --- 5. Pagamento ----------------------------------------------------------
-
-passo(5, "Confirmando o pagamento (baixa manual do sandbox)")
-pago = call("POST", f"/payments/{cobranca['id']}/receiveInCash", seller_key, {
-    "paymentDate": date.today().isoformat(),
-    "value": PRICE,
-    "notifyCustomer": False,
-})
-print(f"  status {pago['status']} | liquido R$ {pago.get('netValue', 0):.2f}")
 
 # --- 6. O SPLIT ------------------------------------------------------------
 
-passo(6, "O SPLIT")
+passo(5, "O SPLIT")
 detalhe = call("GET", f"/payments/{cobranca['id']}", seller_key)
 splits = detalhe.get("split") or []
 if not splits:
     print("  NENHUM SPLIT NA COBRANCA - a prova falhou")
 else:
     for s in splits:
+        # PENDING -> AWAITING_CREDIT -> DONE. CANCELLED significa que o dinheiro
+        # nao passou pelo Asaas, e e o que a baixa manual produz.
         print(f"  carteira {s.get('walletId')}")
         print(f"    situacao ......... {s.get('status')}")
         print(f"    percentual ....... {s.get('percentualValue')}%")
         print(f"    valor ............ R$ {s.get('totalValue') or s.get('fixedValue') or 0}")
         print(f"    e a plataforma? .. {'SIM' if s.get('walletId') == platform_wallet else 'nao'}")
+        if s.get("status") == "CANCELLED":
+            print("    ATENCAO: split cancelado - a cobranca nao passou pelo Asaas")
 
-passo(7, "Saldos")
+passo(6, "Saldos")
 saldo_v = call("GET", "/finance/balance", seller_key)
 saldo_p = call("GET", "/finance/balance", PLATFORM_KEY)
 print(f"  vendedor ... R$ {saldo_v.get('balance', 0)}")
