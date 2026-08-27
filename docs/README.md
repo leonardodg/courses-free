@@ -34,9 +34,10 @@ split de pagamento pelo Mercado Pago.
 normal; comentários em código e mensagens de commit vão sem, por consistência
 com o que já existe na base.
 
-**Fim de linha LF.** Garantido por [`.gitattributes`](.gitattributes) — o git
-global desta máquina tem `core.autocrlf=true`, que sem isso escreveria CRLF no
-working tree e sujaria diffs (e quebraria a man page).
+**Fim de linha LF.** Garantido por [`.gitattributes`](.gitattributes), que tem
+precedência sobre qualquer configuração da máquina. O git global daqui tinha
+`core.autocrlf=true` até 27/08/2026 — sem o atributo, o checkout escreveria CRLF
+no working tree, sujando diffs e quebrando a man page.
 
 **Diagramas em Mermaid**, em bloco ```` ```mermaid ````, para versionar como
 texto. O SVG em `architecture/` é a exceção: veio pronto.

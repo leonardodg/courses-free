@@ -585,8 +585,14 @@ docker tag leodg/courses-free:development leodg/courses-free:backup-$(date +%F)
 
 ## 11. Armadilhas
 
-**Fim de linha.** O git global tem `core.autocrlf=true`, ajuste de Windows: o
-checkout escreve **CRLF** no working tree mesmo com LF gravado no repositório.
+**Fim de linha.** O git global tinha `core.autocrlf=true` — ajuste de Windows
+numa máquina Linux, que fazia o checkout escrever **CRLF** no working tree mesmo
+com LF gravado no repositório. **Corrigido em 27/08/2026** para `false`; se você
+clonar noutra máquina, confira antes de suspeitar de qualquer outra coisa:
+
+```bash
+git config --get core.autocrlf     # deve estar vazio ou false
+```
 Script com CRLF não executa no Linux — o `moodle-entrypoint` é o `ENTRYPOINT` da
 imagem, com CRLF vira `#!/bin/bash\r`, o kernel procura um interpretador com
 `\r` no nome e o container morre no `exec`, sem subir.

@@ -26,3 +26,34 @@ documentação leva acentuação normal.
 **Nada de regex cego em comentários.** Um padrão que capitaliza `// texto`
 também pega a segunda linha de comentários multi-linha — já corrompeu o cabeçalho
 GPL de 74 arquivos. Corrija por arquivo e linha exatos.
+
+## Fim de linha
+
+O repositório guarda **61.209 arquivos em LF e 336 em CRLF**. Os 336 são do
+Moodle upstream e devem continuar CRLF: convertê-los cria modificações contra o
+upstream que conflitam a cada `git merge upstream/MOODLE_502_STABLE`.
+
+**Não use `dos2unix` no projeto.** Ele não sabe a diferença e converteria os 336
+junto. Quem sabe é o git:
+
+```bash
+git ls-files --eol | awk '{print $1}' | sort | uniq -c    # o que o repo guarda
+git ls-files --eol | awk '{print $2}' | sort | uniq -c    # o que está no disco
+```
+
+Se as duas contagens divergirem, o conserto é mandar o git reescrever o working
+tree a partir do índice — **não** converter arquivo por arquivo:
+
+```bash
+git config --global core.autocrlf false   # a causa, se ainda estiver ligada
+git rm --cached -r -q . && git reset --hard -q
+```
+
+> `git reset --hard` descarta alteração não commitada. Confira `git status`
+> antes; arquivos não rastreados não são afetados.
+
+Para os caminhos onde CRLF quebra de verdade — o `ENTRYPOINT` da imagem e a man
+page — há `.gitattributes` com `eol=lf` em `.devcontainer/` e em `docs/`. O
+atributo tem precedência sobre a configuração da máquina, então vale para
+qualquer clone. **O `.gitattributes` da raiz é do Moodle upstream e não deve ser
+tocado.**
