@@ -7,6 +7,7 @@ split de pagamento pelo Mercado Pago.
 
 | Se você quer… | Vá para |
 |---|---|
+| entender a estrutura de worktrees | [`dev/estrutura-worktrees.md`](dev/estrutura-worktrees.md) |
 | montar o ambiente e começar a codar | [`dev/cf.md`](dev/cf.md) e [`dev/guia-worktrees.md`](dev/guia-worktrees.md) |
 | mandar a mudança para produção | [`dev/fluxo-de-contribuicao.md`](dev/fluxo-de-contribuicao.md) |
 | entender **por que** o sistema é assim | [`architecture/decisoes-marketplace.md`](architecture/decisoes-marketplace.md) |

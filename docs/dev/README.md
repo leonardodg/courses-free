@@ -2,6 +2,7 @@
 
 | Documento | O que cobre |
 |---|---|
+| [`estrutura-worktrees.md`](estrutura-worktrees.md) | o bare repo e as worktrees: como montar e operar |
 | [`cf.md`](cf.md) | o comando `cf`: ambientes por worktree, referência completa |
 | [`guia-worktrees.md`](guia-worktrees.md) | o fluxo: portas, `.env`, VS Code, a VPS, armadilhas |
 | [`guia-desenvolvedor.md`](guia-desenvolvedor.md) | plugins, configuração, testes, domínio por vendedor |
