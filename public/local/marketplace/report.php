@@ -15,12 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Relatorios da empresa: transacoes, cursos vendidos e assinaturas.
+ * Relatorios da empresa: transacoes, cursos vendidos, alunos e assinaturas.
  *
- * O que estes relatorios NAO fazem: estimar o liquido. A taxa do Mercado Pago
- * varia por meio de pagamento e por prazo de recebimento, e nao volta na
- * notificacao. Uma coluna "liquido" calculada por percentual fixo divergiria do
- * extrato - e relatorio financeiro que discorda do extrato e pior que nenhum.
+ * O que estes relatorios NAO fazem: estimar o liquido. A taxa do gateway varia
+ * por meio de pagamento e por prazo de recebimento, e nao volta na notificacao.
+ * Uma coluna "liquido" calculada por percentual fixo divergiria do extrato - e
+ * relatorio financeiro que discorda do extrato e pior que nenhum.
+ *
+ * As tres primeiras abas saem da VENDA; a de alunos sai do DIREITO DE ACESSO.
+ * Nao e detalhe: quem pegou uma oferta gratuita, ou teve o direito criado a
+ * mao, e aluno da empresa sem nunca ter aparecido numa venda.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
@@ -32,6 +36,7 @@ require(__DIR__ . '/../../config.php');
 use core_payment\helper;
 use local_marketplace\company;
 use local_marketplace\offer;
+use local_marketplace\entitlement;
 
 $shortname = required_param('company', PARAM_ALPHANUMEXT);
 $view = optional_param('view', 'transactions', PARAM_ALPHA);
@@ -70,6 +75,7 @@ if (!$accounts) {
 $views = [
     'transactions' => get_string('reportviewtransactions', 'local_marketplace'),
     'courses' => get_string('reportviewcourses', 'local_marketplace'),
+    'students' => get_string('reportviewstudents', 'local_marketplace'),
     'subscriptions' => get_string('reportviewsubscriptions', 'local_marketplace'),
 ];
 $tabs = [];
@@ -233,6 +239,89 @@ if ($view === 'courses') {
 
     echo html_writer::div(html_writer::table($table), 'table-responsive');
     echo $OUTPUT->notification(get_string('reportcoursesnotice', 'local_marketplace'), 'info');
+}
+
+// ALUNOS.
+//
+// Sai do direito de acesso, e nao da venda: um aluno que ganhou acesso a uma
+// oferta gratuita, ou que teve o direito criado a mao, e aluno do mesmo jeito.
+// Ler a venda deixaria essa gente de fora, e a pergunta aqui e "quem sao os
+// meus alunos", nao "quem me pagou".
+if ($view === 'students') {
+    $rows = entitlement::get_for_company((int) $company->get('id'));
+
+    if (!$rows) {
+        echo $OUTPUT->notification(get_string('reportnostudents', 'local_marketplace'), 'info');
+        echo $OUTPUT->footer();
+        exit;
+    }
+
+    $active = entitlement::count_active_students((int) $company->get('id'));
+
+    $summary = new html_table();
+    $summary->attributes['class'] = 'generaltable w-auto';
+    $summary->data = [
+        // Alunos distintos com direito vigente. Um aluno com tres ofertas e um
+        // aluno so - contar linhas daria um numero maior que a base real.
+        [get_string('reportstudentsactive', 'local_marketplace'), $active],
+        [get_string('reportstudentsrows', 'local_marketplace'), count($rows)],
+    ];
+    echo html_writer::table($summary);
+
+    $now = time();
+    $table = new html_table();
+    $table->head = [
+        get_string('user'),
+        get_string('email'),
+        get_string('offername', 'local_marketplace'),
+        get_string('reportpayments', 'local_marketplace'),
+        get_string('reportstudentsince', 'local_marketplace'),
+        get_string('reportaccessuntil', 'local_marketplace'),
+        get_string('companystatus', 'local_marketplace'),
+    ];
+    $table->attributes['class'] = 'generaltable';
+
+    foreach ($rows as $row) {
+        $timeend = (int) $row->timeend;
+
+        // A situacao gravada so muda quando o cron roda, entao confiar so nela
+        // mostraria como vigente quem ja venceu ontem a noite. A data manda.
+        if ($row->status !== entitlement::STATUS_ACTIVE) {
+            $badge = html_writer::tag('span', get_string('reportsubcancelled', 'local_marketplace'), [
+                'class' => 'badge bg-secondary',
+            ]);
+        } else if ($timeend > 0 && $timeend <= $now) {
+            $badge = html_writer::tag('span', get_string('reportsubexpired', 'local_marketplace'), [
+                'class' => 'badge bg-danger',
+            ]);
+        } else {
+            $badge = html_writer::tag('span', get_string('reportsubactive', 'local_marketplace'), [
+                'class' => 'badge bg-success',
+            ]);
+        }
+
+        if ($row->norenew) {
+            $badge .= ' ' . html_writer::tag('span', get_string('reportsubnorenew', 'local_marketplace'), [
+                'class' => 'badge bg-warning text-dark',
+            ]);
+        }
+
+        $table->data[] = [
+            html_writer::link(
+                new moodle_url('/user/view.php', ['id' => $row->userid, 'course' => SITEID]),
+                fullname($row)
+            ),
+            s($row->email),
+            format_string($row->offername),
+            (int) $row->cycles,
+            userdate((int) $row->timecreated, get_string('strftimedaydate')),
+            $timeend > 0 ? userdate($timeend, get_string('strftimedaydate')) : get_string('accesslifetime', 'local_marketplace'),
+            $badge,
+        ];
+    }
+
+    echo html_writer::div(html_writer::table($table), 'table-responsive');
+    echo $OUTPUT->notification(get_string('reportstudentsnotice', 'local_marketplace'), 'info');
 }
 
 // ASSINATURAS.
