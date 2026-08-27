@@ -242,6 +242,47 @@ class asaas_client {
     }
 
     /**
+     * Duas URLs apontam para o mesmo dominio?
+     *
+     * Existe por causa de uma exigencia do Asaas que so aparece na pratica: a
+     * URL de retorno tem que usar O MESMO dominio cadastrado na conta que emite
+     * a cobranca. A mensagem crua e "E necessario enviar uma URL que use o
+     * mesmo dominio cadastrado nas suas Minha Conta na aba Informacoes".
+     *
+     * Como a cobranca nasce na conta do VENDEDOR e o retorno aponta para a
+     * PLATAFORMA, isto significa que cada vendedor precisa cadastrar o dominio
+     * da plataforma na conta Asaas dele - e nao o site proprio, que e o que
+     * qualquer um faria por instinto.
+     *
+     * Comparacao por host e sem "www.", porque cadastrar com ou sem o prefixo
+     * e a mesma intencao e o Asaas nao normaliza.
+     *
+     * @param string $one
+     * @param string $two
+     * @return bool
+     */
+    public static function same_host(string $one, string $two): bool {
+        $host = static function (string $url): string {
+            $url = trim($url);
+            if ($url === '') {
+                return '';
+            }
+            // O parse_url so acha o host quando ha esquema; "meusite.com"
+            // sozinho seria lido como caminho.
+            if (!preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
+                $url = 'https://' . $url;
+            }
+            $parsed = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+            return preg_replace('/^www\./', '', $parsed) ?? '';
+        };
+
+        $first = $host($one);
+
+        return $first !== '' && $first === $host($two);
+    }
+
+    /**
      * Consulta uma cobranca.
      *
      * @param string $paymentid Ex.: pay_lumzx8nkxdrrf4rh.

@@ -129,6 +129,29 @@ final class asaas_client_test extends \advanced_testcase {
     }
 
     /**
+     * A URL de retorno tem que bater com o dominio cadastrado no Asaas.
+     *
+     * O Asaas recusa a cobranca INTEIRA quando nao bate - "E necessario enviar
+     * uma URL que use o mesmo dominio cadastrado nas suas Minha Conta na aba
+     * Informacoes". Como a cobranca nasce na conta do vendedor e o retorno
+     * aponta para a plataforma, e o dominio DA PLATAFORMA que precisa estar
+     * cadastrado na conta dele.
+     *
+     * @return void
+     */
+    public function test_same_host(): void {
+        $this->assertTrue(asaas_client::same_host('https://cursos.exemplo.com', 'https://cursos.exemplo.com/moodle'));
+        $this->assertTrue(asaas_client::same_host('cursos.exemplo.com', 'https://cursos.exemplo.com'), 'aceita sem esquema');
+        $this->assertTrue(asaas_client::same_host('https://www.exemplo.com', 'https://exemplo.com'), 'www nao diferencia');
+        $this->assertTrue(asaas_client::same_host('HTTPS://Exemplo.COM', 'https://exemplo.com'), 'maiusculas nao diferenciam');
+
+        $this->assertFalse(asaas_client::same_host('https://outro.com', 'https://exemplo.com'));
+        $this->assertFalse(asaas_client::same_host('https://sub.exemplo.com', 'https://exemplo.com'), 'subdominio e outro host');
+        $this->assertFalse(asaas_client::same_host('', 'https://exemplo.com'), 'conta sem site nao passa');
+        $this->assertFalse(asaas_client::same_host('   ', 'https://exemplo.com'));
+    }
+
+    /**
      * O corpo enviado carrega split, referencia e retorno.
      *
      * @return void

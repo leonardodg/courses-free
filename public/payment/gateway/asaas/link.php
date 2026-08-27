@@ -100,12 +100,25 @@ if ($data = $form->get_data()) {
         redirect($url, get_string('errornowallet', 'paygw_asaas'), null, \core\output\notification::NOTIFY_ERROR);
     }
 
-    // O Asaas so aceita URL de retorno de uma conta que tenha SITE cadastrado.
-    // Sem isso ele recusa a cobranca INTEIRA - nao so o retorno. Barrar aqui e
-    // o mesmo principio do resto desta tela: o aluno no checkout e o pior lugar
-    // possivel para descobrir um campo em branco no cadastro do vendedor.
-    if (\paygw_asaas\payment_processor::use_callback() && empty($me['site'])) {
-        redirect($url, get_string('errornosite', 'paygw_asaas'), null, \core\output\notification::NOTIFY_ERROR);
+    // O Asaas exige que a URL de retorno use O MESMO dominio cadastrado na
+    // conta que emite a cobranca - nao basta ter um site qualquer la. E como a
+    // cobranca nasce na conta do VENDEDOR e o retorno aponta para a PLATAFORMA,
+    // o vendedor precisa cadastrar o dominio DESTE site na conta Asaas dele.
+    //
+    // E contraintuitivo: por instinto ele cadastraria o proprio site. Sem esta
+    // checagem o erro apareceria como recusa da cobranca inteira, com o aluno
+    // ja no checkout, e com uma mensagem que nao diz de qual dominio se trata.
+    if (\paygw_asaas\payment_processor::use_callback()
+            && !asaas_client::same_host((string) ($me['site'] ?? ''), $CFG->wwwroot)) {
+        redirect(
+            $url,
+            get_string('errornosite', 'paygw_asaas', (object) [
+                'expected' => parse_url($CFG->wwwroot, PHP_URL_HOST),
+                'found' => !empty($me['site']) ? s((string) $me['site']) : get_string('none'),
+            ]),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
     }
 
     // A carteira da plataforma nao pode ser a mesma do vendedor: o Asaas recusa
