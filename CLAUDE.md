@@ -58,12 +58,15 @@ Cinco plugins:
 - `availability_marketplace` — libera seção mediante compra
 - `block_marketplace` — assinaturas do aluno no Dashboard
 
-Detalhes de tabela e campo: `docs/guia-desenvolvedor.md`.
+Detalhes de tabela e campo: `docs/dev/guia-desenvolvedor.md`.
 
 ## Ambiente
 
 Worktrees de um bare repo em `/home/leodg/localhost/gitworktree-bare-moodle/`.
-O de trabalho é `feature-marketplace`, no branch `feature/paygw-mercadopago`.
+A worktree de repouso é `dev`; as de trabalho nascem e morrem com as features.
+Use `cf ls` para ver quais existem e qual está sendo servida — não presuma.
+
+**Índice da documentação: `docs/README.md`.**
 
 **Cada worktree tem o próprio ambiente, e vários rodam ao mesmo tempo.** O
 comando é o `cf` (`.devcontainer/bin/cf`): `cf ls` mostra worktrees, offsets,
@@ -71,7 +74,7 @@ portas e status; `cf new <nome>` cria worktree, ambiente, dados e stack, e
 ramifica de `origin/dev` por padrão. Cada worktree recebe um offset, e dele saem
 o nome do stack e as portas — offset 0 é o principal (`courses-free`,
 8080/8443/3307/9004), offset 1 soma 10 a cada uma.
-Guia completo em `docs/guia-worktrees.md`.
+Guia completo em `docs/dev/guia-worktrees.md`.
 
 Não edite `.env` nem portas à mão: o `cf` gera esses arquivos e o `cf doctor`
 reclama quando divergem do registro.
@@ -168,7 +171,7 @@ prova** — precisa de uma segunda conta Mercado Pago real.
 **Fase 3** tem a fundação no ar; falta apontar um domínio real.
 **Fase 5** está bloqueada por decisão de negócio do usuário.
 
-Detalhe completo: `docs/estado-e-proximas-fases.md`.
+Detalhe completo: `docs/architecture/estado-e-proximas-fases.md`.
 
 ## Como o usuário trabalha
 

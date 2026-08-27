@@ -1,23 +1,45 @@
-# Documentação
+# Documentação do courses-free
 
-| Documento | O que traz |
+Plataforma Moodle 5.2 onde qualquer pessoa publica curso gratuito ou pago, com
+split de pagamento pelo Mercado Pago.
+
+## Por onde começar
+
+| Se você quer… | Vá para |
 |---|---|
-| [`../CLAUDE.md`](../CLAUDE.md) | **Comece por aqui.** Contexto para agentes de IA: decisões fechadas, restrições externas, erros já cometidos e como não repeti-los. Carregado automaticamente pelo Claude Code. |
-| [Guia do desenvolvedor](guia-desenvolvedor.md) | Modelo de dados com diagrama ER, tabelas campo a campo, hierarquia da comissão, domínio por vendedor, configuração e armadilhas. |
-| [Painel de testes](painel-de-testes.md) | Todos os caminhos de gestão, comandos de CLI, cartões de teste do Mercado Pago. |
-| [Decisões de arquitetura](decisoes-marketplace.md) | Por que não IOMAD, e as evidências de cada escolha. |
-| [Estado e próximas fases](estado-e-proximas-fases.md) | O que foi validado em produção, o que ninguém viu funcionar, e o que não existe. |
+| montar o ambiente e começar a codar | [`dev/cf.md`](dev/cf.md) e [`dev/guia-worktrees.md`](dev/guia-worktrees.md) |
+| entender **por que** o sistema é assim | [`architecture/decisoes-marketplace.md`](architecture/decisoes-marketplace.md) |
+| saber o que existe e o que falta | [`architecture/estado-e-proximas-fases.md`](architecture/estado-e-proximas-fases.md) |
+| mexer nas tabelas | [`data-model/marketplace.md`](data-model/marketplace.md) |
+| testar o que está no ar | [`data-validation/painel-de-testes.md`](data-validation/painel-de-testes.md) |
 
-## Para quem chega agora
+## As pastas
 
-Três coisas que economizam tempo:
+| Pasta | O que guarda |
+|---|---|
+| [`adr/`](adr/) | **Architecture Decision Records** — uma decisão por arquivo, com contexto e consequências |
+| [`architecture/`](architecture/) | visão de sistema, diagramas, estado do projeto e as decisões consolidadas |
+| [`brand/`](brand/) | identidade visual: logo, cores, tipografia, tom de voz |
+| [`coding-standards/`](coding-standards/) | padrão de código, convenções de commit, o que o CI cobra |
+| [`data-model/`](data-model/) | tabelas, campos e relações |
+| [`data-validation/`](data-validation/) | como se verifica que funciona: painel de testes, cenários, dados de teste |
+| [`dev/`](dev/) | guias de quem desenvolve: ambiente, ferramentas, fluxo de trabalho |
+| [`ai-plans/`](ai-plans/) | **registro de todo plano executado por agente de IA** |
+| [`history/`](history/) | de onde o projeto veio: ideia inicial, conversas fundadoras |
+| [`man/`](man/) | páginas de manual instaláveis (`man cf`) |
 
-**O split nunca foi exercitado.** Vendedor e marketplace foram a mesma conta no
-único teste real, então os 25% são código não testado — e são o modelo de
-negócio. Precisa de uma segunda conta Mercado Pago.
+## Convenções
 
-**Não há transpilador de JavaScript.** `amd/src` é AMD de verdade, não ES6.
-Introduzir `import`/`export` quebra o módulo com "No define call".
+**Português, sem acentos no código.** Prosa e documentação levam acentuação
+normal; comentários em código e mensagens de commit vão sem, por consistência
+com o que já existe na base.
 
-**O `config.php` da VPS é gerado a cada deploy.** Ajuste de máquina vai em
-`config-local.php`, que o deploy nunca toca.
+**Fim de linha LF.** Garantido por [`.gitattributes`](.gitattributes) — o git
+global desta máquina tem `core.autocrlf=true`, que sem isso escreveria CRLF no
+working tree e sujaria diffs (e quebraria a man page).
+
+**Diagramas em Mermaid**, em bloco ```` ```mermaid ````, para versionar como
+texto. O SVG em `architecture/` é a exceção: veio pronto.
+
+**Um documento, um assunto.** Se um arquivo passa a responder duas perguntas
+diferentes, é sinal de que virou dois.
