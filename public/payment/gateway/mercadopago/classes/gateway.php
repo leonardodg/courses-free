@@ -51,6 +51,21 @@ class gateway extends \core_payment\gateway {
     }
 
     /**
+     * Paises em que este gateway consegue receber, em ISO-3166 alpha-2.
+     *
+     * Nao faz parte do contrato do core_payment - ele so pergunta por moeda.
+     * Existe porque a moeda nao identifica o pais em todos os casos, e porque o
+     * marketplace precisa saber a que mercado uma conta pertence antes de
+     * qualquer moeda estar definida. O nucleo chama via component_class_callback,
+     * entao um gateway que nao declare isto simplesmente nao aparece na lista.
+     *
+     * @return string[]
+     */
+    public static function get_supported_countries(): array {
+        return ['AR', 'BR', 'CL', 'CO', 'MX', 'PE', 'UY'];
+    }
+
+    /**
      * Campos da configuracao por conta de pagamento.
      *
      * Nao ha campo de token editavel: ele e escrito pelo fluxo OAuth. Deixar o

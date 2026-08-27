@@ -73,7 +73,7 @@ class api {
 
             self::assign_seller_role($company, $ownerid);
             self::apply_theme($company);
-            self::create_payment_account($company);
+            self::create_payment_account($company, $data->country ?? self::default_country());
 
             $transaction->allow_commit();
         } catch (\Throwable $e) {
@@ -132,7 +132,113 @@ class api {
             }
         }
 
-        return self::clamp((float) (get_config('paygw_mercadopago', 'defaultfeepercent') ?: 25));
+        return self::default_commission_percent();
+    }
+
+    /**
+     * Percentual de comissao para um item, com o guarda de componente embutido.
+     *
+     * E este o ponto que os gateways chamam. Cada um repetia o mesmo bloco -
+     * checar o componente, checar se a classe existe, buscar a oferta, cair num
+     * padrao quando nao acha - e tres copias do mesmo cuidado sao tres lugares
+     * onde ele pode divergir.
+     *
+     * Devolve o padrao do site quando o item nao e do marketplace: um gateway
+     * pode ser usado para pagar taxa de matricula do enrol_fee, e ali nao ha
+     * oferta nem empresa.
+     *
+     * @param string $component Componente do core_payment, ex.: 'local_marketplace'.
+     * @param int $itemid
+     * @return float Percentual entre 0 e 100.
+     */
+    public static function commission_for(string $component, int $itemid): float {
+        if ($component !== 'local_marketplace') {
+            return self::default_commission_percent();
+        }
+
+        $offer = offer::get_record(['id' => $itemid]);
+        if (!$offer) {
+            return self::default_commission_percent();
+        }
+
+        return self::resolve_commission_percent($offer);
+    }
+
+    /**
+     * Comissao padrao do site.
+     *
+     * Vive nas settings do local_marketplace, e nao nas de um gateway. Ate a
+     * versao anterior o nucleo lia get_config('paygw_mercadopago', ...) - o que
+     * fazia a comissao do marketplace inteiro depender de um plugin de
+     * fornecedor estar instalado, e nao ter resposta quando houvesse tres.
+     *
+     * A comparacao com false, e nao o ?:, e o que preserva uma isencao: com
+     * ?: um 0% configurado de proposito voltaria a 25 em silencio.
+     *
+     * @return float
+     */
+    public static function default_commission_percent(): float {
+        $configured = get_config('local_marketplace', 'defaultfeepercent');
+        if ($configured === false || $configured === '' || !is_numeric($configured)) {
+            return 25.0;
+        }
+
+        return self::clamp((float) $configured);
+    }
+
+    /**
+     * Registra uma venda concluida.
+     *
+     * Chamado pelo gateway depois de helper::save_payment(), porque so ele sabe
+     * quanto de comissao foi de fato enviado - e nao da para recalcular a
+     * partir do percentual: cada gateway deduz as proprias taxas numa ordem
+     * diferente, e 25% do bruto nao e o que caiu na conta da plataforma.
+     *
+     * Idempotente: o webhook do gateway reenvia notificacao, e registrar a
+     * mesma venda duas vezes dobraria o faturamento no relatorio.
+     *
+     * O componente entra como parametro pelo mesmo motivo de commission_for():
+     * sem ele, um pagamento de enrol_fee cujo itemid coincidisse com um offerid
+     * viraria uma venda que nunca houve. O guarda fica aqui, e nao repetido em
+     * cada gateway, para nao existir em tres copias que podem divergir.
+     *
+     * @param string $component Componente do core_payment.
+     * @param int $paymentid payments.id do core.
+     * @param int $offerid
+     * @param float $feeamount Comissao em moeda, ja calculada pelo gateway.
+     * @param string $externalid Id da transacao no gateway.
+     * @return sale|null Nulo quando o pagamento nao e de uma oferta.
+     */
+    public static function record_sale(
+        string $component,
+        int $paymentid,
+        int $offerid,
+        float $feeamount,
+        string $externalid = ''
+    ): ?sale {
+        if ($component !== 'local_marketplace') {
+            return null;
+        }
+
+        $existing = sale::get_record(['paymentid' => $paymentid]);
+        if ($existing) {
+            return $existing;
+        }
+
+        $offer = offer::get_record(['id' => $offerid]);
+        if (!$offer) {
+            return null;
+        }
+
+        $record = new sale();
+        $record->set('paymentid', $paymentid);
+        $record->set('offerid', $offerid);
+        $record->set('companyid', (int) $offer->get('companyid'));
+        $record->set('feeamount', $feeamount);
+        $record->set('externalid', $externalid !== '' ? $externalid : null);
+        $record->create();
+
+        return $record;
     }
 
     /**
@@ -309,7 +415,7 @@ class api {
     }
 
     /**
-     * Cria a payment account da empresa, no contexto da categoria dela.
+     * Cria a payment account da empresa para um pais, no contexto da categoria.
      *
      * E o contexto que faz o vendedor conseguir administrar a propria conta
      * sem enxergar as das outras empresas: moodle/payment:manageaccounts e
@@ -320,20 +426,83 @@ class api {
      * ate o vendedor concluir o vinculo: account::is_available() exige ao
      * menos um gateway habilitado.
      *
+     * O pais entra no idnumber porque uma empresa que vende no Brasil e na
+     * Argentina tem duas contas no mesmo contexto, e sem o sufixo elas
+     * colidiriam num identificador que deveria distingui-las.
+     *
+     * Devolve a conta existente quando ja ha uma para aquele pais - criar a
+     * segunda deixaria a empresa com duas contas concorrendo pelo mesmo
+     * mercado, e o indice unico recusaria o vinculo no meio do caminho.
+     *
      * @param company $company
+     * @param string $country ISO-3166 alpha-2.
      * @return \core_payment\account
      */
-    public static function create_payment_account(company $company): \core_payment\account {
+    public static function create_payment_account(company $company, string $country): \core_payment\account {
+        $country = country::normalize($country);
+
+        $existing = $company->get_payment_account($country);
+        if ($existing) {
+            return $existing;
+        }
+
         $context = $company->get_context();
 
         $account = new \core_payment\account();
-        $account->set('name', $company->get('name'));
-        $account->set('idnumber', 'marketplace_' . $company->get('shortname'));
+        $account->set('name', $company->get('name') . ' (' . $country . ')');
+        $account->set('idnumber', 'marketplace_' . $company->get('shortname') . '_' . strtolower($country));
         $account->set('contextid', $context->id);
         $account->set('enabled', true);
         $account->create();
 
+        $link = new company_account();
+        $link->set('companyid', (int) $company->get('id'));
+        $link->set('country', $country);
+        $link->set('accountid', (int) $account->get('id'));
+        $link->create();
+
         return $account;
+    }
+
+    /**
+     * Gateways instalados e habilitados que conseguem receber neste pais.
+     *
+     * A pergunta e feita a cada gateway, nao a uma lista nossa. Um gateway novo
+     * passa a aparecer aqui so por declarar a moeda que atende - nada no nucleo
+     * precisa saber o nome dele. Foi o oposto disso que amarrou a tela da
+     * empresa ao Mercado Pago por um literal.
+     *
+     * @param string $country ISO-3166 alpha-2.
+     * @return string[] Nomes de gateway, ex.: ['asaas', 'mercadopago'].
+     */
+    public static function gateways_for_country(string $country): array {
+        $currency = country::currency_for($country);
+        if ($currency === '') {
+            return [];
+        }
+
+        $out = [];
+        foreach (array_keys(\core\plugininfo\paygw::get_enabled_plugins()) as $name) {
+            $classname = '\paygw_' . $name . '\gateway';
+            $currencies = \component_class_callback($classname, 'get_supported_currencies', [], []);
+            if (in_array($currency, $currencies, true)) {
+                $out[] = $name;
+            }
+        }
+        sort($out);
+
+        return $out;
+    }
+
+    /**
+     * Pais em que a primeira conta de uma empresa nova e provisionada.
+     *
+     * @return string ISO-3166 alpha-2.
+     */
+    public static function default_country(): string {
+        $configured = (string) get_config('local_marketplace', 'defaultcountry');
+
+        return country::is_supported($configured) ? country::normalize($configured) : country::DEFAULT_COUNTRY;
     }
 
     /**

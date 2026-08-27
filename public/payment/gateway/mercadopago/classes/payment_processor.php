@@ -56,15 +56,12 @@ class payment_processor {
         $reference = 'mdl-' . $userid . '-' . $itemid . '-' . random_string(12);
 
         // A comissao e regra do marketplace, nao do gateway. Perguntamos a ele
-        // quando ele esta presente, e caimos no padrao do site quando outro
+        // quando ele esta presente, e caimos no padrao de fabrica quando outro
         // componente usa este gateway - assim o plugin continua servindo a
         // qualquer componente do core_payment, sem depender do marketplace.
-        $feepercent = (float) ($appconfig->defaultfeepercent ?? 25);
-        if ($component === 'local_marketplace' && class_exists('\local_marketplace\api')) {
-            $offer = \local_marketplace\offer::get_record(['id' => $itemid]);
-            if ($offer) {
-                $feepercent = \local_marketplace\api::resolve_commission_percent($offer);
-            }
+        $feepercent = 25.0;
+        if (class_exists('\local_marketplace\api')) {
+            $feepercent = \local_marketplace\api::commission_for($component, $itemid);
         }
         $fee = round($amount * ($feepercent / 100), 2);
 
@@ -202,6 +199,20 @@ class payment_processor {
                 'mercadopago'
             );
             $DB->update_record(self::TABLE, $record);
+
+            // Registra a venda na tabela neutra do marketplace. O gateway e o
+            // unico que sabe quanto de comissao foi DE FATO enviado: recalcular
+            // 25% do bruto no relatorio daria outro numero, porque a taxa do
+            // gateway sai antes e cada um deduz numa ordem diferente.
+            if (class_exists('\local_marketplace\api')) {
+                \local_marketplace\api::record_sale(
+                    $record->component,
+                    (int) $record->paymentid,
+                    (int) $record->itemid,
+                    (float) $record->feeamount,
+                    (string) $record->mppaymentid
+                );
+            }
 
             helper::deliver_order(
                 $record->component,

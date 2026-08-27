@@ -82,62 +82,69 @@ echo $OUTPUT->header();
 // Meio de pagamento.
 echo $OUTPUT->heading(get_string('paymentsection', 'local_marketplace'), 3);
 
-$account = $company->get_payment_account();
+// Uma secao por PAIS: a empresa tem uma conta em cada mercado onde vende, e
+// cada uma tem os proprios gateways. Juntar tudo numa lista so faria o vendedor
+// argentino ver botao de gateway que nao opera na Argentina.
+$accounts = $company->get_payment_accounts();
 
-if (!$account) {
+if (!$accounts) {
     echo $OUTPUT->notification(get_string('errornoaccount', 'local_marketplace'), 'error');
 } else {
-    $gateways = [];
-    $linked = false;
-    foreach ($account->get_gateways() as $name => $gw) {
-        if (!$gw->get('id')) {
-            continue;
-        }
-        if ($gw->get('enabled')) {
-            $gateways[] = $name;
-        }
-        // Ha credencial guardada mesmo que o gateway esteja desligado. Sem
-        // separar os dois casos, uma empresa ja vinculada aparecia como "sem
-        // meio de pagamento" - mandando o vendedor refazer um vinculo que ja
-        // estava feito.
-        if (!empty($gw->get_configuration()['accesstoken'])) {
-            $linked = true;
-        }
-    }
+    foreach ($accounts as $countrycode => $account) {
+        echo $OUTPUT->heading(\local_marketplace\country::describe($countrycode), 4);
 
-    if ($company->can_sell()) {
-        echo $OUTPUT->notification(
-            get_string('cansellyes', 'local_marketplace', implode(', ', $gateways)),
-            'success'
+        $enabled = [];
+        $configured = [];
+        foreach ($account->get_gateways() as $name => $gw) {
+            if (!$gw->get('id')) {
+                continue;
+            }
+            if ($gw->get('enabled')) {
+                $enabled[] = $name;
+            }
+            // Ha credencial guardada mesmo que o gateway esteja desligado. Sem
+            // separar os dois casos, uma empresa ja vinculada aparecia como
+            // "sem meio de pagamento" - mandando o vendedor refazer um vinculo
+            // que ja estava feito.
+            if ($gw->get_configuration()) {
+                $configured[] = $name;
+            }
+        }
+
+        if ($company->can_sell($countrycode)) {
+            echo $OUTPUT->notification(
+                get_string('cansellyes', 'local_marketplace', implode(', ', $enabled)),
+                'success'
+            );
+        } else if ($configured) {
+            echo $OUTPUT->notification(get_string('linkednotenabled', 'local_marketplace'), 'warning');
+        } else {
+            echo $OUTPUT->notification(get_string('nopaymentaccount', 'local_marketplace'), 'warning');
+        }
+
+        // Um botao por gateway que atende aquele pais. A lista vem do que cada
+        // gateway declara atender, e nao de um nome escrito aqui: o literal
+        // 'mercadopago' que existia neste lugar era o que impedia um segundo
+        // meio de pagamento de aparecer.
+        $buttons = [];
+        foreach (\local_marketplace\api::gateways_for_country($countrycode) as $name) {
+            $buttons[] = html_writer::link(
+                new moodle_url('/payment/manage_gateway.php', [
+                    'accountid' => $account->get('id'),
+                    'gateway' => $name,
+                ]),
+                get_string('pluginname', 'paygw_' . $name),
+                ['class' => 'btn btn-sm ' . (in_array($name, $enabled, true) ? 'btn-outline-primary' : 'btn-primary')]
+            );
+        }
+
+        echo html_writer::div(
+            $buttons
+                ? implode(' ', $buttons)
+                : $OUTPUT->notification(get_string('nogatewayforcountry', 'local_marketplace'), 'warning'),
+            'mb-4'
         );
-
-        // A moeda vem do pais da conta vinculada, nao de uma escolha no
-        // cadastro. Mostrar aqui evita a descoberta so na hora de precificar.
-        $currency = $company->get_payment_currency();
-        echo $OUTPUT->notification(
-            $currency !== ''
-                ? get_string('paymentcurrency', 'local_marketplace', $currency)
-                : get_string('paymentcurrencyunknown', 'local_marketplace'),
-            $currency !== '' ? 'info' : 'warning'
-        );
-    } else if ($linked) {
-        echo $OUTPUT->notification(get_string('linkednotenabled', 'local_marketplace'), 'warning');
-    } else {
-        echo $OUTPUT->notification(get_string('nopaymentaccount', 'local_marketplace'), 'warning');
     }
-
-    // O link direto para a tela do gateway e a razao de ser desta pagina.
-    echo html_writer::div(
-        html_writer::link(
-            new moodle_url('/payment/manage_gateway.php', [
-                'accountid' => $account->get('id'),
-                'gateway' => 'mercadopago',
-            ]),
-            get_string('configurepayment', 'local_marketplace'),
-            ['class' => 'btn btn-primary']
-        ),
-        'mb-4'
-    );
 }
 
 // Ofertas.

@@ -87,12 +87,15 @@ $companies = company::get_records([], 'name');
 cli_heading(sprintf('Empresas (%d)', count($companies)));
 
 foreach ($companies as $c) {
-    $account = $c->get_payment_account();
+    // Uma linha por pais: a empresa tem uma conta em cada mercado onde vende.
+    $accounts = $c->get_payment_accounts();
+    $contas = [];
     $gateways = [];
-    if ($account) {
+    foreach ($accounts as $countrycode => $account) {
+        $contas[] = $countrycode . ':' . $account->get('id');
         foreach ($account->get_gateways(false) as $gw) {
             if ($gw->get('id')) {
-                $gateways[] = $gw->get('gateway') . ($gw->get('enabled') ? '' : ' (desligado)');
+                $gateways[] = $countrycode . ':' . $gw->get('gateway') . ($gw->get('enabled') ? '' : ' (desligado)');
             }
         }
     }
@@ -102,7 +105,7 @@ foreach ($companies as $c) {
     cli_writeln(sprintf('    categoria .......... %s', $c->get('categoryid') ?: 'NENHUMA'));
     cli_writeln(sprintf('    dominio ............ %s', $c->get('hostname') ?: '-'));
     cli_writeln(sprintf('    vendedores ......... %d', count(member::get_by_company((int) $c->get('id')))));
-    cli_writeln(sprintf('    conta de pagamento . %s', $account ? 'id ' . $account->get('id') : 'NENHUMA'));
+    cli_writeln(sprintf('    contas por pais .... %s', $contas ? implode(', ', $contas) : 'NENHUMA'));
     cli_writeln(sprintf('    gateways ........... %s', $gateways ? implode(', ', $gateways) : 'nenhum'));
     cli_writeln(sprintf('    PODE VENDER ........ %s', $c->can_sell() ? $sim : 'nao - so oferta gratuita'));
 

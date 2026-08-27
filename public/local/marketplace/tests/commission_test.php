@@ -27,6 +27,8 @@ namespace local_marketplace;
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \local_marketplace\api::resolve_commission_percent
+ * @covers     \local_marketplace\api::commission_for
+ * @covers     \local_marketplace\api::default_commission_percent
  */
 final class commission_test extends \advanced_testcase {
     /** @var company */
@@ -45,7 +47,7 @@ final class commission_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
 
-        set_config('defaultfeepercent', 25, 'paygw_mercadopago');
+        set_config('defaultfeepercent', 25, 'local_marketplace');
 
         $owner = $this->getDataGenerator()->create_user();
         $this->company = api::create_company((object) [
@@ -188,5 +190,72 @@ final class commission_test extends \advanced_testcase {
 
         $this->set_course_policy(150.0);
         $this->assertEquals(100.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * Um 0% configurado no site continua sendo 0%.
+     *
+     * Ate a versao anterior o padrao vinha de um `?: 25`, que trata zero como
+     * ausencia. Uma plataforma que decidisse nao cobrar comissao nenhuma
+     * passaria a cobrar 25% sem ninguem ter mudado nada - e so descobriria no
+     * extrato do vendedor.
+     *
+     * @return void
+     */
+    public function test_site_default_zero_is_honoured(): void {
+        set_config('defaultfeepercent', 0, 'local_marketplace');
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(0.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * Site sem a configuracao cai no padrao de fabrica.
+     *
+     * @return void
+     */
+    public function test_site_default_unset_falls_back_to_factory(): void {
+        unset_config('defaultfeepercent', 'local_marketplace');
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(25.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * O ponto de entrada dos gateways devolve o mesmo que a resolucao interna.
+     *
+     * @return void
+     */
+    public function test_commission_for_matches_resolver(): void {
+        $this->company->set('commissionpct', 15.0);
+        $this->company->update();
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(
+            api::resolve_commission_percent($offer),
+            api::commission_for('local_marketplace', (int) $offer->get('id'))
+        );
+    }
+
+    /**
+     * Item que nao e do marketplace nao herda a comissao de uma oferta.
+     *
+     * O itemid de outro componente - uma taxa de matricula do enrol_fee, por
+     * exemplo - pode coincidir com o id de uma oferta. Sem o guarda de
+     * componente, aquele pagamento sairia cobrando a comissao negociada de uma
+     * empresa que nao tem nada a ver com ele.
+     *
+     * @return void
+     */
+    public function test_commission_for_ignores_other_components(): void {
+        $this->company->set('commissionpct', 15.0);
+        $this->company->update();
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(25.0, api::commission_for('enrol_fee', (int) $offer->get('id')));
     }
 }

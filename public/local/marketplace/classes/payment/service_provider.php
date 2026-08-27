@@ -41,9 +41,14 @@ class service_provider implements \core_payment\local\callback\service_provider 
     /**
      * Valor, moeda e conta que recebe.
      *
-     * A conta e a da EMPRESA, no contexto da categoria dela - e o que faz o
-     * dinheiro cair na conta do vendedor, e nao numa conta central da
-     * plataforma. A comissao sai via marketplace_fee, no gateway.
+     * A conta e a da EMPRESA no PAIS da oferta, no contexto da categoria dela -
+     * e o que faz o dinheiro cair na conta do vendedor, e nao numa conta
+     * central da plataforma. A comissao sai como split, no gateway.
+     *
+     * O core nao passa o usuario aqui, de proposito: valor, moeda e conta sao
+     * funcao pura do itemid. E por isso que o pais vive na oferta - nao ha como
+     * uma oferta ser BRL para um aluno e ARS para outro, e um plano por pais e
+     * uma oferta separada.
      *
      * @param string $paymentarea
      * @param int $itemid offerid
@@ -53,7 +58,7 @@ class service_provider implements \core_payment\local\callback\service_provider 
         $offer = new offer($itemid);
         $company = new company($offer->get('companyid'));
 
-        $account = $company->get_payment_account();
+        $account = $company->get_payment_account((string) $offer->get('country'));
         if (!$account) {
             throw new moodle_exception('errorcannotsell', 'local_marketplace');
         }
