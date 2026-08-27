@@ -186,7 +186,26 @@ class payment_processor {
             return false;
         }
 
-        $record->feeamount = self::fee_from($payment, (float) $record->amount, (float) $record->feepercent);
+        // Aqui o split ja existe na resposta, entao le-se o valor real em vez
+        // de recalcular o percentual - inclusive o zero de um split cancelado.
+        $record->feeamount = self::fee_from(
+            $payment,
+            (float) $record->amount,
+            (float) $record->feepercent,
+            credentials::platform_wallet($record->environment)
+        );
+
+        // Curso entregue sem comissao nenhuma nao e erro tecnico, e um fato do
+        // negocio que alguem precisa ver. Acontece quando o vendedor da baixa
+        // manual na cobranca: o aluno pagou por fora, o Asaas cancela o split,
+        // e a plataforma nao recebe.
+        if ((float) $record->feeamount <= 0 && (float) $record->feepercent > 0) {
+            debugging(
+                'paygw_asaas: cobranca ' . $asaaspaymentid . ' entregue com comissao zero - '
+                    . 'split cancelado ou ausente. Status: ' . $status,
+                DEBUG_NORMAL
+            );
+        }
         $record->paymentid = helper::save_payment(
             (int) $record->accountid,
             $record->component,
@@ -259,18 +278,50 @@ class payment_processor {
     }
 
     /**
-     * Comissao efetivamente repassada.
+     * Comissao que a plataforma vai DE FATO receber.
      *
-     * Usa o netValue quando a resposta traz - e sobre ele que o Asaas divide.
-     * Cair no valor cheio quando nao vem produz uma diferenca de centavos no
-     * relatorio, o que e melhor do que nao registrar comissao nenhuma.
+     * Le o split da propria resposta quando ele existe, e nao um percentual
+     * calculado por nos. A diferenca nao e cosmetica: se o vendedor der baixa
+     * manual na cobranca (receiveInCash), o Asaas marca o split como CANCELLED -
+     * dinheiro que nao passou por ele nao tem como ser dividido - e a plataforma
+     * recebe ZERO. Calculando o percentual, o relatorio anunciaria uma comissao
+     * que nunca vai chegar, e relatorio financeiro que discorda do extrato e
+     * pior que nenhum.
+     *
+     * Sem split na resposta - na criacao da cobranca, quando ele ainda nao
+     * existe - cai no percentual sobre o netValue, que e a estimativa correta.
      *
      * @param array $payment Resposta da API.
      * @param float $amount
      * @param float $feepercent
+     * @param string $walletid Carteira da plataforma. Vazio ignora o split.
      * @return float
      */
-    public static function fee_from(array $payment, float $amount, float $feepercent): float {
+    public static function fee_from(
+        array $payment,
+        float $amount,
+        float $feepercent,
+        string $walletid = ''
+    ): float {
+        $splits = $payment['split'] ?? [];
+
+        if ($walletid !== '' && is_array($splits) && $splits) {
+            $total = 0.0;
+            foreach ($splits as $split) {
+                if ((string) ($split['walletId'] ?? '') !== $walletid) {
+                    continue;
+                }
+                // CANCELLED e REFUSED nao transferem nada. Somar o valor deles
+                // faria o relatorio prometer dinheiro que nao vem.
+                if (in_array(strtoupper((string) ($split['status'] ?? '')), ['CANCELLED', 'REFUSED'], true)) {
+                    continue;
+                }
+                $total += (float) ($split['totalValue'] ?? $split['fixedValue'] ?? 0);
+            }
+
+            return round($total, 2);
+        }
+
         $base = (float) ($payment['netValue'] ?? 0);
         if ($base <= 0) {
             $base = $amount;

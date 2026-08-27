@@ -41,6 +41,91 @@ final class payment_processor_test extends \advanced_testcase {
     }
 
     /**
+     * Com split na resposta, vale o split - e nao o percentual.
+     *
+     * @return void
+     */
+    public function test_fee_reads_the_real_split(): void {
+        $payment = [
+            'netValue' => 97.52,
+            'split' => [
+                ['walletId' => 'plataforma', 'status' => 'AWAITING_CREDIT', 'totalValue' => 24.38],
+            ],
+        ];
+
+        $this->assertEqualsWithDelta(24.38, payment_processor::fee_from($payment, 100.0, 25.0, 'plataforma'), 0.001);
+    }
+
+    /**
+     * Split CANCELLED da comissao ZERO, e nao o percentual.
+     *
+     * Este teste existe por causa de um furo concreto: se o vendedor der baixa
+     * manual na cobranca (receiveInCash), o Asaas cancela o split - dinheiro
+     * que nao passou por ele nao tem como ser dividido - e a plataforma recebe
+     * nada. Calculando o percentual, o relatorio anunciaria R$ 25,00 de
+     * comissao que nunca chegariam.
+     *
+     * Relatorio financeiro que discorda do extrato e pior que nenhum.
+     *
+     * @return void
+     */
+    public function test_cancelled_split_means_zero_commission(): void {
+        $payment = [
+            'netValue' => 100.0,
+            'split' => [
+                ['walletId' => 'plataforma', 'status' => 'CANCELLED', 'totalValue' => 25.00],
+            ],
+        ];
+
+        $this->assertEqualsWithDelta(0.0, payment_processor::fee_from($payment, 100.0, 25.0, 'plataforma'), 0.001);
+    }
+
+    /**
+     * Split recusado tambem nao conta.
+     *
+     * @return void
+     */
+    public function test_refused_split_means_zero_commission(): void {
+        $payment = [
+            'split' => [['walletId' => 'plataforma', 'status' => 'REFUSED', 'totalValue' => 25.00]],
+        ];
+
+        $this->assertEqualsWithDelta(0.0, payment_processor::fee_from($payment, 100.0, 25.0, 'plataforma'), 0.001);
+    }
+
+    /**
+     * Split de outra carteira nao vira comissao nossa.
+     *
+     * @return void
+     */
+    public function test_other_wallets_are_not_our_commission(): void {
+        $payment = [
+            'netValue' => 97.52,
+            'split' => [
+                ['walletId' => 'de-outra-pessoa', 'status' => 'DONE', 'totalValue' => 40.00],
+                ['walletId' => 'plataforma', 'status' => 'DONE', 'totalValue' => 24.38],
+            ],
+        ];
+
+        $this->assertEqualsWithDelta(24.38, payment_processor::fee_from($payment, 100.0, 25.0, 'plataforma'), 0.001);
+    }
+
+    /**
+     * Sem split na resposta, o percentual sobre o liquido e a estimativa certa.
+     *
+     * E o caso da criacao da cobranca, quando o split ainda nao existe.
+     *
+     * @return void
+     */
+    public function test_without_split_falls_back_to_percentage(): void {
+        $this->assertEqualsWithDelta(
+            24.38,
+            payment_processor::fee_from(['netValue' => 97.52], 100.0, 25.0, 'plataforma'),
+            0.001
+        );
+    }
+
+    /**
      * Sem netValue na resposta, cai no valor cheio.
      *
      * Erra por centavos, o que e melhor do que nao registrar comissao nenhuma.
