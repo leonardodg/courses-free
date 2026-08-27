@@ -60,7 +60,8 @@
         <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="offertype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="single" SEQUENCE="false" COMMENT="single=um curso · bundle=combo · catalog=tudo da empresa (nao usa offer_course)."/>
         <FIELD NAME="price" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="currency" TYPE="char" LENGTH="3" NOTNULL="true" DEFAULT="BRL" SEQUENCE="false"/>
+        <FIELD NAME="country" TYPE="char" LENGTH="2" NOTNULL="true" DEFAULT="BR" SEQUENCE="false" COMMENT="Pais em que esta oferta vende, em ISO-3166 alpha-2. Decide a conta que recebe, a moeda e quais gateways aparecem no checkout. Vive na OFERTA e nao na empresa porque core_payment::get_payable() resolve valor, moeda e conta a partir do itemid, sem saber quem compra: uma oferta so nao consegue ser BRL para um aluno e ARS para outro. Plano por pais e oferta separada."/>
+        <FIELD NAME="currency" TYPE="char" LENGTH="3" NOTNULL="true" DEFAULT="BRL" SEQUENCE="false" COMMENT="Derivada do country. Guardada tambem aqui porque a venda historica precisa saber em que moeda foi cobrada, mesmo que a tabela de paises mude depois."/>
         <FIELD NAME="accessmode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="lifetime" SEQUENCE="false" COMMENT="lifetime=vitalicio · days=prazo em accessdays · recurring=assinatura."/>
         <FIELD NAME="accessdays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Quantos dias de acesso cada pagamento libera. 0 em lifetime."/>
         <FIELD NAME="billingdays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Intervalo entre cobrancas, em dias. So em recurring. Separado de accessdays porque permitem carencia: cobrar a cada 30 dias liberando 35 da margem para o pagamento atrasar sem cortar o aluno."/>
@@ -77,6 +78,27 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="companyid-status" UNIQUE="false" FIELDS="companyid, status"/>
+        <INDEX NAME="companyid-country" UNIQUE="false" FIELDS="companyid, country"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_account" COMMENT="Conta de pagamento da empresa em cada pais. Uma empresa que vende no Brasil e na Argentina precisa de DUAS contas, porque uma conta e presa a um pais e so recebe na moeda dele - nao ha cambio no caminho do split. As contas do core vivem todas no contexto da categoria da empresa; e esta tabela que diz qual e de qual pais. Sem ela, account::get_record(['contextid' => ...]) devolveria a primeira que aparecesse.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="country" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="ISO-3166 alpha-2. Ver local_marketplace\country::CURRENCIES."/>
+        <FIELD NAME="accountid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="payment_accounts.id do core."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="companyid" TYPE="foreign" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
+        <KEY NAME="accountid" TYPE="foreign-unique" FIELDS="accountid" REFTABLE="payment_accounts" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyid-country" UNIQUE="true" FIELDS="companyid, country"/>
       </INDEXES>
     </TABLE>
 
@@ -120,6 +142,29 @@
       <INDEXES>
         <INDEX NAME="userid-status" UNIQUE="false" FIELDS="userid, status"/>
         <INDEX NAME="userid-companyid" UNIQUE="false" FIELDS="userid, companyid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_marketplace_sale" COMMENT="O que o marketplace precisa saber de uma venda e o core_payment nao guarda: a comissao efetivamente retida e o id da transacao no gateway. Valor, moeda, gateway, comprador e data ficam em {payments}, que e a fonte da verdade - duplicar daria duas versoes do mesmo numero financeiro. Existe porque antes disto o relatorio lia a tabela do paygw_mercadopago direto, e com um segundo gateway ele passaria a mentir por omissao.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="paymentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="payments.id do core. Uma venda por pagamento."/>
+        <FIELD NAME="offerid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Desnormalizado de proposito: o relatorio filtra por empresa a cada pagina, e chegar la pela oferta custaria um join em toda consulta."/>
+        <FIELD NAME="feeamount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Comissao da plataforma efetivamente enviada ao gateway, em moeda. NAO recalcule a partir do percentual: cada gateway deduz as proprias taxas numa ordem diferente, e 25% do bruto nao e o que caiu na conta."/>
+        <FIELD NAME="externalid" TYPE="char" LENGTH="128" NOTNULL="false" SEQUENCE="false" COMMENT="Id da transacao no gateway, para conciliar com o extrato dele."/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="paymentid" TYPE="foreign-unique" FIELDS="paymentid" REFTABLE="payments" REFFIELDS="id"/>
+        <KEY NAME="offerid" TYPE="foreign" FIELDS="offerid" REFTABLE="local_marketplace_offer" REFFIELDS="id"/>
+        <KEY NAME="companyid" TYPE="foreign" FIELDS="companyid" REFTABLE="local_marketplace_company" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="companyid-timecreated" UNIQUE="false" FIELDS="companyid, timecreated"/>
       </INDEXES>
     </TABLE>
 

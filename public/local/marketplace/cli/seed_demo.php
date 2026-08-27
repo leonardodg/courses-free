@@ -149,12 +149,16 @@ $company = api::create_company((object) [
     'hostname' => null,
 ], (int) $seller->id);
 
-$account = $company->get_payment_account();
+$accounts = $company->get_payment_accounts();
+$contas = [];
+foreach ($accounts as $countrycode => $account) {
+    $contas[] = $countrycode . ':' . $account->get('id');
+}
 cli_writeln(sprintf(
-    "Empresa criada: id %d | categoria %d | conta de pagamento %d",
+    "Empresa criada: id %d | categoria %d | contas por pais %s",
     $company->get('id'),
     $company->get('categoryid'),
-    $account ? $account->get('id') : 0
+    $contas ? implode(', ', $contas) : 'nenhuma'
 ));
 
 // Cursos.

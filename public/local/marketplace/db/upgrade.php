@@ -168,5 +168,227 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082540, 'local', 'marketplace');
     }
 
+    if ($oldversion < 2026082546) {
+        $dbman = $DB->get_manager();
+
+        // A oferta passa a dizer em que PAIS vende, em ISO-3166 alpha-2.
+        //
+        // O pais vive na oferta e nao na empresa porque core_payment resolve
+        // valor, moeda e conta a partir do itemid, sem receber o usuario: uma
+        // oferta so nao consegue ser BRL para um aluno e ARS para outro.
+        $table = new xmldb_table('local_marketplace_offer');
+        $field = new xmldb_field('country', XMLDB_TYPE_CHAR, '2', null, XMLDB_NOTNULL, null, 'BR', 'price');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('companyid-country', XMLDB_INDEX_NOTUNIQUE, ['companyid', 'country']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Conta de pagamento por pais.
+        $table = new xmldb_table('local_marketplace_account');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('companyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('country', XMLDB_TYPE_CHAR, '2', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('accountid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('companyid', XMLDB_KEY_FOREIGN, ['companyid'], 'local_marketplace_company', ['id']);
+        $table->add_key('accountid', XMLDB_KEY_FOREIGN_UNIQUE, ['accountid'], 'payment_accounts', ['id']);
+        $table->add_index('companyid-country', XMLDB_INDEX_UNIQUE, ['companyid', 'country']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Adota as contas que ja existem.
+        //
+        // Sem isto elas ficariam orfas: a busca passa a ser por pais, e uma
+        // conta sem linha aqui e invisivel - a empresa apareceria como "sem
+        // meio de pagamento" mesmo com o vinculo concluido e funcionando.
+        //
+        // O pais vem do siteid que o vinculo do Mercado Pago ja detectava
+        // (config.siteid), e do pais da plataforma quando o vinculo e anterior
+        // a isso. Nos dois casos esta certo: ate agora so havia como vincular
+        // conta do mesmo pais da aplicacao configurada.
+        upgrade_local_marketplace_adopt_accounts();
+
+        upgrade_plugin_savepoint(true, 2026082546, 'local', 'marketplace');
+    }
+
+    if ($oldversion < 2026082547) {
+        $dbman = $DB->get_manager();
+
+        // Tabela de vendas neutra. O relatorio lia paygw_mercadopago direto, e
+        // com um segundo gateway ele passaria a mentir por omissao: a venda
+        // existiria, o aluno estaria matriculado, e o total simplesmente nao
+        // contaria aquele dinheiro.
+        $table = new xmldb_table('local_marketplace_sale');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('paymentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('offerid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('companyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('feeamount', XMLDB_TYPE_NUMBER, '10, 2', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('externalid', XMLDB_TYPE_CHAR, '128', null, null, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('paymentid', XMLDB_KEY_FOREIGN_UNIQUE, ['paymentid'], 'payments', ['id']);
+        $table->add_key('offerid', XMLDB_KEY_FOREIGN, ['offerid'], 'local_marketplace_offer', ['id']);
+        $table->add_key('companyid', XMLDB_KEY_FOREIGN, ['companyid'], 'local_marketplace_company', ['id']);
+        $table->add_index('companyid-timecreated', XMLDB_INDEX_NOTUNIQUE, ['companyid', 'timecreated']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_local_marketplace_backfill_sales();
+
+        // A comissao padrao do site sai do namespace de um gateway. Copiar o
+        // valor atual e obrigatorio: perder isto faria toda empresa sem
+        // comissao negociada voltar ao padrao de fabrica de 25% - uma mudanca
+        // de preco silenciosa em cima de contrato ja fechado.
+        $inherited = get_config('paygw_mercadopago', 'defaultfeepercent');
+        if ($inherited !== false && $inherited !== '' && get_config('local_marketplace', 'defaultfeepercent') === false) {
+            set_config('defaultfeepercent', $inherited, 'local_marketplace');
+        }
+
+        upgrade_plugin_savepoint(true, 2026082547, 'local', 'marketplace');
+    }
+
     return true;
+}
+
+/**
+ * Traz o historico de vendas do paygw_mercadopago para a tabela neutra.
+ *
+ * So as linhas aprovadas e com pagamento do core registrado: uma preferencia
+ * pendente ou recusada nunca foi uma venda, e trazer aquilo inflaria o
+ * relatorio com dinheiro que nao entrou.
+ *
+ * @return int Quantas vendas foram trazidas.
+ */
+function upgrade_local_marketplace_backfill_sales(): int {
+    global $DB;
+
+    if (!$DB->get_manager()->table_exists('paygw_mercadopago')) {
+        return 0;
+    }
+
+    $sql = "SELECT mp.id, mp.paymentid, mp.itemid, mp.feeamount, mp.mppaymentid, o.companyid
+              FROM {paygw_mercadopago} mp
+              JOIN {local_marketplace_offer} o ON o.id = mp.itemid
+             WHERE mp.status = :status
+               AND mp.paymentid IS NOT NULL
+               AND mp.component = :component";
+    $rows = $DB->get_records_sql($sql, ['status' => 'approved', 'component' => 'local_marketplace']);
+
+    $now = time();
+    $moved = 0;
+
+    foreach ($rows as $row) {
+        if ($DB->record_exists('local_marketplace_sale', ['paymentid' => $row->paymentid])) {
+            continue;
+        }
+
+        $DB->insert_record('local_marketplace_sale', (object) [
+            'paymentid' => (int) $row->paymentid,
+            'offerid' => (int) $row->itemid,
+            'companyid' => (int) $row->companyid,
+            'feeamount' => (float) $row->feeamount,
+            'externalid' => $row->mppaymentid ?: null,
+            'usermodified' => 0,
+            'timecreated' => $now,
+            'timemodified' => $now,
+        ]);
+        $moved++;
+    }
+
+    return $moved;
+}
+
+/**
+ * Cria uma linha em local_marketplace_account para cada conta ja existente.
+ *
+ * Fica fora da funcao de upgrade porque e o unico passo com logica de verdade,
+ * e um passo de schema que faz duas coisas e dificil de reler quando falha.
+ *
+ * @return int Quantas contas foram adotadas.
+ */
+function upgrade_local_marketplace_adopt_accounts(): int {
+    global $DB;
+
+    // MLB e o codigo do Mercado Pago; BR e o nosso. A traducao mora aqui, e nao
+    // no nucleo, porque e um dado historico: depois deste passo ninguem mais
+    // precisa saber o que MLB significa.
+    $sitetocountry = [
+        'MLA' => 'AR',
+        'MLB' => 'BR',
+        'MLC' => 'CL',
+        'MCO' => 'CO',
+        'MLM' => 'MX',
+        'MPE' => 'PE',
+        'MLU' => 'UY',
+    ];
+
+    $platformsite = strtoupper((string) (get_config('paygw_mercadopago', 'platformsite') ?: 'MLB'));
+    $fallback = $sitetocountry[$platformsite] ?? \local_marketplace\country::DEFAULT_COUNTRY;
+
+    $now = time();
+    $adopted = 0;
+
+    $companies = $DB->get_records('local_marketplace_company', null, '', 'id, categoryid');
+    foreach ($companies as $companyrow) {
+        if (empty($companyrow->categoryid)) {
+            continue;
+        }
+        $context = context_coursecat::instance((int) $companyrow->categoryid, IGNORE_MISSING);
+        if (!$context) {
+            continue;
+        }
+
+        $accounts = $DB->get_records('payment_accounts', ['contextid' => $context->id, 'archived' => 0]);
+        foreach ($accounts as $account) {
+            $country = $fallback;
+
+            $config = $DB->get_field('payment_gateways', 'config', [
+                'accountid' => $account->id,
+                'gateway' => 'mercadopago',
+            ]);
+            if ($config) {
+                $decoded = json_decode($config, true);
+                if (!empty($decoded['siteid'])) {
+                    $siteid = strtoupper((string) $decoded['siteid']);
+                    $country = $sitetocountry[$siteid] ?? $fallback;
+                }
+            }
+
+            // Uma empresa com duas contas no mesmo pais e um cadastro que nunca
+            // deveria ter existido, e o indice unico agora impede. Fica a
+            // primeira; a segunda segue no core, sem vinculo, e aparece na tela
+            // de contas da empresa para alguem decidir o que fazer com ela.
+            $taken = $DB->record_exists('local_marketplace_account', [
+                'companyid' => $companyrow->id,
+                'country' => $country,
+            ]);
+            $already = $DB->record_exists('local_marketplace_account', ['accountid' => $account->id]);
+            if ($taken || $already) {
+                continue;
+            }
+
+            $DB->insert_record('local_marketplace_account', (object) [
+                'companyid' => $companyrow->id,
+                'country' => $country,
+                'accountid' => $account->id,
+                'usermodified' => 0,
+                'timecreated' => $now,
+                'timemodified' => $now,
+            ]);
+            $adopted++;
+        }
+    }
+
+    return $adopted;
 }

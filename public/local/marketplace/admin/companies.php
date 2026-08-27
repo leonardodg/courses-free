@@ -64,11 +64,13 @@ $table->attributes['class'] = 'generaltable';
 foreach ($companies as $c) {
     // O estado do meio de pagamento e a informacao que o administrador mais
     // procura: e o portao que decide se a empresa pode vender.
-    $currency = $c->get_payment_currency();
+    // Uma empresa pode vender em varios paises, e cada pais tem a propria
+    // moeda. Mostrar so a primeira esconderia metade da operacao dela.
+    $currencies = implode(', ', $c->get_currencies());
     if ($c->can_sell()) {
         $payment = html_writer::tag(
             'span',
-            get_string('cansell', 'local_marketplace') . ($currency !== '' ? ' · ' . s($currency) : ''),
+            get_string('cansell', 'local_marketplace') . ($currencies !== '' ? ' · ' . s($currencies) : ''),
             ['class' => 'badge bg-success']
         );
     } else {

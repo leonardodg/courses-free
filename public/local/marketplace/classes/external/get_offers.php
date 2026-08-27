@@ -182,7 +182,7 @@ class get_offers extends external_api {
                 'pageaccent' => (string) $company->get('pageaccent'),
                 'logourl' => ($url = $company->get_page_logo_url()) ? $url->out(false) : '',
                 'cansell' => $company->can_sell(),
-                'currency' => $company->get_payment_currency(),
+                'currency' => implode(',', $company->get_currencies()),
             ],
             'offers' => $result,
         ];
@@ -203,7 +203,7 @@ class get_offers extends external_api {
                 'pageaccent' => new external_value(PARAM_TEXT, 'Cor de destaque em hexadecimal'),
                 'logourl' => new external_value(PARAM_RAW, 'URL do logo da marca, vazio se nao houver'),
                 'cansell' => new external_value(PARAM_BOOL, 'Se a empresa pode vender curso pago'),
-                'currency' => new external_value(PARAM_TEXT, 'Moeda em que a empresa recebe'),
+                'currency' => new external_value(PARAM_TEXT, 'Moedas em que a empresa recebe, separadas por virgula'),
             ]),
             'offers' => new external_multiple_structure(
                 new external_single_structure([

@@ -156,11 +156,9 @@ echo html_writer::div(html_writer::table($table), 'table-responsive');
 // Pagamentos.
 echo $OUTPUT->heading(get_string('mysubspayments', 'local_marketplace'), 3);
 
-$payments = $DB->get_records(
-    'paygw_mercadopago',
-    ['userid' => (int) $USER->id, 'status' => 'approved'],
-    'timecreated DESC'
-);
+// De qualquer gateway: o aluno pode ter comprado um curso pelo Pix de um meio
+// e outro pelo cartao de outro, e a lista dele precisa mostrar os dois.
+$payments = \local_marketplace\sale::get_for_user((int) $USER->id);
 
 if (!$payments) {
     echo $OUTPUT->notification(get_string('nopayments', 'local_marketplace'), 'info');
@@ -170,17 +168,19 @@ if (!$payments) {
         get_string('date'),
         get_string('offername', 'local_marketplace'),
         get_string('cost'),
-        get_string('reportmppayment', 'local_marketplace'),
+        get_string('reportgateway', 'local_marketplace'),
+        get_string('reportexternalid', 'local_marketplace'),
     ];
     $ptable->attributes['class'] = 'generaltable';
 
     foreach ($payments as $p) {
-        $o = offer::get_record(['id' => (int) $p->itemid]);
+        $o = offer::get_record(['id' => (int) $p->offerid]);
         $ptable->data[] = [
             userdate((int) $p->timecreated, get_string('strftimedatetimeshort')),
-            $o ? format_string($o->get('name')) : '#' . (int) $p->itemid,
+            $o ? format_string($o->get('name')) : '#' . (int) $p->offerid,
             helper::get_cost_as_string((float) $p->amount, $p->currency),
-            $p->mppaymentid ? s($p->mppaymentid) : '-',
+            s($p->gateway),
+            $p->externalid ? s($p->externalid) : '-',
         ];
     }
 

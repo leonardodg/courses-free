@@ -55,12 +55,12 @@ $PAGE->set_heading(format_string($company->get('name')));
 
 require_capability('local/marketplace:viewreport', $context);
 
-$account = $company->get_payment_account();
+$accounts = $company->get_payment_accounts();
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('reportsection', 'local_marketplace'), 3);
 
-if (!$account) {
+if (!$accounts) {
     echo $OUTPUT->notification(get_string('errornoaccount', 'local_marketplace'), 'error');
     echo $OUTPUT->footer();
     exit;
@@ -105,14 +105,14 @@ if ($view !== 'subscriptions') {
     echo html_writer::div(implode(' ', $links), 'mb-3');
 }
 
-// Vendas aprovadas.
-$params = ['accountid' => (int) $account->get('id'), 'status' => 'approved'];
-$where = 'accountid = :accountid AND status = :status';
-if ($from > 0 && $view !== 'subscriptions') {
-    $where .= ' AND timecreated >= :since';
-    $params['since'] = time() - ($from * DAYSECS);
-}
-$sales = $DB->get_records_select('paygw_mercadopago', $where, $params, 'timecreated DESC');
+// Vendas concluidas, de QUALQUER gateway.
+//
+// Ate a versao anterior isto era um SELECT em paygw_mercadopago. Com um
+// segundo meio de pagamento aquilo passaria a mentir por omissao: a venda
+// existiria, o aluno estaria matriculado, e o total simplesmente nao contaria
+// aquele dinheiro - sem erro e sem aviso.
+$since = ($from > 0 && $view !== 'subscriptions') ? time() - ($from * DAYSECS) : 0;
+$sales = \local_marketplace\sale::get_for_company((int) $company->get('id'), $since);
 
 // TRANSACOES.
 if ($view === 'transactions') {
@@ -153,20 +153,22 @@ if ($view === 'transactions') {
         get_string('user'),
         get_string('reportgross', 'local_marketplace'),
         get_string('reportcommission', 'local_marketplace'),
-        get_string('reportmppayment', 'local_marketplace'),
+        get_string('reportgateway', 'local_marketplace'),
+        get_string('reportexternalid', 'local_marketplace'),
     ];
     $table->attributes['class'] = 'generaltable';
 
     foreach ($sales as $s) {
-        $o = offer::get_record(['id' => (int) $s->itemid]);
+        $o = offer::get_record(['id' => (int) $s->offerid]);
         $u = \core_user::get_user((int) $s->userid, '*', IGNORE_MISSING);
         $table->data[] = [
             userdate((int) $s->timecreated, get_string('strftimedatetimeshort')),
-            $o ? format_string($o->get('name')) : '#' . (int) $s->itemid,
+            $o ? format_string($o->get('name')) : '#' . (int) $s->offerid,
             $u ? fullname($u) : '?',
             helper::get_cost_as_string((float) $s->amount, $s->currency),
             helper::get_cost_as_string((float) $s->feeamount, $s->currency),
-            $s->mppaymentid ? s($s->mppaymentid) : '-',
+            s($s->gateway),
+            $s->externalid ? s($s->externalid) : '-',
         ];
     }
     echo html_writer::div(html_writer::table($table), 'table-responsive');
@@ -186,7 +188,7 @@ if ($view === 'courses') {
     // ultrapassa o faturamento de proposito, e o aviso abaixo diz isso.
     $percourse = [];
     foreach ($sales as $s) {
-        $o = offer::get_record(['id' => (int) $s->itemid]);
+        $o = offer::get_record(['id' => (int) $s->offerid]);
         if (!$o) {
             continue;
         }
@@ -267,11 +269,11 @@ if ($view === 'subscriptions') {
     }
 
     // Quantas vezes cada aluno pagou cada assinatura. E o mais proximo de
-    // "mensalidades pagas" que os dados permitem: cada linha aprovada em
-    // paygw_mercadopago e um pagamento efetivo daquela oferta.
+    // "mensalidades pagas" que os dados permitem: cada venda registrada e um
+    // pagamento efetivo daquela oferta, em qualquer gateway.
     $paid = [];
     foreach ($sales as $s) {
-        $key = (int) $s->userid . ':' . (int) $s->itemid;
+        $key = (int) $s->userid . ':' . (int) $s->offerid;
         $paid[$key] = $paid[$key] ?? ['n' => 0, 'last' => 0];
         $paid[$key]['n']++;
         $paid[$key]['last'] = max($paid[$key]['last'], (int) $s->timecreated);

@@ -30,6 +30,42 @@ if ($hassiteconfig) {
         get_string('pluginname', 'local_marketplace')
     ), 'users');
 
+    $settings = new admin_settingpage(
+        'local_marketplace_settings',
+        get_string('settings', 'local_marketplace')
+    );
+
+    // A comissao padrao mora AQUI, e nao nas settings de um gateway.
+    //
+    // Ate a versao anterior o nucleo lia get_config('paygw_mercadopago', ...),
+    // o que fazia a comissao do marketplace inteiro depender de um plugin de
+    // fornecedor estar instalado - e nao tinha resposta definida quando
+    // houvesse tres gateways, cada um com o proprio padrao.
+    $settings->add(new admin_setting_configtext(
+        'local_marketplace/defaultfeepercent',
+        get_string('defaultfeepercent', 'local_marketplace'),
+        get_string('defaultfeepercent_desc', 'local_marketplace'),
+        '25',
+        PARAM_FLOAT
+    ));
+
+    // Pais em que a primeira conta de uma empresa nova e provisionada. Nao
+    // limita nada: a empresa pode receber conta em outros paises depois, e e a
+    // OFERTA que diz onde cada plano vende.
+    $countries = [];
+    foreach (\local_marketplace\country::codes() as $code) {
+        $countries[$code] = \local_marketplace\country::describe($code);
+    }
+    $settings->add(new admin_setting_configselect(
+        'local_marketplace/defaultcountry',
+        get_string('defaultcountry', 'local_marketplace'),
+        get_string('defaultcountry_desc', 'local_marketplace'),
+        \local_marketplace\country::DEFAULT_COUNTRY,
+        $countries
+    ));
+
+    $ADMIN->add('local_marketplace_cat', $settings);
+
     $ADMIN->add('local_marketplace_cat', new admin_externalpage(
         'local_marketplace_companies',
         get_string('companies', 'local_marketplace'),

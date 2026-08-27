@@ -141,36 +141,69 @@ class company extends persistent {
      * isto agnostico: se um dia entrar outro meio de pagamento, o portao
      * continua correto sem tocar aqui.
      *
+     * Sem pais, responde "vende em ALGUM lugar" - e o que a vitrine e a lista de
+     * empresas querem saber. Com pais, responde sobre aquele mercado: uma
+     * empresa pode receber no Brasil e nao na Argentina, e a oferta argentina
+     * dela nao pode ser publicada por causa disso.
+     *
+     * @param string|null $country ISO-3166 alpha-2, ou nulo para qualquer pais.
      * @return bool
      */
-    public function can_sell(): bool {
+    public function can_sell(?string $country = null): bool {
         if ($this->get('status') !== self::STATUS_ACTIVE) {
             return false;
         }
-        $account = $this->get_payment_account();
-        return $account && $account->is_available();
+
+        if ($country !== null) {
+            $account = $this->get_payment_account($country);
+            return $account && $account->is_available();
+        }
+
+        foreach ($this->get_payment_accounts() as $account) {
+            if ($account->is_available()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
-     * Payment account da empresa, no contexto da categoria dela.
+     * Payment account com que a empresa recebe naquele pais.
      *
+     * @param string $country ISO-3166 alpha-2.
      * @return \core_payment\account|null
      */
-    public function get_payment_account(): ?\core_payment\account {
-        $categoryid = $this->get('categoryid');
-        if (empty($categoryid)) {
-            return null;
-        }
-        $context = \context_coursecat::instance($categoryid, IGNORE_MISSING);
-        if (!$context) {
-            return null;
-        }
-        $account = \core_payment\account::get_record([
-            'contextid' => $context->id,
-            'archived' => 0,
-        ]);
+    public function get_payment_account(string $country): ?\core_payment\account {
+        $link = company_account::get_for((int) $this->get('id'), $country);
 
-        return $account ?: null;
+        return $link ? $link->get_payment_account() : null;
+    }
+
+    /**
+     * Todas as contas da empresa, indexadas por pais.
+     *
+     * @return array<string, \core_payment\account>
+     */
+    public function get_payment_accounts(): array {
+        $out = [];
+        foreach (company_account::list_for_company((int) $this->get('id')) as $countrycode => $link) {
+            $account = $link->get_payment_account();
+            if ($account) {
+                $out[$countrycode] = $account;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Paises em que a empresa tem conta.
+     *
+     * @return string[] Codigos ISO-3166 alpha-2, em ordem.
+     */
+    public function get_countries(): array {
+        return array_keys($this->get_payment_accounts());
     }
 
     /**
@@ -305,33 +338,26 @@ class company extends persistent {
     }
 
     /**
-     * Moeda em que esta empresa recebe.
+     * Moedas em que esta empresa recebe, uma por pais em que tem conta.
      *
-     * Nao e escolha livre: vem do pais da conta Mercado Pago vinculada, gravada
-     * no gateway pelo fluxo OAuth. Uma conta e presa a um pais e so recebe na
-     * moeda dele, entao a empresa "escolhe" a moeda escolhendo QUAL conta
-     * vincular - e trocar de moeda significa vincular outra conta.
+     * Nao e escolha livre e nao e uma so. Uma conta e presa a um pais e so
+     * recebe na moeda dele, entao a empresa "escolhe" a moeda escolhendo em
+     * quais paises abre conta.
      *
-     * Vazio quando a empresa ainda nao vinculou, ou quando o vinculo ocorreu
-     * antes de passarmos a consultar o pais.
+     * Ate a versao anterior isto devolvia UMA moeda, lida do primeiro gateway
+     * habilitado da unica conta. Com mais de um gateway na mesma conta a
+     * resposta passava a depender da ordem dos ids, o que e o mesmo que dizer
+     * que nao havia resposta.
      *
-     * @return string Codigo ISO de tres letras, ou vazio
+     * @return array<string, string> pais => moeda
      */
-    public function get_payment_currency(): string {
-        $account = $this->get_payment_account();
-        if (!$account) {
-            return '';
+    public function get_currencies(): array {
+        $out = [];
+        foreach ($this->get_countries() as $countrycode) {
+            $out[$countrycode] = country::currency_for($countrycode);
         }
-        foreach ($account->get_gateways() as $gw) {
-            if (!$gw->get('id') || !$gw->get('enabled')) {
-                continue;
-            }
-            $currency = (string) ($gw->get_configuration()['currency'] ?? '');
-            if ($currency !== '') {
-                return $currency;
-            }
-        }
-        return '';
+
+        return $out;
     }
 
     /**

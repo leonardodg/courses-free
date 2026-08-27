@@ -90,15 +90,34 @@ class offer_form extends \moodleform {
         $mform->setType('price', PARAM_FLOAT);
         $mform->addHelpButton('price', 'offerprice', 'local_marketplace');
 
-        $currency = $company->get_payment_currency();
-        $mform->addElement(
-            'static',
-            'currencystatic',
-            get_string('currency', 'core_payment'),
-            $currency !== '' ? s($currency) : get_string('paymentcurrencyunknown', 'local_marketplace')
-        );
-        $mform->addElement('hidden', 'currency', $currency !== '' ? $currency : 'BRL');
-        $mform->setType('currency', PARAM_ALPHA);
+        // O pais decide a conta que recebe, a moeda e quais gateways aparecem
+        // no checkout. Vender em outro pais e outra OFERTA, nao outro preco na
+        // mesma: o core resolve valor, moeda e conta pelo itemid, sem saber
+        // quem esta comprando.
+        //
+        // A lista sao os paises em que a empresa TEM conta. Oferecer um pais
+        // sem conta produziria oferta que ninguem consegue pagar - o checkout
+        // recusaria com o aluno ja decidido a comprar.
+        $countries = [];
+        foreach ($company->get_countries() as $code) {
+            $countries[$code] = \local_marketplace\country::describe($code);
+        }
+
+        if ($countries) {
+            $mform->addElement('select', 'country', get_string('offercountry', 'local_marketplace'), $countries);
+            $mform->addHelpButton('country', 'offercountry', 'local_marketplace');
+        } else {
+            // Empresa ainda sem conta nenhuma. A oferta so pode ser gratuita, e
+            // o pais fica no padrao ate alguem vincular uma conta.
+            $mform->addElement(
+                'static',
+                'countrystatic',
+                get_string('offercountry', 'local_marketplace'),
+                get_string('nopaymentaccount', 'local_marketplace')
+            );
+            $mform->addElement('hidden', 'country', \local_marketplace\api::default_country());
+        }
+        $mform->setType('country', PARAM_ALPHA);
 
         // Assinatura.
         $mform->addElement('header', 'accessheader', get_string('offeraccess', 'local_marketplace'));

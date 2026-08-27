@@ -1,0 +1,209 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+namespace local_marketplace;
+
+/**
+ * Registro de venda neutro de gateway.
+ *
+ * O que estes testes protegem: o relatorio lia a tabela do paygw_mercadopago
+ * direto. Com um segundo gateway ele mentiria por omissao - a venda existiria,
+ * o aluno estaria matriculado, e o total simplesmente nao contaria aquele
+ * dinheiro. Sem erro e sem aviso, que e o pior tipo de bug de relatorio.
+ *
+ * @package    local_marketplace
+ * @copyright  2026 Leonardo Della Giustina
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_marketplace\sale
+ * @covers     \local_marketplace\api::record_sale
+ */
+final class sale_test extends \advanced_testcase {
+    /** @var company */
+    protected $company;
+
+    /** @var offer */
+    protected $offer;
+
+    /** @var \stdClass */
+    protected $buyer;
+
+    /**
+     * Empresa, oferta e comprador.
+     *
+     * @return void
+     */
+    protected function setUp(): void {
+        parent::setUp();
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $owner = $this->getDataGenerator()->create_user();
+        $this->company = api::create_company((object) [
+            'name' => 'Empresa Teste',
+            'shortname' => 'com' . random_int(1000, 9999),
+        ], (int) $owner->id);
+
+        $this->offer = new offer();
+        $this->offer->set('companyid', (int) $this->company->get('id'));
+        $this->offer->set('name', 'Oferta');
+        $this->offer->set('price', 100.0);
+        $this->offer->set('country', 'BR');
+        $this->offer->set('status', offer::STATUS_PUBLISHED);
+        $this->offer->create();
+
+        $this->buyer = $this->getDataGenerator()->create_user();
+    }
+
+    /**
+     * Grava um pagamento do core e devolve o id.
+     *
+     * @param string $gateway
+     * @param float $amount
+     * @return int
+     */
+    protected function make_payment(string $gateway, float $amount = 100.0): int {
+        $account = $this->company->get_payment_account('BR');
+
+        return \core_payment\helper::save_payment(
+            (int) $account->get('id'),
+            'local_marketplace',
+            payment\service_provider::PAYMENT_AREA,
+            (int) $this->offer->get('id'),
+            (int) $this->buyer->id,
+            $amount,
+            'BRL',
+            $gateway
+        );
+    }
+
+    /**
+     * A venda registrada aparece no relatorio da empresa.
+     *
+     * @return void
+     */
+    public function test_recorded_sale_shows_up_for_the_company(): void {
+        $paymentid = $this->make_payment('mercadopago');
+        api::record_sale('local_marketplace', $paymentid, (int) $this->offer->get('id'), 25.0, 'mp-123');
+
+        $sales = sale::get_for_company((int) $this->company->get('id'));
+
+        $this->assertCount(1, $sales);
+        $row = reset($sales);
+        $this->assertEquals(100.0, (float) $row->amount);
+        $this->assertEquals(25.0, (float) $row->feeamount);
+        $this->assertSame('mercadopago', $row->gateway);
+        $this->assertSame('mp-123', $row->externalid);
+    }
+
+    /**
+     * Vendas de gateways diferentes entram no mesmo relatorio.
+     *
+     * E o ponto inteiro desta tabela.
+     *
+     * @return void
+     */
+    public function test_sales_from_several_gateways_are_counted_together(): void {
+        api::record_sale('local_marketplace', $this->make_payment('mercadopago'), (int) $this->offer->get('id'), 25.0);
+        api::record_sale('local_marketplace', $this->make_payment('asaas'), (int) $this->offer->get('id'), 25.0);
+        api::record_sale('local_marketplace', $this->make_payment('pagarme'), (int) $this->offer->get('id'), 25.0);
+
+        $sales = sale::get_for_company((int) $this->company->get('id'));
+
+        $this->assertCount(3, $sales);
+        $gateways = array_map(fn($row) => $row->gateway, $sales);
+        sort($gateways);
+        $this->assertSame(['asaas', 'mercadopago', 'pagarme'], $gateways);
+    }
+
+    /**
+     * Registrar a mesma venda duas vezes nao dobra o faturamento.
+     *
+     * O webhook do gateway reenvia notificacao. Sem esta garantia, cada reenvio
+     * viraria uma venda a mais no relatorio.
+     *
+     * @return void
+     */
+    public function test_recording_twice_is_idempotent(): void {
+        $paymentid = $this->make_payment('asaas');
+
+        $first = api::record_sale('local_marketplace', $paymentid, (int) $this->offer->get('id'), 25.0);
+        $second = api::record_sale('local_marketplace', $paymentid, (int) $this->offer->get('id'), 25.0);
+
+        $this->assertEquals($first->get('id'), $second->get('id'));
+        $this->assertCount(1, sale::get_for_company((int) $this->company->get('id')));
+    }
+
+    /**
+     * Pagamento de outro componente nao vira venda do marketplace.
+     *
+     * O itemid do enrol_fee pode coincidir com o id de uma oferta. Sem o guarda
+     * de componente, aquele pagamento apareceria no relatorio de uma empresa
+     * que nao vendeu nada.
+     *
+     * @return void
+     */
+    public function test_other_components_are_ignored(): void {
+        $paymentid = $this->make_payment('asaas');
+
+        $this->assertNull(api::record_sale('enrol_fee', $paymentid, (int) $this->offer->get('id'), 25.0));
+        $this->assertCount(0, sale::get_for_company((int) $this->company->get('id')));
+    }
+
+    /**
+     * Oferta apagada nao gera venda orfa.
+     *
+     * @return void
+     */
+    public function test_missing_offer_records_nothing(): void {
+        $paymentid = $this->make_payment('asaas');
+
+        $this->assertNull(api::record_sale('local_marketplace', $paymentid, 999999, 25.0));
+    }
+
+    /**
+     * O aluno ve as proprias compras, de qualquer gateway.
+     *
+     * @return void
+     */
+    public function test_buyer_sees_their_own_payments(): void {
+        api::record_sale('local_marketplace', $this->make_payment('asaas'), (int) $this->offer->get('id'), 25.0);
+
+        $mine = sale::get_for_user((int) $this->buyer->id);
+        $others = sale::get_for_user((int) $this->getDataGenerator()->create_user()->id);
+
+        $this->assertCount(1, $mine);
+        $this->assertCount(0, $others);
+    }
+
+    /**
+     * O filtro por periodo corta pelo pagamento, nao pelo registro.
+     *
+     * @return void
+     */
+    public function test_period_filter_uses_the_payment_date(): void {
+        global $DB;
+
+        $paymentid = $this->make_payment('asaas');
+        api::record_sale('local_marketplace', $paymentid, (int) $this->offer->get('id'), 25.0);
+
+        // Empurra o pagamento para 60 dias atras.
+        $DB->set_field('payments', 'timecreated', time() - (60 * DAYSECS), ['id' => $paymentid]);
+
+        $companyid = (int) $this->company->get('id');
+        $this->assertCount(0, sale::get_for_company($companyid, time() - (30 * DAYSECS)));
+        $this->assertCount(1, sale::get_for_company($companyid, time() - (90 * DAYSECS)));
+    }
+}

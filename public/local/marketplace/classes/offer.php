@@ -95,6 +95,10 @@ class offer extends persistent {
                 'choices' => [self::TYPE_SINGLE, self::TYPE_BUNDLE, self::TYPE_CATALOG],
             ],
             'price' => ['type' => PARAM_FLOAT, 'default' => 0],
+            'country' => [
+                'type' => PARAM_ALPHA,
+                'default' => country::DEFAULT_COUNTRY,
+            ],
             'currency' => ['type' => PARAM_ALPHA, 'default' => 'BRL'],
             'accessmode' => [
                 'type' => PARAM_ALPHA,
@@ -114,39 +118,53 @@ class offer extends persistent {
     }
 
     /**
-     * A moeda tem que ser aquela em que a empresa realmente recebe.
+     * O pais tem que ser um em que o marketplace opera.
      *
-     * Sem esta checagem, uma oferta em BRL numa empresa com conta argentina
-     * passaria pelo cadastro sem reclamar e so quebraria no checkout - com o
-     * aluno ja na tela de pagamento, decidido a comprar. E o pior lugar
-     * possivel para descobrir um erro de cadastro.
-     *
-     * Oferta gratuita nao paga nada, entao a moeda dela nao importa.
+     * Nao checa se a EMPRESA tem conta la: uma oferta pode ser cadastrada em
+     * rascunho antes de a conta daquele pais existir. Quem barra a venda sem
+     * conta e o portao - company::can_sell($country) na vitrine, e o
+     * get_payable() no checkout, que recusa em vez de cobrar para lugar nenhum.
      *
      * @param string $value
      * @return true|\lang_string
      */
-    protected function validate_currency($value) {
-        if ((float) $this->raw_get('price') <= 0) {
-            return true;
+    protected function validate_country($value) {
+        if (!country::is_supported((string) $value)) {
+            return new \lang_string('errorcountryunsupported', 'local_marketplace', $value);
         }
 
-        $company = company::get_record(['id' => $this->raw_get('companyid')]);
-        if (!$company) {
-            return true;
-        }
+        return true;
+    }
 
-        // Empresa sem vinculo concluido nao tem moeda conhecida. Publicar
-        // oferta paga ja e barrado pelo portao de venda; nao ha o que checar.
-        $expected = $company->get_payment_currency();
-        if ($expected === '' || $expected === $value) {
-            return true;
+    /**
+     * A moeda e DERIVADA do pais, nunca escolhida.
+     *
+     * Uma conta do pais X so recebe na moeda de X, e nao ha cambio no caminho
+     * do split - entao "oferta em BRL vendendo na Argentina" nao e uma
+     * configuracao errada, e uma configuracao impossivel. Derivar aqui, e nao
+     * validar num formulario, e o que garante que nenhum caminho de gravacao
+     * (tela, CLI, teste, upgrade) consiga produzir a combinacao invalida.
+     *
+     * Antes disto a moeda esperada vinha do gateway ja vinculado, o que fazia
+     * o cadastro de uma oferta depender de o vendedor ter concluido o vinculo -
+     * e devolvia respostas diferentes conforme a ordem dos gateways na conta.
+     *
+     * @return void
+     */
+    protected function before_validate() {
+        $currency = country::currency_for((string) $this->raw_get('country'));
+        if ($currency !== '') {
+            $this->raw_set('currency', $currency);
         }
+    }
 
-        return new \lang_string('errorcurrencymismatch', 'local_marketplace', (object) [
-            'expected' => $expected,
-            'given' => $value,
-        ]);
+    /**
+     * Moeda desta oferta, derivada do pais.
+     *
+     * @return string
+     */
+    public function get_expected_currency(): string {
+        return country::currency_for((string) $this->get('country'));
     }
 
     /**
