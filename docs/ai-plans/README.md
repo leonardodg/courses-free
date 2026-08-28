@@ -45,3 +45,4 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | Data | Plano | Resultado |
 |---|---|---|
 | 2026-08-26 | [`cf`, fluxo de worktrees](2026-08-26-cf-fluxo-de-worktrees.md) | entregue — PRs #50, #51, #52 |
+| 2026-08-27 | [Gateways além do Mercado Pago](2026-08-27-gateways-asaas-e-pagarme.md) | parcial — Asaas entregue e **split provado**; Pagar.me em espera do CNPJ |
