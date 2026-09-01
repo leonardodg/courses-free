@@ -314,7 +314,7 @@ class api {
             'cnpj' => $application->get('cnpj'),
             'planid' => !empty($decision->planid) ? (int) $decision->planid : null,
             'commissionpct' => null,
-        ], self::resolve_owner($application, $decision->ownerid ?? null));
+        ], self::resolve_owner($application, self::owner_input($decision->ownerid ?? null)));
 
         $application->set('companyid', (int) $company->get('id'));
         $application->set('status', application::STATUS_APPROVED);
@@ -437,6 +437,28 @@ class api {
         }
 
         return $candidate;
+    }
+
+    /**
+     * Traduz o dono vindo do formulario.
+     *
+     * O autocomplete do moodleform manda STRING VAZIA quando ninguem foi
+     * escolhido, e nao null - entao o `?? null` do chamador nao pegava, e ''
+     * chegava num parametro ?int e estourava TypeError.
+     *
+     * Quebrava justamente o caminho mais comum: aprovar deixando o dono em
+     * branco, que e o que a propria tela instrui a fazer quando o candidato
+     * ainda nao tem conta.
+     *
+     * @param mixed $value
+     * @return int|null Nulo quando ninguem foi escolhido.
+     */
+    protected static function owner_input($value): ?int {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        return ((int) $value) ?: null;
     }
 
     /**

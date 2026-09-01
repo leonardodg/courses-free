@@ -51,6 +51,56 @@ if (!$app) {
 $planid = $app->get('planid');
 $plan = $planid ? plan::get_record(['id' => (int) $planid]) : null;
 
+// O formulario e montado e PROCESSADO antes de qualquer saida.
+//
+// Todo redirect daqui - cancelar, aprovar, recusar - precisa acontecer com o
+// buffer limpo. Com o header ja impresso, o redirect() do Moodle emite
+// "You should really redirect before you start page output" e cai num
+// redirecionamento por meta/JS, que e mais lento e some com a mensagem de
+// sucesso em navegador que bloqueia script.
+// Se ja existe conta com o e-mail do contato, ela vem pre-selecionada: o
+// caminho comum e o candidato ja ser aluno da plataforma, e obrigar o
+// administrador a procurar de novo o que o sistema ja sabe e atrito a toa.
+$matched = $DB->get_record('user', [
+    'email' => $app->get('contactemail'),
+    'deleted' => 0,
+    'mnethostid' => $CFG->mnet_localhost_id,
+], 'id', IGNORE_MULTIPLE);
+
+$form = new approval_form($PAGE->url, [
+    'id' => (int) $app->get('id'),
+    'contactemail' => $app->get('contactemail'),
+    'matcheduserid' => $matched ? (int) $matched->id : null,
+    'planid' => $app->get('planid'),
+    'suggestedshortname' => api::suggest_shortname($app->get('companyname')),
+]);
+
+if ($form->is_cancelled()) {
+    redirect($listurl);
+}
+
+if ($decision = $form->get_data()) {
+    if ($decision->decision === application::STATUS_APPROVED) {
+        $created = api::approve($app, $decision);
+
+        redirect(
+            $listurl,
+            get_string('approvedmessage', 'local_partners', format_string($created->get('name'))),
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
+
+    api::reject($app, $decision);
+
+    redirect(
+        $listurl,
+        get_string('rejectedmessage', 'local_partners', format_string($app->get('companyname'))),
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
+}
+
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($app->get('companyname')));
 
@@ -104,51 +154,9 @@ if ($app->get('status') !== application::STATUS_PENDING) {
     exit;
 }
 
-// Se ja existe conta com o e-mail do contato, ela vem pre-selecionada: o
-// caminho comum e o candidato ja ser aluno da plataforma, e obrigar o
-// administrador a procurar de novo o que o sistema ja sabe e atrito a toa.
-$matched = $DB->get_record('user', [
-    'email' => $app->get('contactemail'),
-    'deleted' => 0,
-    'mnethostid' => $CFG->mnet_localhost_id,
-], 'id', IGNORE_MULTIPLE);
-
-$form = new approval_form($PAGE->url, [
-    'id' => (int) $app->get('id'),
-    'contactemail' => $app->get('contactemail'),
-    'matcheduserid' => $matched ? (int) $matched->id : null,
-    'planid' => $app->get('planid'),
-    'suggestedshortname' => api::suggest_shortname($app->get('companyname')),
-]);
-
-if ($form->is_cancelled()) {
-    redirect($listurl);
-}
-
-if ($decision = $form->get_data()) {
-    if ($decision->decision === application::STATUS_APPROVED) {
-        $created = api::approve($app, $decision);
-
-        redirect(
-            $listurl,
-            get_string('approvedmessage', 'local_partners', format_string($created->get('name'))),
-            null,
-            \core\output\notification::NOTIFY_SUCCESS
-        );
-    }
-
-    api::reject($app, $decision);
-
-    redirect(
-        $listurl,
-        get_string('rejectedmessage', 'local_partners', format_string($app->get('companyname'))),
-        null,
-        \core\output\notification::NOTIFY_INFO
-    );
-}
-
 echo $OUTPUT->heading(get_string('decision', 'local_partners'), 3);
 $form->display();
 
 echo html_writer::link($listurl, get_string('back'), ['class' => 'btn btn-secondary']);
+
 echo $OUTPUT->footer();

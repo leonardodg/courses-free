@@ -64,6 +64,11 @@ if ($plan) {
         'description' => $plan->get('description'),
         'monthlyfee' => $plan->get('monthlyfee'),
         'commissionpct' => $plan->get('commissionpct'),
+        // O nulo vira string vazia, que e a opcao "herdar a base do site" no
+        // seletor. Sem esta linha o campo era gravado e nunca lido de volta: a
+        // tela mostrava "herdar" para todo plano, inclusive os que tinham base
+        // propria.
+        'commissionbase' => $plan->get('commissionbase') ?? '',
         'country' => $plan->get('country'),
         'hostingmodel' => $plan->get('hostingmodel'),
         'ispublic' => $plan->get('ispublic'),
