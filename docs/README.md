@@ -1,7 +1,7 @@
 # Documentação do courses-free
 
 Plataforma Moodle 5.2 onde qualquer pessoa publica curso gratuito ou pago, com
-split de pagamento pelo Mercado Pago.
+split de pagamento. Gateways: Mercado Pago e Asaas.
 
 ## Por onde começar
 
@@ -14,6 +14,25 @@ split de pagamento pelo Mercado Pago.
 | saber o que existe e o que falta | [`architecture/estado-e-proximas-fases.md`](architecture/estado-e-proximas-fases.md) |
 | mexer nas tabelas | [`data-model/marketplace.md`](data-model/marketplace.md) |
 | testar o que está no ar | [`data-validation/painel-de-testes.md`](data-validation/painel-de-testes.md) |
+| **configurar uma instalação nova** | [`operacao/configuracao-inicial.md`](operacao/configuracao-inicial.md) |
+| configurar **um plugin** específico | o `README.md` dentro do diretório dele |
+| saber que dado pessoal é coletado | [`legal/mapa-de-dados-pessoais.md`](legal/mapa-de-dados-pessoais.md) |
+
+### Os READMEs dos plugins
+
+Cada plugin explica para que serve, de que depende, o que precisa ser
+configurado e as armadilhas dele:
+
+| Plugin | README |
+|---|---|
+| núcleo | [`public/local/marketplace/`](../public/local/marketplace/README.md) |
+| captação de parceiros | [`public/local/partners/`](../public/local/partners/README.md) |
+| tema | [`public/theme/ldg/`](../public/theme/ldg/README.md) |
+| gateway Asaas | [`public/payment/gateway/asaas/`](../public/payment/gateway/asaas/README.md) |
+| gateway Mercado Pago | [`public/payment/gateway/mercadopago/`](../public/payment/gateway/mercadopago/README.md) |
+| matrícula | [`public/enrol/marketplace/`](../public/enrol/marketplace/README.md) |
+| liberação de seção | [`public/availability/condition/marketplace/`](../public/availability/condition/marketplace/README.md) |
+| bloco de assinaturas | [`public/blocks/marketplace/`](../public/blocks/marketplace/README.md) |
 
 ## As pastas
 
@@ -26,6 +45,8 @@ split de pagamento pelo Mercado Pago.
 | [`data-model/`](data-model/) | tabelas, campos e relações |
 | [`data-validation/`](data-validation/) | como se verifica que funciona: painel de testes, cenários, dados de teste |
 | [`dev/`](dev/) | guias de quem desenvolve: ambiente, ferramentas, fluxo de trabalho |
+| [`operacao/`](operacao/) | colocar e manter no ar: configuração inicial, ordem das coisas |
+| [`legal/`](legal/) | privacidade, termos de uso e o mapa do que é coletado |
 | [`ai-plans/`](ai-plans/) | **registro de todo plano executado por agente de IA** |
 | [`history/`](history/) | de onde o projeto veio: ideia inicial, conversas fundadoras |
 | [`man/`](man/) | páginas de manual instaláveis (`man cf`) |
@@ -46,3 +67,11 @@ texto. O SVG em `architecture/` é a exceção: veio pronto.
 
 **Um documento, um assunto.** Se um arquivo passa a responder duas perguntas
 diferentes, é sinal de que virou dois.
+
+**`docs/private/` não é versionado.** É onde vive documentação confidencial de
+negócio — margem, custo, simulação de lucro. O remote é **público** e o deploy
+faz `rsync` de `docs/` para a VPS, então a regra está no `.gitignore`
+versionado, e não num exclude local que ninguém enxerga.
+
+O que pode entrar em documento versionado são os números que a landing **exibe**:
+preço, percentual de comissão, resolução por faixa. Margem e custo, nunca.
