@@ -16,6 +16,8 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversMethod;
+
 /**
  * Mapa Host -> empresa.
  *
@@ -26,8 +28,8 @@ namespace local_marketplace;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\api::regenerate_domain_map
  */
+#[CoversMethod(\local_marketplace\api::class, 'regenerate_domain_map')]
 final class domain_map_test extends \advanced_testcase {
     /**
      * Cria uma empresa com dominio.

@@ -34,9 +34,24 @@ automático. Foi o que motivou procurar outro gateway: ver `docs/adr/0001`.
 fiscal: a plataforma não emite nota por outra empresa. A cobrança nasce na conta
 dele, o líquido fica com ele, e o split leva só a comissão. Ver `docs/adr/0003`.
 
-**A comissão incide sobre o líquido, não sobre o bruto.** Cada gateway deduz as
-próprias taxas antes de dividir — no Asaas, R$ 100 viram R$ 97,52 e 25% disso
-são R$ 24,38. Nunca recalcule no relatório: guarde o que o gateway devolveu.
+**A base da comissão é configurável, e o padrão é o BRUTO.** Cada degrau da
+cadeia pode declarar a sua, e a base sai do **mesmo degrau que deu a taxa** —
+`api::resolve_commission()` devolve taxa, base e origem juntas. Coluna
+`commissionbase` nula = "herda a do site", que é diferente de escolher bruto.
+
+Como cada gateway aplica: bruto vai como valor absoluto (`fixedValue` no Asaas,
+`marketplace_fee` no MP); líquido vai como `percentualValue` no Asaas e **não é
+possível no Mercado Pago**, onde a taxa só é conhecida depois. Com `net`
+configurado, a venda pelo MP sai sobre o bruto e **grava `gross`**.
+
+**Os termos aplicados são fotografados na venda** (`feepercent`, `feebase`,
+`feesource` em `local_marketplace_sale` e nas tabelas dos gateways). O webhook lê
+da linha, nunca resolve de novo: mudar a configuração não pode reescrever o
+passado. Ver `docs/adr/0007`.
+
+A taxa **não varia por meio de pagamento**: quem escolhe o gateway é o aluno, no
+checkout. Nunca recalcule o valor no relatório — estorno parcial e split recusado
+mudam o que o gateway devolveu.
 
 **Baixa manual não prova split.** `receiveInCash` faz o split sair `CANCELLED`
 com o valor certo na tela. Dinheiro que não passou pelo gateway não tem como ser
@@ -176,13 +191,18 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **105 testes** (63 no núcleo, 34 no Asaas, 8 no MP), phpcs
-limpo, CI validando os plugins a cada push.
+webhook, matrícula. **187 testes** (102 no núcleo, 29 no local_partners, 48 no
+Asaas, 8 no MP), phpcs limpo, CI validando os plugins a cada push.
 
-**O split foi provado** em 2026-08-27, no sandbox do Asaas, com duas contas
-distintas: R$ 100 brutos, R$ 97,52 líquidos, split de 25% = R$ 24,38 atribuído à
-carteira da plataforma. Primeira vez no projeto. Falta vê-lo chegar a `DONE` com
-o saldo se movendo. Roteiro repetível em `docs/data-validation/asaas-sandbox.md`.
+**O split foi provado** no sandbox do Asaas, com duas contas distintas. Em
+2026-08-27, R$ 100 brutos → R$ 97,52 líquidos → 25% = R$ 24,38 na carteira da
+plataforma. Em **2026-09-01**, com a base de cálculo já configurável, as duas
+bases na mesma cobrança: **bruto R$ 25,00** (`fixedValue`) e **líquido R$ 24,38**
+(`percentualValue`), ambas `AWAITING_CREDIT` e conferidas pela lista de splits
+recebidos **da conta da plataforma**.
+
+Falta vê-lo chegar a `DONE` com o saldo se movendo — cartão liquida em D+30 no
+sandbox. Roteiro repetível em `docs/data-validation/asaas-sandbox.md`.
 
 **Continua sem prova:** o split no Mercado Pago, e a compra pelo Moodle com
 comissão maior que zero.

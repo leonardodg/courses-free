@@ -203,7 +203,9 @@ class asaas_client {
 
         $body['split'] = self::build_split(
             (string) ($params['splitwalletid'] ?? ''),
-            (float) ($params['splitpercent'] ?? 0)
+            (float) ($params['splitpercent'] ?? 0),
+            (float) $body['value'],
+            (string) ($params['splitbase'] ?? 'gross')
         );
         if (!$body['split']) {
             // Um split vazio nao e "sem comissao", e um corpo invalido: o Asaas
@@ -220,24 +222,65 @@ class asaas_client {
      * Estatico e puro para poder ser testado sem rede - e o pedaco do corpo
      * onde um erro custa dinheiro real de alguem.
      *
-     * O percentual incide sobre o netValue, e nao sobre o valor cheio: o Asaas
-     * ja tirou a propria taxa antes de dividir. Nao ha o que corrigir aqui, mas
-     * ha o que NAO fazer - recalcular 25% do bruto no relatorio daria um numero
-     * diferente do que caiu na conta.
+     * O CAMPO depende da base de calculo, e e a coisa mais importante desta
+     * funcao:
+     *
+     * - base BRUTO -> fixedValue, calculado por nos. O percentualValue nao
+     *   serve, porque o Asaas o aplica sobre o netValue: em R$ 100,00 a 9,9%
+     *   devolveria R$ 9,65 em vez de R$ 9,90, e a plataforma pagaria parte da
+     *   taxa do gateway sem ter escolhido isso.
+     * - base LIQUIDO -> percentualValue, deixando o Asaas dividir. E o unico
+     *   jeito correto: o liquido depende da taxa da forma de pagamento, que so
+     *   e conhecida por ele, e no momento de criar a cobranca ainda nao existe.
+     *
+     * LIMITE, que vale para as duas: o Asaas recusa a cobranca INTEIRA se o
+     * split nao couber no liquido. Com comissao de ate 10% e taxa de ate 3%
+     * sobra folga larga; o caso que aperta e ticket muito baixo, em que a taxa
+     * fixa come quase tudo - R$ 2,00 no Pix nao tem de onde tirar comissao.
+     * Quem define preco minimo e a regra de negocio, nao esta funcao.
      *
      * @param string $walletid Carteira da plataforma.
      * @param float $percent Percentual da comissao.
+     * @param float $grossvalue Valor cheio da cobranca.
+     * @param string $base Base de calculo: 'gross' ou 'net'.
      * @return array Vazio quando nao ha split a fazer.
      */
-    public static function build_split(string $walletid, float $percent): array {
+    public static function build_split(
+        string $walletid,
+        float $percent,
+        float $grossvalue,
+        string $base = 'gross'
+    ): array {
         $walletid = trim($walletid);
-        if ($walletid === '' || $percent <= 0) {
+        if ($walletid === '' || $percent <= 0 || $grossvalue <= 0) {
             return [];
         }
 
+        $percent = min($percent, 100.0);
+
+        if ($base === 'net') {
+            return [[
+                'walletId' => $walletid,
+                'percentualValue' => round($percent, 4),
+            ]];
+        }
+
+        $fixed = round($grossvalue * ($percent / 100), 2);
+
+        // Arredondamento para baixo pode zerar a comissao de centavos. Sem
+        // valor nao ha split: mandar zero faz o Asaas recusar o corpo.
+        if ($fixed <= 0) {
+            return [];
+        }
+
+        // Teto absoluto. Nao substitui o limite do liquido descrito acima, que
+        // so o Asaas conhece - impede o caso obvio de pedir mais do que a
+        // cobranca inteira.
+        $fixed = min($fixed, round($grossvalue, 2));
+
         return [[
             'walletId' => $walletid,
-            'percentualValue' => round(min($percent, 100.0), 4),
+            'fixedValue' => $fixed,
         ]];
     }
 

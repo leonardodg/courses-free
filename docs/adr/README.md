@@ -41,3 +41,6 @@ Pago, já foi superada pelos ADRs abaixo.
 | [0002](0002-conta-de-pagamento-por-pais.md) | País ISO na oferta, e uma conta de pagamento por país | Aceita |
 | [0003](0003-quem-cria-a-cobranca-emite-a-nota.md) | Quem cria a cobrança é o vendedor, porque é ele quem emite a nota | Aceita |
 | [0004](0004-cohort-por-empresa-adiado.md) | Cohort por empresa: adiado, e derivado quando vier | Aceita |
+| [0005](0005-trava-de-resolucao-por-ticket.md) | A trava de resolução por ticket, e onde ela precisa ser aplicada | Proposta |
+| [0006](0006-aprovacao-automatica-de-parceiro.md) | Aprovação automática de parceiro, e por que ela ainda não pode existir | Proposta |
+| [0007](0007-comissao-sobre-o-bruto.md) | Base de cálculo da comissão: configurável, e fotografada na venda | Aceita |

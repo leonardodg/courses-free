@@ -16,6 +16,9 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversMethod;
+
 /**
  * Conta de pagamento por pais.
  *
@@ -28,11 +31,11 @@ namespace local_marketplace;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\company_account
- * @covers     \local_marketplace\company::get_payment_account
- * @covers     \local_marketplace\company::get_payment_accounts
- * @covers     \local_marketplace\api::create_payment_account
  */
+#[CoversClass(\local_marketplace\company_account::class)]
+#[CoversMethod(\local_marketplace\company::class, 'get_payment_account')]
+#[CoversMethod(\local_marketplace\company::class, 'get_payment_accounts')]
+#[CoversMethod(\local_marketplace\api::class, 'create_payment_account')]
 final class company_account_test extends \advanced_testcase {
     /** @var company */
     protected $company;

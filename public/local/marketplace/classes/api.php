@@ -54,6 +54,8 @@ class api {
             $company->set('shortname', $data->shortname);
             $company->set('cnpj', !empty($data->cnpj) ? $data->cnpj : null);
             $company->set('commissionpct', self::commission_input($data->commissionpct ?? null));
+            $company->set('commissionbase', self::commission_base_input($data->commissionbase ?? null));
+            $company->set('planid', !empty($data->planid) ? (int) $data->planid : null);
             $company->set('pagetitle', !empty($data->pagetitle) ? $data->pagetitle : null);
             $company->set('pageintro', $data->pageintro ?? null);
             $company->set('pageaccent', !empty($data->pageaccent) ? $data->pageaccent : null);
@@ -97,7 +99,8 @@ class api {
      *
      *   1. politica do CURSO, quando a oferta libera um curso so
      *   2. comissao negociada com a EMPRESA
-     *   3. padrao do SITE
+     *   3. comissao do PLANO contratado pela empresa
+     *   4. padrao do SITE
      *
      * A politica de curso so entra em oferta de curso unico, e a razao e que
      * nao existe resposta correta para um combo: tres cursos com percentuais
@@ -114,25 +117,71 @@ class api {
      * @return float Percentual entre 0 e 100.
      */
     public static function resolve_commission_percent(offer $offer): float {
+        return self::resolve_commission($offer)->percent;
+    }
+
+    /**
+     * Termos completos da comissao: percentual, base de calculo e origem.
+     *
+     * Mesma cadeia do percentual, com uma regra a mais: **a base sai do MESMO
+     * degrau que deu o percentual**. Resolver as duas coisas em cadeias
+     * independentes produziria combinacoes que ninguem contratou - taxa do
+     * plano com base do site, por exemplo - e o parceiro veria um numero que
+     * nao corresponde a nenhum acordo existente.
+     *
+     * Degrau que nao declara base (coluna nula) herda a base do site. E a
+     * diferenca entre "este contrato define a base" e "este contrato so define
+     * a taxa", que sem o nulo seriam indistinguiveis.
+     *
+     * @param offer $offer
+     * @return commission
+     */
+    public static function resolve_commission(offer $offer): commission {
         if ($offer->get('offertype') === offer::TYPE_SINGLE) {
             $courseids = $offer->get_course_ids();
             if (count($courseids) === 1) {
                 $policy = course_policy::get_by_course((int) reset($courseids));
                 if ($policy) {
-                    return self::clamp((float) $policy->get('commissionpct'));
+                    return new commission(
+                        (float) $policy->get('commissionpct'),
+                        $policy->get('commissionbase'),
+                        commission::SOURCE_POLICY
+                    );
                 }
             }
         }
 
         $company = company::get_record(['id' => (int) $offer->get('companyid')]);
         if ($company) {
+            // A empresa continua vencendo o plano. "Comissao negociada com ESTA
+            // empresa" e mais especifico que "padrao da classe de empresas", e e
+            // o que garante que ligar planos hoje nao mexa em nenhuma venda que
+            // ja acontece. Quem quiser que o plano governe apaga o valor
+            // negociado - e a tela de empresas mostra de onde o numero veio.
             $negotiated = $company->get_commission_percent();
             if ($negotiated !== null) {
-                return self::clamp($negotiated);
+                return new commission(
+                    $negotiated,
+                    $company->get('commissionbase'),
+                    commission::SOURCE_COMPANY
+                );
+            }
+
+            $plan = $company->get_plan();
+            if ($plan && $plan->get('status') === plan::STATUS_ACTIVE) {
+                return new commission(
+                    (float) $plan->get('commissionpct'),
+                    $plan->get('commissionbase'),
+                    commission::SOURCE_PLAN
+                );
             }
         }
 
-        return self::default_commission_percent();
+        return new commission(
+            self::default_commission_percent(),
+            commission::default_base(),
+            commission::SOURCE_SITE
+        );
     }
 
     /**
@@ -152,16 +201,36 @@ class api {
      * @return float Percentual entre 0 e 100.
      */
     public static function commission_for(string $component, int $itemid): float {
+        return self::commission_terms_for($component, $itemid)->percent;
+    }
+
+    /**
+     * Termos completos da comissao para um item.
+     *
+     * E este o ponto que os gateways passam a chamar: eles precisam da base
+     * para decidir COMO mandar o split, e nao so de quanto.
+     *
+     * @param string $component Componente do core_payment.
+     * @param int $itemid
+     * @return commission
+     */
+    public static function commission_terms_for(string $component, int $itemid): commission {
+        $fallback = new commission(
+            self::default_commission_percent(),
+            commission::default_base(),
+            commission::SOURCE_SITE
+        );
+
         if ($component !== 'local_marketplace') {
-            return self::default_commission_percent();
+            return $fallback;
         }
 
         $offer = offer::get_record(['id' => $itemid]);
         if (!$offer) {
-            return self::default_commission_percent();
+            return $fallback;
         }
 
-        return self::resolve_commission_percent($offer);
+        return self::resolve_commission($offer);
     }
 
     /**
@@ -207,6 +276,9 @@ class api {
      * @param int $offerid
      * @param float $feeamount Comissao em moeda, ja calculada pelo gateway.
      * @param string $externalid Id da transacao no gateway.
+     * @param commission|null $terms Termos APLICADOS. Nulo resolve na hora, e e
+     *                               so para chamador antigo: o certo e o gateway
+     *                               passar o que ele de fato usou.
      * @return sale|null Nulo quando o pagamento nao e de uma oferta.
      */
     public static function record_sale(
@@ -214,7 +286,8 @@ class api {
         int $paymentid,
         int $offerid,
         float $feeamount,
-        string $externalid = ''
+        string $externalid = '',
+        ?commission $terms = null
     ): ?sale {
         if ($component !== 'local_marketplace') {
             return null;
@@ -230,11 +303,21 @@ class api {
             return null;
         }
 
+        // A FOTO dos termos. Sem ela, uma venda de seis meses atras so pode ser
+        // explicada relendo a configuracao de hoje - e o percentual da empresa,
+        // o plano dela e o padrao do site mudam. O relatorio passaria a contar
+        // uma historia diferente da que o extrato do gateway conta, e a que
+        // muda seria a nossa.
+        $terms = $terms ?? self::resolve_commission($offer);
+
         $record = new sale();
         $record->set('paymentid', $paymentid);
         $record->set('offerid', $offerid);
         $record->set('companyid', (int) $offer->get('companyid'));
         $record->set('feeamount', $feeamount);
+        $record->set('feepercent', $terms->percent);
+        $record->set('feebase', $terms->base);
+        $record->set('feesource', $terms->source);
         $record->set('externalid', $externalid !== '' ? $externalid : null);
         $record->create();
 
@@ -273,6 +356,25 @@ class api {
     }
 
     /**
+     * Traduz a base vinda de formulario.
+     *
+     * O vazio vira NULO, e nao a base padrao: nulo significa "herda o site" e e
+     * a informacao que permite o contrato acompanhar uma mudanca de politica da
+     * plataforma. Gravar 'gross' congelaria a base naquele valor para sempre,
+     * sem ninguem ter pedido isso.
+     *
+     * @param mixed $value
+     * @return string|null
+     */
+    public static function commission_base_input($value): ?string {
+        if (!is_string($value) || !in_array($value, commission::bases(), true)) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
      * Altera os dados cadastrais de uma empresa.
      *
      * O atalho NAO muda. Ele vira o idnumber da categoria, entra nas URLs da
@@ -300,6 +402,8 @@ class api {
             $company->set('name', $data->name);
             $company->set('cnpj', !empty($data->cnpj) ? $data->cnpj : null);
             $company->set('commissionpct', self::commission_input($data->commissionpct ?? null));
+            $company->set('commissionbase', self::commission_base_input($data->commissionbase ?? null));
+            $company->set('planid', !empty($data->planid) ? (int) $data->planid : null);
             $company->set('pagetitle', !empty($data->pagetitle) ? $data->pagetitle : null);
             $company->set('pageintro', $data->pageintro ?? null);
             $company->set('pageaccent', !empty($data->pageaccent) ? $data->pageaccent : null);

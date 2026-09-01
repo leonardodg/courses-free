@@ -16,6 +16,7 @@
 
 namespace local_marketplace\form;
 
+use local_marketplace\commission;
 use local_marketplace\company;
 
 defined('MOODLE_INTERNAL') || die();
@@ -92,8 +93,24 @@ class company_form extends \moodleform {
         $mform->setType('cnpj', PARAM_ALPHANUM);
         $mform->addHelpButton('cnpj', 'companycnpj', 'local_marketplace');
 
-        // Vazio NAO e zero. Vazio herda o padrao do site; zero e isencao
-        // negociada. Um campo numerico obrigatorio nao teria como dizer isso.
+        // O plano vem antes da comissao de proposito: e a fonte mais comum, e
+        // deixar a comissao vazia significa "usar a do plano". So planos ativos
+        // aparecem - arquivar existe para tirar um plano de circulacao.
+        $plans = ['' => get_string('noplan', 'local_marketplace')];
+        foreach (
+            \local_marketplace\plan::get_records(
+                ['status' => \local_marketplace\plan::STATUS_ACTIVE],
+                'sortorder, name'
+            ) as $plan
+        ) {
+            $plans[(int) $plan->get('id')] = format_string($plan->get('name'));
+        }
+        $mform->addElement('select', 'planid', get_string('plan', 'local_marketplace'), $plans);
+        $mform->setType('planid', PARAM_INT);
+
+        // Vazio NAO e zero. Vazio herda o plano e, sem plano, o padrao do site;
+        // zero e isencao negociada. Um campo numerico obrigatorio nao teria
+        // como dizer isso.
         $mform->addElement(
             'text',
             'commissionpct',
@@ -102,6 +119,17 @@ class company_form extends \moodleform {
         );
         $mform->setType('commissionpct', PARAM_RAW_TRIMMED);
         $mform->addHelpButton('commissionpct', 'companycommission', 'local_marketplace');
+
+        // A base viaja junto com a taxa: quem define uma define a outra. O
+        // vazio herda a base do site, e e diferente de escolher bruto - por
+        // isso a opcao existe explicitamente.
+        $mform->addElement('select', 'commissionbase', get_string('companycommissionbase', 'local_marketplace'), [
+            '' => get_string('commissionbaseinherit', 'local_marketplace'),
+            commission::BASE_GROSS => get_string('commissionbasegross', 'local_marketplace'),
+            commission::BASE_NET => get_string('commissionbasenet', 'local_marketplace'),
+        ]);
+        $mform->setType('commissionbase', PARAM_ALPHA);
+        $mform->addHelpButton('commissionbase', 'companycommissionbase', 'local_marketplace');
 
         // Tema por categoria. Depende de $CFG->allowcategorythemes, que o
         // install.php garante - sem ele o campo e gravado e nao surte efeito.

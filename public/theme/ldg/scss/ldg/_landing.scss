@@ -1,0 +1,209 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// Landing de captacao de parceiros.
+//
+// O estilo mora no TEMA, e nao no local_partners, pela mesma razao que o chrome
+// da pagina e do tema: quem desenha o site e o tema. O plugin entrega markup
+// semantico com classes previsiveis; se um dia a marca mudar, muda aqui e o
+// plugin nao e tocado.
+
+.ldg-landing {
+    // A escala tipografica de marketing so vale AQUI. No corpo do Moodle um h1
+    // de 48px competiria com o conteudo do curso.
+    h1 {
+        font-size: var(--ldg-fs-hero);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+    }
+
+    h2 {
+        font-size: var(--ldg-fs-h2);
+        font-weight: 600;
+        margin-bottom: var(--ldg-gutter);
+    }
+
+    h3 {
+        font-size: var(--ldg-fs-h3);
+        font-weight: 600;
+    }
+
+    section {
+        padding: calc(var(--ldg-gutter) * 2.5) 0;
+    }
+}
+
+.ldg-landing-inner {
+    margin: 0 auto;
+    max-width: var(--ldg-container);
+    padding: 0 var(--ldg-gutter);
+}
+
+.ldg-landing-lead {
+    color: var(--ldg-text-muted);
+    font-size: 1.125rem;
+    max-width: 46rem;
+}
+
+// O hero e escuro nos DOIS modos: e uma foto com degrade por cima, e o texto
+// em cima dela e sempre claro.
+.ldg-landing-hero {
+    background-position: center;
+    background-size: cover;
+    color: #ffffff;
+    position: relative;
+
+    &::before {
+        background: linear-gradient(rgba(14, 25, 43, 0.7), rgba(14, 25, 43, 0.92));
+        content: "";
+        inset: 0;
+        position: absolute;
+    }
+
+    .ldg-landing-inner {
+        padding-bottom: calc(var(--ldg-gutter) * 3);
+        padding-top: calc(var(--ldg-gutter) * 3);
+        position: relative;
+    }
+
+    .ldg-landing-lead {
+        color: rgba(255, 255, 255, 0.85);
+        margin-bottom: var(--ldg-gutter);
+    }
+}
+
+.ldg-landing-grid {
+    display: grid;
+    gap: var(--ldg-gutter);
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.ldg-landing-card,
+.ldg-landing-plan {
+    background-color: var(--ldg-surface);
+    border: 1px solid var(--ldg-border);
+    border-radius: var(--bs-border-radius);
+    box-shadow: var(--ldg-shadow-card);
+    padding: var(--ldg-gutter);
+}
+
+// O plano de entrada e o destaque: e ele que carrega o argumento de risco zero.
+.ldg-landing-plan-featured {
+    border-color: var(--ldg-accent);
+    box-shadow: 0 0 0 1px var(--ldg-accent), var(--ldg-shadow-card);
+}
+
+.ldg-landing-price {
+    font-size: var(--ldg-fs-h2);
+    font-weight: 700;
+    margin: var(--ldg-space) 0 0;
+}
+
+.ldg-landing-commission {
+    color: var(--ldg-accent-text);
+    font-weight: 600;
+}
+
+.ldg-landing-plandesc,
+.ldg-landing-hosting {
+    color: var(--ldg-text-muted);
+}
+
+.ldg-landing-tiers {
+    border-top: 1px solid var(--ldg-border);
+    list-style: none;
+    margin: var(--ldg-gutter) 0;
+    padding: var(--ldg-gutter) 0 0;
+
+    li {
+        display: flex;
+        gap: var(--ldg-space);
+        justify-content: space-between;
+        padding: 0.25rem 0;
+    }
+}
+
+.ldg-landing-note {
+    color: var(--ldg-text-muted);
+    font-size: var(--ldg-fs-caption);
+    margin-top: var(--ldg-gutter);
+}
+
+.ldg-landing-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+        display: flex;
+        gap: var(--ldg-gutter);
+        padding: var(--ldg-space) 0;
+    }
+}
+
+.ldg-landing-stepnumber {
+    align-items: center;
+    background-color: var(--ldg-accent);
+    border-radius: 50%;
+    color: #ffffff;
+    display: flex;
+    flex: 0 0 2.5rem;
+    font-weight: 700;
+    height: 2.5rem;
+    justify-content: center;
+}
+
+.ldg-landing-cta {
+    background-color: var(--ldg-surface);
+    text-align: center;
+
+    .ldg-landing-lead {
+        margin: 0 auto var(--ldg-gutter);
+    }
+}
+
+// O honeypot do formulario de candidatura. Escondido por CSS, e nunca por
+// type="hidden": robo ignora display:none, mas preenche hidden do mesmo jeito.
+.local-partners-honeypot,
+#fitem_id_fax {
+    left: -10000px;
+    position: absolute;
+}
+
+// A home com a landing ocupa a largura toda.
+//
+// O index.php do Moodle acrescenta a classe `limitedwidth` ao body, que estreita
+// o #page para largura de leitura. Faz sentido para a home de cursos; numa
+// pagina de marketing com hero de fundo inteiro, deixa uma faixa vazia na
+// direita e o hero cortado.
+body.ldg-has-landing {
+    #page.drawers,
+    #page.drawers .main-inner,
+    #region-main-box,
+    #region-main {
+        max-width: none;
+        padding-left: 0;
+        padding-right: 0;
+        width: 100%;
+    }
+
+    // O miolo tem o proprio container interno (.ldg-landing-inner), entao o
+    // region-main nao precisa de margem nenhuma.
+    #region-main {
+        border: 0;
+        margin: 0;
+    }
+}

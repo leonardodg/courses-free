@@ -250,9 +250,16 @@ class mp_client {
      * aqui, na preferencia, e nao no pagamento - e por isso que a integracao
      * declarada no painel do Mercado Pago precisa ser "API de Preferencias".
      *
-     * ATENCAO: a ordem de deducao e fixa e nao configuravel. A taxa do proprio
-     * Mercado Pago sai primeiro, e o marketplace_fee incide sobre o que sobra.
-     * Um relatorio que calcule 25% do bruto vai divergir do extrato.
+     * O marketplace_fee e um VALOR ABSOLUTO, e nao um percentual - por isso a
+     * plataforma recebe exatamente o que foi combinado sobre o valor bruto,
+     * calculado antes de chamar esta funcao. E a mesma base do fixedValue no
+     * Asaas: os dois gateways entregam a comissao sobre o bruto.
+     *
+     * ATENCAO, e coisa diferente: a ordem de deducao e fixa e nao configuravel.
+     * A taxa do proprio Mercado Pago sai primeiro, e o marketplace_fee sai do
+     * que sobra. Isso nao muda quanto a plataforma recebe - muda quem absorve a
+     * taxa do gateway, que e o vendedor. Se a taxa nao deixar saldo para o
+     * marketplace_fee, quem recusa e o Mercado Pago.
      *
      * @param array $preference Corpo da preferencia
      * @return array Resposta, com id e init_point

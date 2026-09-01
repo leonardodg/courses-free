@@ -16,6 +16,8 @@
 
 namespace paygw_asaas;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 defined('MOODLE_INTERNAL') || die();
 
 // O transporte falso nao e autocarregado: vive em tests/fixtures.
@@ -32,20 +34,72 @@ require_once(__DIR__ . '/fixtures/fake_asaas_client.php');
  * @package    paygw_asaas
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \paygw_asaas\asaas_client
  */
+#[CoversClass(\paygw_asaas\asaas_client::class)]
 final class asaas_client_test extends \advanced_testcase {
     /**
-     * O split e um percentual sobre a carteira da plataforma.
+     * O split e um valor FIXO, calculado sobre o bruto.
      *
      * @return void
      */
     public function test_build_split(): void {
-        $split = asaas_client::build_split('wallet-abc', 25.0);
+        $split = asaas_client::build_split('wallet-abc', 25.0, 100.0);
 
         $this->assertCount(1, $split);
         $this->assertSame('wallet-abc', $split[0]['walletId']);
-        $this->assertEqualsWithDelta(25.0, $split[0]['percentualValue'], 0.0001);
+        $this->assertEqualsWithDelta(25.0, $split[0]['fixedValue'], 0.0001);
+        // Nunca percentualValue: o Asaas o aplica sobre o netValue.
+        $this->assertArrayNotHasKey('percentualValue', $split[0]);
+    }
+
+    /**
+     * A comissao e sobre o BRUTO, e nao sobre o que sobra da taxa do gateway.
+     *
+     * O caso que motivou a mudanca: R$ 100,00 a 9,9%. Com percentualValue o
+     * Asaas dividiria o netValue de R$ 97,52 e devolveria R$ 9,65 - a
+     * plataforma pagando parte da taxa do gateway sem ter combinado isso.
+     *
+     * @return void
+     */
+    public function test_split_incide_sobre_o_bruto(): void {
+        $split = asaas_client::build_split('wallet-abc', 9.9, 100.0);
+
+        $this->assertEqualsWithDelta(9.90, $split[0]['fixedValue'], 0.0001);
+    }
+
+    /**
+     * O valor sai com duas casas, que e o que o Asaas aceita.
+     *
+     * @return void
+     */
+    public function test_split_arredonda_para_centavos(): void {
+        $split = asaas_client::build_split('wallet-abc', 9.9, 49.90);
+
+        // 49,90 x 9,9% = 4,9401.
+        $this->assertEqualsWithDelta(4.94, $split[0]['fixedValue'], 0.0001);
+    }
+
+    /**
+     * Comissao que arredonda para zero NAO vira split.
+     *
+     * Centavo de comissao em venda de centavos: mandar fixedValue zerado faz o
+     * Asaas recusar o corpo, e a venda inteira falharia por causa do
+     * arredondamento.
+     *
+     * @return void
+     */
+    public function test_comissao_que_zera_no_arredondamento(): void {
+        $this->assertSame([], asaas_client::build_split('wallet-abc', 0.1, 0.04));
+    }
+
+    /**
+     * Valor de cobranca invalido nao produz split.
+     *
+     * @return void
+     */
+    public function test_valor_invalido_nao_produz_split(): void {
+        $this->assertSame([], asaas_client::build_split('wallet-abc', 25.0, 0.0));
+        $this->assertSame([], asaas_client::build_split('wallet-abc', 25.0, -10.0));
     }
 
     /**
@@ -58,8 +112,8 @@ final class asaas_client_test extends \advanced_testcase {
      * @return void
      */
     public function test_zero_commission_produces_no_split(): void {
-        $this->assertSame([], asaas_client::build_split('wallet-abc', 0.0));
-        $this->assertSame([], asaas_client::build_split('wallet-abc', -5.0));
+        $this->assertSame([], asaas_client::build_split('wallet-abc', 0.0, 100.0));
+        $this->assertSame([], asaas_client::build_split('wallet-abc', -5.0, 100.0));
     }
 
     /**
@@ -72,19 +126,19 @@ final class asaas_client_test extends \advanced_testcase {
      * @return void
      */
     public function test_missing_wallet_produces_no_split(): void {
-        $this->assertSame([], asaas_client::build_split('', 25.0));
-        $this->assertSame([], asaas_client::build_split('   ', 25.0));
+        $this->assertSame([], asaas_client::build_split('', 25.0, 100.0));
+        $this->assertSame([], asaas_client::build_split('   ', 25.0, 100.0));
     }
 
     /**
-     * Percentual acima de 100 e contido.
+     * Percentual acima de 100 nao leva mais do que a cobranca inteira.
      *
      * @return void
      */
     public function test_split_is_capped_at_one_hundred(): void {
-        $split = asaas_client::build_split('wallet-abc', 150.0);
+        $split = asaas_client::build_split('wallet-abc', 150.0, 80.0);
 
-        $this->assertEqualsWithDelta(100.0, $split[0]['percentualValue'], 0.0001);
+        $this->assertEqualsWithDelta(80.0, $split[0]['fixedValue'], 0.0001);
     }
 
     /**
@@ -316,5 +370,48 @@ final class asaas_client_test extends \advanced_testcase {
 
         $this->expectException(\moodle_exception::class);
         $client->get_payment('pay_1');
+    }
+
+    /**
+     * Base LIQUIDO volta a usar percentualValue, e e o certo.
+     *
+     * Aqui o campo percentual nao e armadilha, e a unica saida: o liquido
+     * depende da taxa da forma de pagamento, que so o Asaas conhece, e na
+     * criacao da cobranca ele ainda nao existe. Calcular por conta propria
+     * exigiria adivinhar a taxa deles.
+     *
+     * @return void
+     */
+    public function test_base_liquida_usa_percentual(): void {
+        $split = asaas_client::build_split('wallet-abc', 9.9, 100.0, 'net');
+
+        $this->assertEqualsWithDelta(9.9, $split[0]['percentualValue'], 0.0001);
+        $this->assertArrayNotHasKey('fixedValue', $split[0]);
+    }
+
+    /**
+     * As duas bases produzem numeros diferentes, que e o motivo de existirem.
+     *
+     * @return void
+     */
+    public function test_as_bases_divergem(): void {
+        $bruto = asaas_client::build_split('w', 9.9, 100.0, 'gross');
+        $liquido = asaas_client::build_split('w', 9.9, 100.0, 'net');
+
+        // Sobre o bruto o numero e fechado em reais; sobre o liquido ele so
+        // sera conhecido quando o Asaas descontar a taxa dele.
+        $this->assertSame(9.90, $bruto[0]['fixedValue']);
+        $this->assertArrayNotHasKey('fixedValue', $liquido[0]);
+    }
+
+    /**
+     * Base desconhecida cai no bruto, e nao derruba a cobranca.
+     *
+     * @return void
+     */
+    public function test_base_desconhecida_cai_no_bruto(): void {
+        $split = asaas_client::build_split('wallet-abc', 10.0, 50.0, 'qualquer');
+
+        $this->assertEqualsWithDelta(5.0, $split[0]['fixedValue'], 0.0001);
     }
 }

@@ -16,6 +16,8 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * Vigencia do direito de acesso.
  *
@@ -25,8 +27,8 @@ namespace local_marketplace;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\entitlement
  */
+#[CoversClass(\local_marketplace\entitlement::class)]
 final class entitlement_test extends \advanced_testcase {
     /**
      * Monta um direito sem gravar.

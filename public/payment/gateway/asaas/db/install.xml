@@ -18,7 +18,9 @@
         <FIELD NAME="amount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="currency" TYPE="char" LENGTH="3" NOTNULL="true" DEFAULT="BRL" SEQUENCE="false"/>
         <FIELD NAME="feepercent" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Percentual resolvido pelo marketplace no momento da compra. Guardado porque a comissao da empresa pode mudar depois, e a venda antiga tem que continuar explicavel."/>
-        <FIELD NAME="feeamount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Comissao em moeda, calculada sobre o netValue - que e onde o Asaas aplica o split. NAO e feepercent do valor cheio."/>
+        <FIELD NAME="feeamount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Comissao em moeda efetivamente enviada no split. Calculada sobre a base em feebase."/>
+        <FIELD NAME="feebase" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="gross" SEQUENCE="false" COMMENT="Base APLICADA: gross|net. Decide o campo do split - gross vai como fixedValue calculado por nos, net vai como percentualValue para o Asaas dividir o liquido dele."/>
+        <FIELD NAME="feesource" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="site" SEQUENCE="false" COMMENT="De onde os termos vieram: policy|company|plan|site. Viaja ate a venda no marketplace."/>
         <FIELD NAME="billingtype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="UNDEFINED" SEQUENCE="false" COMMENT="UNDEFINED|PIX|BOLETO|CREDIT_CARD."/>
         <FIELD NAME="environment" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="sandbox" SEQUENCE="false" COMMENT="sandbox|production. Guardado na linha porque uma cobranca criada em homologacao NAO pode ser consultada com a chave de producao: as bases nao compartilham dados."/>
         <FIELD NAME="status" TYPE="char" LENGTH="30" NOTNULL="true" DEFAULT="PENDING" SEQUENCE="false" COMMENT="Status cru do Asaas: PENDING, RECEIVED, CONFIRMED, OVERDUE, REFUNDED."/>

@@ -1,0 +1,41 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Tema global da plataforma. Filho do Moove.
+ *
+ * @package    theme_ldg
+ * @copyright  2026 Leonardo Della Giustina
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+$plugin->component = 'theme_ldg';
+$plugin->version   = 2026083105;
+$plugin->requires  = 2026042000; // Moodle 5.2.
+$plugin->supported = [502, 502];
+$plugin->maturity  = MATURITY_ALPHA;
+$plugin->release   = '0.1.0';
+
+// O Moove NAO declara $plugin->supported, entao a versao abaixo e a unica
+// garantia de que o pai instalado e o 5.2.1 - a release que este filho conhece.
+// Subir o Moove sem reconferir os overrides de core_renderer e util\settings e
+// a forma mais provavel de este tema quebrar em silencio.
+$plugin->dependencies = [
+    'theme_boost' => 2026042000,
+    'theme_moove' => 2026042100,
+];

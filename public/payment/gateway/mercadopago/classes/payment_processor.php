@@ -60,9 +60,22 @@ class payment_processor {
         // componente usa este gateway - assim o plugin continua servindo a
         // qualquer componente do core_payment, sem depender do marketplace.
         $feepercent = 25.0;
+        $feesource = 'site';
         if (class_exists('\local_marketplace\api')) {
-            $feepercent = \local_marketplace\api::commission_for($component, $itemid);
+            $terms = \local_marketplace\api::commission_terms_for($component, $itemid);
+            $feepercent = $terms->percent;
+            $feesource = $terms->source;
         }
+
+        // A base APLICADA e sempre o bruto, e nao ha escolha: o marketplace_fee
+        // e valor absoluto, e a taxa do Mercado Pago so e conhecida depois que
+        // o pagamento acontece. Nao da para cobrar um percentual do liquido de
+        // um numero que ainda nao existe.
+        //
+        // Quando o marketplace pede 'net', esta e a divergencia que o registro
+        // existe para expor: gravamos gross, que foi o que aconteceu, em vez de
+        // gravar a intencao e deixar o relatorio mentir.
+        $feebase = 'gross';
         $fee = round($amount * ($feepercent / 100), 2);
 
         $record = (object) [
@@ -76,6 +89,9 @@ class payment_processor {
             'amount' => $amount,
             'currency' => $currency,
             'feeamount' => $fee,
+            'feepercent' => $feepercent,
+            'feebase' => $feebase,
+            'feesource' => $feesource,
             'status' => 'pending',
             'timecreated' => time(),
             'timemodified' => time(),
@@ -210,7 +226,17 @@ class payment_processor {
                     (int) $record->paymentid,
                     (int) $record->itemid,
                     (float) $record->feeamount,
-                    (string) $record->mppaymentid
+                    (string) $record->mppaymentid,
+                    // Da LINHA, e nao de nova resolucao: entre a preferencia e
+                    // o webhook a configuracao pode ter mudado, e a venda tem
+                    // que registrar o que foi cobrado.
+                    class_exists('\local_marketplace\commission')
+                        ? new \local_marketplace\commission(
+                            (float) $record->feepercent,
+                            (string) $record->feebase,
+                            (string) $record->feesource
+                        )
+                        : null
                 );
             }
 

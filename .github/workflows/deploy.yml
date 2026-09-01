@@ -209,6 +209,21 @@ jobs:
               cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
             done <<< "$LIST"
 
+            # Dependencias que sao plugin de TERCEIRO, e por isso vivem em
+            # moodle-plugins-thirdparty.txt e nao entram no $LIST acima.
+            #
+            # Hoje ha uma so: o theme_ldg e filho do theme_moove. Sem o pai
+            # aqui, o install monta um tema com parents = ['moove','boost']
+            # apontando para o nada e o job morre - nao no phpcs, no install.
+            #
+            # A lista e explicita de proposito. Copiar o arquivo de terceiros
+            # inteiro instalaria tambem o attendance, o onetopic e o tiles, que
+            # nao tem release 5.2 e derrubariam o install por outro motivo.
+            for dep in public/theme/moove; do
+              [ "$dep" = "$p" ] && continue
+              cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
+            done
+
             # Um banco POR plugin. O install nao derruba o banco anterior, e a
             # segunda rodada morria com 'database "moodle" already exists'.
             rm -rf "/tmp/moodle-$i"

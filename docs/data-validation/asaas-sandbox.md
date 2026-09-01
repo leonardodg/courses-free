@@ -218,9 +218,17 @@ curl -s -X POST "$ASAAS_BASE_URL/payments" \
   }"
 ```
 
-Repare em `netValue`: o Asaas tira a própria taxa **antes** de dividir, então 25%
-incidem sobre o líquido e não sobre os R$ 100. Não recalcule a comissão no
-relatório — use o que o gateway devolveu.
+Repare em `netValue`: o Asaas tira a própria taxa **antes** de dividir, então um
+`percentualValue` de 25% incide sobre o líquido e não sobre os R$ 100.
+
+> **A base de cálculo virou configuração.** Esta seção foi escrita quando o
+> código só sabia mandar `percentualValue`, e é por isso que os números abaixo
+> são 25% de R$ 97,52. Hoje `asaas_client::build_split()` manda `fixedValue`
+> quando a base é o bruto e `percentualValue` quando é o líquido.
+> Ver `docs/adr/0007-comissao-sobre-o-bruto.md` e a
+> [prova das duas bases](#prova-das-duas-bases-2026-09-01).
+
+Não recalcule a comissão no relatório — use o que o gateway devolveu.
 
 ### 6. Ver o QR Code
 
@@ -283,6 +291,50 @@ for K in "$ASAAS_SELLER_API_KEY" "$ASAAS_PLATFORM_API_KEY"; do
 done
 ```
 
+### Prova das duas bases (2026-09-01)
+
+Segunda execução do roteiro, agora com a base de cálculo configurável. Mesma
+cobrança de R$ 100,00 a 25%, mesmo par de contas, **cartão fictício** nas duas —
+o que iguala o `netValue` em R$ 97,52 e torna os números comparáveis.
+
+O split foi montado por `asaas_client::build_split()`, e não à mão: o que
+precisa ser provado é o código que vai para produção.
+
+| Base | Campo enviado | Cobrança | Split | **A plataforma recebe** |
+|---|---|---|---|---|
+| bruto | `fixedValue: 25.00` | `CONFIRMED` | `AWAITING_CREDIT` | **R$ 25,00** |
+| líquido | `percentualValue: 25` | `CONFIRMED` | `AWAITING_CREDIT` | **R$ 24,38** |
+
+**R$ 0,62 de diferença por venda de R$ 100,00** — e é exatamente a fatia da taxa
+do Asaas que a plataforma deixava de cobrar. O R$ 24,38 reproduz o número de
+2026-08-27 na casa do centavo, o que confirma que a base líquida continua se
+comportando como antes.
+
+A conferência que importa foi feita **do lado que recebe**, e não do lado que
+cobra:
+
+```bash
+curl -s -H "access_token: $ASAAS_PLATFORM_API_KEY" \
+     -H "User-Agent: Moodle paygw_asaas" \
+     "$ASAAS_BASE_URL/payments/splits/received?limit=10"
+```
+
+```
+AWAITING_CREDIT  R$ 25.00   <- base bruta
+AWAITING_CREDIT  R$ 24.38   <- base liquida
+```
+
+**O saldo das duas contas continua em R$ 0,00, e isso está certo.** Cartão
+liquida em D+30 no sandbox, e `AWAITING_CREDIT` quer dizer literalmente
+"esperando ser creditado". O que está provado é que o valor foi **atribuído à
+outra conta**, com o número certo. Ver o split chegar a `DONE` com o saldo se
+movendo continua pendente, e depende só de tempo.
+
+> **Armadilha do `User-Agent`.** Sem o cabeçalho, a API responde
+> `user_agent_not_informed` e recusa a requisição inteira. O `asaas_client` já
+> manda (`User-Agent: Moodle paygw_asaas`); quem chamar por `curl` à mão precisa
+> lembrar, ou vai depurar um 400 que não tem nada a ver com o corpo.
+
 As situações do split andam assim:
 
 ```
@@ -308,10 +360,13 @@ SPLIT
   valor ........... 24.38
 ```
 
-R$ 97,52 × 25% = **R$ 24,38**. A comissão incide sobre o **líquido**, não sobre
-os R$ 100 — que é exatamente o que `payment_processor::fee_from()` calcula, e a
-razão de o relatório guardar o valor devolvido pelo gateway em vez de recalcular
-25% do bruto.
+R$ 97,52 × 25% = **R$ 24,38** — o resultado de `percentualValue`, que era o que
+o código mandava no dia desta prova. Hoje ele manda `fixedValue` calculado sobre
+o bruto, e a mesma cobrança atribuiria **R$ 25,00**.
+
+O que não mudou, e é o motivo de o relatório guardar o valor devolvido pelo
+gateway em vez de recalcular: estorno parcial e split recusado alteram o número
+depois da criação.
 
 **É a primeira vez neste projeto que um split é visto sendo atribuído entre duas
 contas distintas.**
@@ -434,7 +489,8 @@ Todas encontradas contra a API real, e todas já tratadas no plugin.
 | *"É necessário enviar uma URL que use o mesmo domínio…"* | O domínio da plataforma não está cadastrado na conta do vendedor |
 | *"O evento [PAYMENT_RECEIVED_IN_CASH] é inválido"* | Nome de evento não é valor de status. Use `PAYMENT_RECEIVED` |
 | Webhook responde `401` em toda entrega | Token vazio de um dos lados, ou divergente |
-| Comissão do relatório diverge do extrato | O split incide sobre o `netValue`. Não recalcule sobre o bruto |
+| Comissão do relatório diverge do extrato | Não recalcule: guarde o valor devolvido pelo gateway, que muda com estorno e split recusado |
+| Comissão menor que o combinado | Split indo como `percentualValue`, que o Asaas aplica ao `netValue`. Tem que ser `fixedValue` |
 | Vínculo recusa salvar | Instalação sem chave de cifragem. Rode `generate_key.php` |
 
 ---

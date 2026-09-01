@@ -1,0 +1,93 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// Lugares do core e do Boost que pintam fundo com a variavel SCSS $body-bg.
+//
+// $body-bg e resolvido em tempo de COMPILACAO e nao tem variante dark: o
+// Bootstrap 5.3 tem $body-bg-dark para a custom property --bs-body-bg, mas todo
+// SCSS que escreve `background: $body-bg` direto congela o valor do modo claro.
+// O resultado no modo escuro e um painel claro com o texto branco por cima -
+// invisivel. Foi assim que a tela de gestao de cursos apareceu quebrada.
+//
+// Nao da para consertar na origem: trocar $body-bg por uma custom property
+// quebra a compilacao, porque o _root.scss do Bootstrap chama to-rgb($body-bg)
+// para gerar --bs-body-bg-rgb, e to-rgb() nao aceita var().
+//
+// Entao a correcao e por seletor, com os MESMOS seletores do core - este
+// arquivo carrega por ultimo, e em empate de especificidade quem vem depois
+// vence. Onde ha ID no seletor do core, o ID precisa estar aqui tambem.
+//
+// COMO REFAZER ESTA LISTA depois de atualizar o Moodle: baixe o CSS compilado
+// do tema e procure o valor literal do $body-bg do modo claro.
+//
+//   curl -sk "https://<site>/theme/styles.php/ldg/<rev>/all" -o /tmp/t.css
+//   grep -o '[^{}]*{[^}]*background[^}]*#f4f6fa[^}]*}' /tmp/t.css
+//
+// Se aparecer seletor que nao esta aqui, o core ganhou um lugar novo.
+
+// Fundo de pagina. Sao areas que, no modo claro, se confundem de proposito com
+// o fundo do documento - entao acompanham --ldg-bg, e nao a superficie.
+#region-main,
+.region_main_settings_menu_proxy,
+.pagelayout-maintenance .page-header-headings,
+.pagelayout-secure .page-header-headings,
+.block .block-cards .course-summaryitem,
+.modchoosernav,
+.btn-add-content,
+.message-app .message.received,
+.form-autocomplete-suggestions li.suggestions-heading,
+#page-backup-restore .filealiasesfailures .aliaseslist,
+#page-mod-quiz-edit div.question div.content div.questioncontrols,
+#page-mod-quiz-edit div.question div.content div.points,
+#page-mod-quiz-edit div.quizpage .pagecontent .pagestatus,
+#page-mod-quiz-edit div.editq div.question div.content,
+.moodle-dialogue-base .moodle-dialogue .moodle-dialogue-bd body {
+    background-color: var(--ldg-bg);
+}
+
+// Gestao de cursos e categorias. O seletor do core tem DOIS ids
+// (#course-category-listings + #category-listing), especificidade (2,1,0):
+// a regra generica de .card, que e (0,1,0), nunca chegaria perto.
+#course-category-listings.columns-3 {
+    background-color: var(--ldg-bg);
+}
+
+#course-category-listings.columns-3 #category-listing > div,
+#course-category-listings.columns-3 #course-listing > div,
+#course-category-listings.columns-3 #course-detail > div {
+    background-color: var(--ldg-surface);
+}
+
+// A linha em destaque nao pode ser um fundo opaco: no escuro ela apagaria o
+// texto. Veu translucido resolve nos dois modos com um valor so.
+#course-category-listings .listitem.highlight {
+    background-color: var(--ldg-hover-overlay);
+}
+
+// Estas duas sao cromo, e cromo e escuro nos dois modos.
+.moremenu .nav-tabs,
+.secondary-navigation .navigation {
+    background-color: transparent;
+}
+
+// Sobras de tema claro no CSS do core, com cor chapada em vez de variavel.
+.formlisting {
+    background-color: var(--ldg-surface);
+}
+
+.formlistingmore,
+.formlistingrow {
+    background-color: var(--ldg-bg);
+}

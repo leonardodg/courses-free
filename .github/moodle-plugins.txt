@@ -13,8 +13,15 @@ public/enrol/marketplace
 public/availability/condition/marketplace
 public/blocks/marketplace
 
-# --- Fase 4, ainda nao existe ---
-# public/theme/coursesfree
+# Captacao de parceiros: landing publica e fila de candidaturas. Depende do
+# local_marketplace para ler os planos, e o --extra-plugins ja o leva junto.
+public/local/partners
+
+# Tema global da plataforma. E FILHO do theme_moove, que e plugin de terceiro e
+# por isso vive em moodle-plugins-thirdparty.txt. O deploy.yml sabe disso e
+# copia os pais para o --extra-plugins; sem aquele passo, o install monta um
+# tema com $THEME->parents = ['moove','boost'] apontando para o nada.
+public/theme/ldg
 
 # --- Plugins de terceiros -----------------------------------------------------
 # INSTALADOS em 2026-08-24, da release oficial 5.2 do marketplace, com MD5

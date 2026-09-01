@@ -59,6 +59,20 @@ class company extends persistent {
                 'null' => NULL_ALLOWED,
                 'default' => null,
             ],
+            'commissionbase' => [
+                'type' => PARAM_ALPHA,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+                // O nulo entra na lista de proposito: o validador de choices do
+                // persistent roda mesmo com NULL_ALLOWED, e sem ele "herda a
+                // base do site" seria recusado como valor invalido.
+                'choices' => [null, commission::BASE_GROSS, commission::BASE_NET],
+            ],
+            'planid' => [
+                'type' => PARAM_INT,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
             'pagetitle' => [
                 'type' => PARAM_TEXT,
                 'null' => NULL_ALLOWED,
@@ -95,6 +109,29 @@ class company extends persistent {
                 'choices' => [self::STATUS_ACTIVE, self::STATUS_SUSPENDED],
             ],
         ];
+    }
+
+    /**
+     * O CNPJ, quando informado, precisa ser um numero valido.
+     *
+     * Continua OPCIONAL: pessoa fisica vende sem CNPJ, e essa decisao nao muda.
+     * O que muda e que catorze digitos quaisquer deixam de passar - antes disto
+     * o campo era so PARAM_ALPHANUM, e um erro de digitacao so aparecia quando
+     * o gateway recusasse a cobranca.
+     *
+     * @param string|null $value
+     * @return true|lang_string
+     */
+    protected function validate_cnpj($value) {
+        if ($value === null || $value === '') {
+            return true;
+        }
+
+        if (!cnpj::is_valid((string) $value)) {
+            return new lang_string('errorcnpjinvalid', 'local_marketplace');
+        }
+
+        return true;
     }
 
     /**
@@ -358,6 +395,57 @@ class company extends persistent {
         }
 
         return $out;
+    }
+
+    /**
+     * Contexto da categoria da empresa, onde vivem as capabilities e o papel.
+     *
+     * @return \context
+     */
+    /**
+     * O plano precisa existir e estar ativo.
+     *
+     * A chave estrangeira do XMLDB e documental no Moodle - a integridade e
+     * garantida aqui. Plano arquivado e recusado de proposito: arquivar existe
+     * para tirar um plano de venda, e aceitar novo vinculo o traria de volta
+     * pela porta dos fundos.
+     *
+     * @param int|null $value
+     * @return true|lang_string
+     */
+    protected function validate_planid($value) {
+        if ($value === null) {
+            return true;
+        }
+
+        $plan = plan::get_record(['id' => (int) $value]);
+
+        if (!$plan) {
+            return new lang_string('errorplannotfound', 'local_marketplace');
+        }
+
+        if ($plan->get('status') !== plan::STATUS_ACTIVE) {
+            return new lang_string('errorplanarchived', 'local_marketplace');
+        }
+
+        return true;
+    }
+
+    /**
+     * Plano contratado por esta empresa, se houver.
+     *
+     * @return plan|null
+     */
+    public function get_plan(): ?plan {
+        $planid = $this->get('planid');
+
+        if (empty($planid)) {
+            return null;
+        }
+
+        $plan = plan::get_record(['id' => (int) $planid]);
+
+        return $plan ?: null;
     }
 
     /**
