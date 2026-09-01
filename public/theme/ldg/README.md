@@ -3,6 +3,44 @@
 Tema global da plataforma. É **filho do `theme_moove`**, e o Moove é plugin de
 terceiro versionado no repositório.
 
+Além da identidade visual, ele carrega duas funções: o **menu lateral de
+navegação** recolhível em trilho de ícones, e a decisão de mostrar a **landing de
+parceria** como home para visitante anônimo.
+
+## Dependências
+
+| Depende de | Versão | Por quê |
+|---|---|---|
+| `theme_moove` | 2026042100+ | é o pai; sem ele o filho não compila |
+| `theme_boost` | 2026042000+ | avô, e precisa estar em `$THEME->parents` |
+
+**Não declara `local_partners`**, de propósito. A landing é dependência
+*opcional*, resolvida por `class_exists()` — sem o plugin, `/` cai no marketing
+do próprio Moove e o site não fica sem home. É o que permite o `moodle-plugin-ci`
+instalar o tema sozinho.
+
+> **Armadilha de CI:** o `theme_moove` vive em
+> `.github/moodle-plugins-thirdparty.txt`, que **não** entra no `--extra-plugins`
+> do workflow. Acrescentar este tema à lista sem levar o pai junto instala um
+> filho órfão, e a falha é dura.
+
+## O que precisa configurar
+
+`/admin/settings.php?section=themesettingldg`
+
+| Aba | Settings |
+|---|---|
+| Marca | `logo`, `logodark`, `favicon`, `loginbg`, `brandcolor`, `secondarymenucolor`, `fontsite` |
+| Cor | `defaultcolormode`, `enablecolormodetoggle` |
+| Avançado | `preset`, `presetfiles`, `scsspre`, `scss`, `googleanalytics` |
+
+**Depois de trocar qualquer asset, purgue os caches.** O SCSS e as URLs de
+arquivo carregam `theme_get_revision()`; sem purgar, a logo antiga continua sendo
+servida e parece que o upload não funcionou.
+
+Para a landing virar a home, ver o README do `local_partners` — são duas
+configurações, uma em cada plugin.
+
 ## O que NÃO fazer aqui
 
 **Não edite `public/theme/moove/`.** É código de upstream. Toda customização
@@ -46,19 +84,44 @@ Moove carrega `'moove'` no construtor.
 **Ao atualizar o `theme_moove`, reconfira esta tabela.** Um `theme_config::load`
 novo no pai vira um bug silencioso aqui.
 
-## Dark é o tema, não um modo
+## Escuro é o padrão, claro é suportado
 
-O design system da marca é dark-first. O modo escuro do Moove é uma *user
-preference* (`dark-mode-on`), e visitante anônimo não tem preferência nenhuma —
-a landing de captação e a tela de login, que são as duas páginas anônimas,
-sairiam **claras** para todo o público-alvo.
+O design system da marca é dark-first, mas os **dois** modos são de primeira
+classe. No claro, o azul escuro predomina — não é o tema claro do Moove com outra
+cor de destaque.
 
-Por isso `theme_ldg/forcedarkmode` nasce ligado: `data-bs-theme='dark'` fixo, o
-botão de alternar escondido, e a paleta escura entra como variável do Bootstrap
-no pre-SCSS. O setting existe para desligar sem mexer em código.
+O modo é resolvido em três estados por `\theme_ldg\util\settings::color_mode()`:
+
+```
+preferência do usuário (dark-mode-on)   ← se existir, vence
+        ↓ ausente
+theme_ldg/defaultcolormode              ← escuro por padrão
+```
+
+O terceiro estado é o que importa: **visitante anônimo não tem user preference**.
+A landing de captação e a tela de login são as duas páginas anônimas, e sem esse
+degrau elas sairiam claras para todo o público-alvo. Com ele, saem no padrão
+configurado.
+
+| Setting | Padrão | O que faz |
+|---|---|---|
+| `defaultcolormode` | `dark` | modo de quem ainda não escolheu |
+| `enablecolormodetoggle` | ligado | mostra o botão de alternar na navbar |
+
+**`enablecolormodetoggle` é `admin_setting_configcheckbox`, e não
+`configselect`.** Com um select cuja primeira opção era "Não", salvar qualquer
+outra coisa na mesma página gravava `0` junto — o `config_log` mostrou o toggle
+indo de `[1]` para `[0]` no mesmo POST do upload de logo, e o sintoma foi "sumiu
+a opção de modo escuro".
 
 Custo aceito: a área de edição do TinyMCE (`$THEME->editor_scss`) continua clara.
 É tela de autoria, não pública.
+
+### O modo claro precisou de `_corefixes.scss`
+
+Vinte e dois seletores do core do Moodle chegam com `$body-bg` embutido no CSS
+compilado, o que deixava telas inteiras ilegíveis no escuro — a de gestão de
+cursos foi a primeira a aparecer. Ver a seção sobre esse arquivo abaixo.
 
 ## `loginbg`, e não `loginbgimg`
 

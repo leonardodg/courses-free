@@ -1,6 +1,6 @@
 # Estado do marketplace e o que falta
 
-Atualizado em 2026-08-25.
+Atualizado em 2026-09-01.
 
 ## O que ja funciona
 
@@ -10,17 +10,24 @@ matriculado.
 
 | Componente | Estado |
 |---|---|
-| `local_marketplace` | empresas, vendedores, ofertas, direitos, relatorios, vitrine configuravel, telas de admin |
+| `local_marketplace` | empresas, vendedores, ofertas, direitos, relatorios, vitrine, planos comerciais, telas de admin |
+| `local_partners` | landing publica, candidatura com confirmacao de e-mail, fila e aprovacao que provisiona a empresa |
+| `theme_ldg` | tema filho do Moove: dark e claro, menu lateral recolhivel, landing como home |
 | `paygw_mercadopago` | OAuth com PKCE, vincular/desvincular, `marketplace_fee`, webhook, modo de teste |
+| `paygw_asaas` | Pix, boleto e cartao, split provado, credencial cifrada, webhook autenticado |
 | `enrol_marketplace` | matricula por diferenca, a partir dos direitos vigentes |
 | `availability_marketplace` | secao liberada por oferta especifica, com botao de compra |
 | `block_marketplace` | assinaturas do aluno no Dashboard |
-| Infra | VPS Oracle, deploy automatico no push para `dev`, TLS por certbot, CI validando os cinco plugins |
+| Infra | VPS Oracle, deploy automatico no push para `dev`, TLS por certbot, CI validando os plugins |
 
-**33 testes PHPUnit, zero violacoes de phpcs**, rodados no CI a cada push. O job
+**187 testes PHPUnit, zero violacoes de phpcs**, rodados no CI a cada push. O job
 de validacao bloqueia o deploy quando falha.
 
-Tres idiomas completos: `en`, `pt_br` e `es`, com 261 chaves cada.
+Tres idiomas completos: `en`, `pt_br` e `es`, com paridade exata de chaves.
+
+**A base de calculo da comissao virou configuracao** (ADR-0007), e os termos
+aplicados - percentual, base e origem - sao fotografados em cada venda. Mudar a
+configuracao nao reescreve o passado.
 
 ## O que NAO foi validado
 
@@ -74,11 +81,15 @@ Hoje o aluno recompra quando vence, avisado por e-mail cinco dias antes. Decisao
 de negocio pendente: aceitar assim, ou montar cobranca recorrente fora do split
 com repasse manual - o que muda o modelo de dados e o relatorio.
 
-### Pagina publica de parceria
+### Trava de resolucao de video
 
-Desenho decidido - formulario aberto, e-mail para o admin, tabela guardando os
-leads - e nao construido. E o que transforma o marketplace em algo que capta
-vendedor sozinho.
+**E a lacuna mais cara do projeto.** As faixas de resolucao por ticket existem no
+banco (`local_marketplace_plan_tier`) e aparecem na vitrine, mas **nada as
+aplica**: um curso barato serviria 4K se o video existisse em 4K.
+
+A margem do plano de entrada depende inteiramente disso, e a alternativa
+descartada era cobrar taxa fixa por venda - que e justamente o argumento
+comercial contra os concorrentes. Ver ADR-0005.
 
 ## Fase 3 - dominio por vendedor
 
@@ -108,11 +119,19 @@ precisa estar claro na UX de checkout.
 
 ## Fase 4 - captacao e relatorio
 
-O relatorio financeiro **esta feito**: transacoes, cursos vendidos e assinaturas,
-com comissao por empresa.
+**Concluida em 2026-09-01.**
 
-O tema de captacao foi abandonado por qualidade de codigo. Se voltar, comeca do
-zero como tema filho do `boost_union`.
+O relatorio financeiro mostra transacoes, cursos vendidos e assinaturas, com a
+comissao por empresa e **os termos aplicados em cada venda**.
+
+A captacao foi construida no `local_partners`: landing publica, candidatura com
+confirmacao de e-mail opcional, anti-robo em tres camadas e aprovacao que chama
+`api::create_company()`.
+
+O tema de captacao havia sido abandonado por qualidade de codigo. Voltou como
+`theme_ldg`, **filho do `theme_moove`** - e nao do `boost_union`, como se
+imaginava. O Moove ja resolvia a base visual, e o custo passou a ser sobrescrever
+os quatro metodos dele que carregam `theme_config::load('moove')` fixo.
 
 ## Fase 5 - conteudo hospedado na plataforma
 

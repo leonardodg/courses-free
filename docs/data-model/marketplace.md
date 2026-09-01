@@ -89,6 +89,8 @@ A empresa vendedora. Uma empresa = uma categoria de cursos.
 | `themename` | Tema da categoria. Depende de `$CFG->allowcategorythemes`, garantido pelo `install.php`. Vazio limpa e volta ao tema do site. |
 | `hostname` | Único. Domínio próprio do vendedor. Resolve pelo mapa gerado — ver *Domínio por vendedor* abaixo. |
 | `commissionpct` | Comissão negociada, de 0 a 100. **Nulo herda o padrão do site** — nulo e zero são coisas diferentes. |
+| `commissionbase` | `gross` ou `net`. **Nulo herda a base do site.** Só é lida quando `commissionpct` também está preenchida: a base sai do mesmo degrau que deu a taxa. |
+| `planid` | Plano contratado. Nulo = provisionada antes de existirem planos, ou fora de plano — a cadeia pula o degrau. |
 | `status` | `active` ou `suspended`. Não há aprovação manual: os portões são a conta de pagamento e o papel restrito. |
 
 ### `local_marketplace_member`
@@ -151,9 +153,22 @@ verdade — duplicar daria duas versões do mesmo número financeiro.
 | Campo | Para que serve |
 |---|---|
 | `paymentid` | `payments.id` do core, único. Uma venda por pagamento. |
-| `feeamount` | Comissão **efetivamente** enviada, em moeda. Não recalcule a partir do percentual: cada gateway deduz as próprias taxas numa ordem diferente. |
+| `feeamount` | Comissão **efetivamente** enviada, em moeda. Não recalcule a partir do percentual: estorno parcial e split recusado mudam este valor depois da criação. |
+| `feepercent` | Percentual **aplicado** nesta venda. |
+| `feebase` | Base **aplicada**: `gross` ou `net`. |
+| `feesource` | De onde os termos vieram: `policy` · `company` · `plan` · `site`. |
 | `externalid` | Id da transação no gateway, para conciliar com o extrato dele. |
 | `companyid` | Desnormalizado: o relatório filtra por empresa a cada página. |
+
+**Os três campos de termo são uma FOTO, e é o ponto deles.** A taxa da empresa, o
+plano dela e o padrão do site mudam; sem a foto, uma venda de seis meses atrás só
+poderia ser explicada relendo a configuração de hoje, e o relatório passaria a
+contar uma história diferente da do extrato.
+
+`feebase` guarda o que foi **aplicado**, e não o que estava configurado — no
+Mercado Pago não há como cobrar sobre o líquido, então lá a venda registra
+`gross` mesmo com `net` configurado. Ver
+[ADR-0007](../adr/0007-comissao-sobre-o-bruto.md).
 
 Existe porque o relatório lia a tabela do `paygw_mercadopago` direto. Com um
 segundo gateway aquilo passaria a **mentir por omissão** — a venda existiria, o
@@ -180,6 +195,70 @@ Política de hospedagem e comissão, por curso.
 |---|---|
 | `hostingtype` | `external` ou `platform`. Hoje só `external` é aceito — `platform` é recusado na validação até a decisão de negócio da Fase 5. |
 | `commissionpct` | Percentual retido. Só se aplica em oferta de **curso único**. |
+| `commissionbase` | `gross` ou `net`. Nulo herda a base do site. |
+
+### `local_marketplace_plan`
+
+O plano comercial. Nasce de um seed e é **editável por tela** — preço muda por
+decisão comercial, não por deploy.
+
+| Campo | Para que serve |
+|---|---|
+| `shortname` | Único, e é a **chave estável**: `starter` · `pro` · `scale`. O `name` muda com o marketing; este não. |
+| `monthlyfee` | Mensalidade. **Ainda não é cobrada** — a recorrência está bloqueada. |
+| `commissionpct` | Comissão do plano, de 0 a 100. **NOT NULL**, ao contrário da empresa: o nulo da empresa significa "não negociamos nada", e um plano sempre negociou. |
+| `commissionbase` | `gross` ou `net`. Nulo herda a base do site — é o plano que só define a taxa e aceita a política geral. |
+| `country` / `currency` | Valor tem país. Plano em outro país é outra linha, pela mesma razão da oferta. |
+| `hostingmodel` | `native` (a plataforma absorve o custo de vídeo) ou `byos` (o produtor conecta a chave dele). |
+| `ispublic` | Aparece na landing. Plano sob medida existe sem estar na vitrine. |
+| `status` | `active` ou `archived`. **Plano nunca é apagado** — há empresa apontando para ele e histórico de comissão dependendo. |
+
+O seed é **idempotente por `shortname` e só insere, nunca faz update**. Um deploy
+não pode sobrescrever preço que alguém ajustou.
+
+### `local_marketplace_plan_tier`
+
+A trava de resolução por faixa de ticket, do plano nativo.
+
+| Campo | Para que serve |
+|---|---|
+| `planid` | Plano dono da faixa. |
+| `maxprice` | Teto da faixa. **`NULL` = a última faixa, a sem teto.** Guardar um número enorme transformaria "sem limite" em "limite que alguém escolheu". |
+| `maxresolution` | `720p` · `1080p` · `1440p` · `4k`. |
+| `sortorder` | A landing itera ordenado. |
+
+É tabela, e não JSON em coluna, por três motivos: a base não usa JSON em coluna
+nenhuma, a landing precisa iterar ordenado, e um dia alguém vai perguntar ao
+banco qual plano libera 4K.
+
+> **A trava ainda não é aplicada em lugar nenhum.** Estes dados existem e
+> aparecem na vitrine, mas nada limita a resolução do player. Ver
+> [ADR-0005](../adr/0005-trava-de-resolucao-por-ticket.md).
+
+### `local_partners_application`
+
+A candidatura de empresa parceira. Vive no `local_partners`.
+
+**Não é uma empresa: é um pedido.** Aprovar cria uma **categoria de curso**, que
+é objeto global do site — por isso existe uma fila, e alguém decide.
+
+| Campo | Para que serve |
+|---|---|
+| `status` | `unconfirmed` · `pending` · `approved` · `rejected`. A `unconfirmed` **não entra na fila**: é envio anônimo que ainda não clicou no link do e-mail. Depois de decidida nunca volta para `pending` — reenvio é linha nova, para o histórico não sumir. |
+| `userid` | Quem enviou, quando veio de alguém autenticado. É o **dono natural** da empresa: quem já tem perfil não precisa de conta nova nem de confirmar e-mail que o site já confirmou. |
+| `confirmtoken` | Token do link de confirmação. Uso único, apagado assim que confirma. |
+| `timeconfirmed` | Quando o e-mail foi provado. Nulo em candidatura que nunca precisou confirmar. |
+| `planid` | Plano escolhido na landing. É **intenção, não contrato** — quem grava o plano na empresa é a aprovação. |
+| `companyid` | Empresa criada na aprovação. É o que torna **aprovar idempotente**: preenchido, a segunda aprovação não cria uma segunda categoria. |
+| `submitterip` | Serve ao limite de taxa e a nada mais. Sai no privacy provider e é apagado junto com a candidatura. |
+
+`planid` **sem chave estrangeira declarada**: ela apontaria para tabela de outro
+plugin, e o `check_database_schema` reclamaria num ambiente em que a ordem de
+desinstalação divergisse. A integridade vem do `validate_planid()` do persistent.
+
+Candidatura nunca confirmada é apagada pela tarefa
+`\local_partners\task\purge_unconfirmed` — o formulário é público e anônimo, e
+sem prazo a tabela vira depósito de dado pessoal de gente que talvez nem exista.
 
 ### `paygw_mercadopago`
 
@@ -189,8 +268,15 @@ Transações. Vive no plugin do gateway, não no marketplace.
 |---|---|
 | `externalreference` | A chave de ligação. O ID do pagamento só existe **depois** que o aluno paga, então precisamos de algo nosso acompanhando desde a criação da preferência. |
 | `accountid` | Conta que recebe. É dela que sai o token para consultar o pagamento. |
-| `feeamount` | `marketplace_fee` enviado. **Não é 25% do bruto**: a taxa do Mercado Pago sai antes e a comissão incide sobre o resto. |
+| `feeamount` | `marketplace_fee` enviado, em moeda. É **valor absoluto**: a plataforma recebe exatamente isto. |
+| `feepercent` | Percentual aplicado. |
+| `feebase` | Aqui é **sempre `gross`**, e não por escolha: o `marketplace_fee` é absoluto e a taxa do MP só é conhecida depois. Com `net` configurado, a linha registra `gross` — que é o que de fato aconteceu. |
+| `feesource` | `policy` · `company` · `plan` · `site`. |
 | `status` | Espelha o Mercado Pago: `pending` · `approved` · `rejected` · `refunded` · `cancelled`. |
+
+> **Não confunda com a ordem de dedução.** A taxa do Mercado Pago sai primeiro,
+> do lado do vendedor, e o `marketplace_fee` sai do que sobra. Isso muda **quem
+> absorve a taxa**, e não quanto a plataforma recebe.
 
 ### `paygw_asaas`
 
@@ -201,6 +287,8 @@ Transações do Asaas. Mesma ideia, com duas diferenças que valem.
 | `environment` | `sandbox` ou `production`. Guardado **na linha** porque uma cobrança criada em homologação não pode ser consultada com a chave de produção: as bases não compartilham dados. |
 | `feepercent` | Percentual resolvido no momento da compra. Guardado porque a comissão da empresa pode mudar depois, e a venda antiga precisa continuar explicável. |
 | `feeamount` | Comissão em moeda, calculada sobre o valor **bruto**: R$ 100 a 25% são R$ 25,00. Vai aos gateways como valor absoluto (`fixedValue` no Asaas, `marketplace_fee` no Mercado Pago), e não como percentual — o `percentualValue` do Asaas incidiria sobre o `netValue` e devolveria menos. Depois da criação vale o que o gateway devolveu. |
+| `feebase` | Base aplicada. **Decide o campo do split:** `gross` vai como `fixedValue` calculado por nós, `net` vai como `percentualValue` para o Asaas dividir o líquido dele. |
+| `feesource` | `policy` · `company` · `plan` · `site`. Viaja até a venda no marketplace. |
 | `billingtype` | `UNDEFINED` deixa o aluno escolher · `PIX` · `BOLETO` · `CREDIT_CARD`. |
 
 A credencial do vendedor **não** fica aqui: vive cifrada no
