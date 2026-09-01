@@ -16,6 +16,7 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 use local_marketplace\payment\service_provider;
 
 /**
@@ -28,8 +29,8 @@ use local_marketplace\payment\service_provider;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\payment\service_provider
  */
+#[CoversClass(\local_marketplace\payment\service_provider::class)]
 final class service_provider_test extends \advanced_testcase {
     /** @var \stdClass */
     protected $user;
@@ -115,8 +116,8 @@ final class service_provider_test extends \advanced_testcase {
         $userid = (int) $this->user->id;
 
         service_provider::deliver_order('offer', (int) $offer->get('id'), 1, $userid);
-        $first = reset(entitlement::get_active_for_user($userid));
-        $firstend = (int) $first->get('timeend');
+        $active = entitlement::get_active_for_user($userid);
+        $firstend = (int) reset($active)->get('timeend');
 
         service_provider::deliver_order('offer', (int) $offer->get('id'), 2, $userid);
 
@@ -145,10 +146,12 @@ final class service_provider_test extends \advanced_testcase {
         $userid = (int) $this->user->id;
 
         service_provider::deliver_order('offer', (int) $offer->get('id'), 1, $userid);
-        $before = (int) reset(entitlement::get_active_for_user($userid))->get('timeend');
+        $active = entitlement::get_active_for_user($userid);
+        $before = (int) reset($active)->get('timeend');
 
         service_provider::deliver_order('offer', (int) $offer->get('id'), 2, $userid);
-        $after = (int) reset(entitlement::get_active_for_user($userid))->get('timeend');
+        $active = entitlement::get_active_for_user($userid);
+        $after = (int) reset($active)->get('timeend');
 
         $this->assertSame($before + (30 * DAYSECS), $after);
     }
@@ -167,7 +170,8 @@ final class service_provider_test extends \advanced_testcase {
         service_provider::deliver_order('offer', (int) $offer->get('id'), 1, $userid);
         service_provider::deliver_order('offer', (int) $offer->get('id'), 2, $userid);
 
-        $ent = reset(entitlement::get_active_for_user($userid));
+        $active = entitlement::get_active_for_user($userid);
+        $ent = reset($active);
         $this->assertSame(2, (int) $ent->get('cycles'));
         $this->assertSame(0, (int) $ent->get('timeend'));
     }

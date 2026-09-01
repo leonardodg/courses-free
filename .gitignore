@@ -65,6 +65,14 @@ UPGRADING-CURRENT.md
 .phpunit.cache
 tsconfig.aliases.json
 
+# Documentacao CONFIDENCIAL de negocio: planos, margem, custo, comparacao com
+# concorrente. O remote origin e um repositorio PUBLICO, e o deploy faz rsync de
+# docs/ para a VPS - um "git add ." aqui publicaria calculo de lucro.
+#
+# O que pode entrar em documento versionado e so o que a landing EXIBE: preco,
+# percentual de comissao, resolucao por faixa. Margem e custo, nunca.
+/docs/private/
+
 # Segredos e certificados locais de dev - nunca versionar.
 # Os arquivos .example ao lado servem de template.
 .devcontainer/secrets/

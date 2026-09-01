@@ -1,0 +1,179 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_partners/landing
+
+    Pagina de captacao de empresas parceiras.
+
+    Template BURRO de proposito: so secoes e lacos, nenhuma logica. Todo texto
+    vem de string de idioma e todo numero vem do banco, preparado pelo
+    landing_page. Uma tabela de precos escrita aqui envelheceria no primeiro
+    reajuste, e o visitante veria um numero que o sistema nao pratica.
+
+    Context variables required for this template:
+    * applyurl - URL do formulario de candidatura
+    * heroimage - URL da imagem do hero
+    * plans - array de planos: name, description, isfree, monthlyfee,
+              commissionpct, isbyos, hosting, tiers, hastiers
+    * hasplans - boolean
+    * steps - array de { number, title, text }
+    * faq - array de { id, question, answer }
+
+    Example context (json):
+    {
+        "applyurl": "/local/partners/apply.php",
+        "heroimage": "/local/partners/pix/hero.jpg",
+        "hasplans": true,
+        "plans": [
+            {
+                "name": "Starter",
+                "description": "Zero monthly fee.",
+                "isfree": true,
+                "monthlyfee": "R$ 0,00",
+                "commissionpct": "9.90",
+                "isbyos": false,
+                "hosting": "Hosting included",
+                "hastiers": true,
+                "tiers": [{"label": "Up to R$ 49.90", "resolution": "720p"}]
+            }
+        ],
+        "steps": [{"number": 1, "title": "Apply", "text": "Fill the form."}],
+        "faq": [{"id": "f1", "question": "How much?", "answer": "9.9%."}]
+    }
+}}
+<div class="ldg-landing">
+
+    <section class="ldg-landing-hero" style="background-image: url('{{heroimage}}');">
+        <div class="ldg-landing-inner">
+            <h1>{{#str}}herotitle, local_partners{{/str}}</h1>
+            <p class="ldg-landing-lead">{{#str}}herolead, local_partners{{/str}}</p>
+            <a href="{{applyurl}}" class="btn btn-primary btn-lg">{{#str}}heroctatext, local_partners{{/str}}</a>
+        </div>
+    </section>
+
+    <section class="ldg-landing-value">
+        <div class="ldg-landing-inner">
+            <h2>{{#str}}valuetitle, local_partners{{/str}}</h2>
+            <div class="ldg-landing-grid">
+                <div class="ldg-landing-card">
+                    <h3>{{#str}}value1title, local_partners{{/str}}</h3>
+                    <p>{{#str}}value1text, local_partners{{/str}}</p>
+                </div>
+                <div class="ldg-landing-card">
+                    <h3>{{#str}}value2title, local_partners{{/str}}</h3>
+                    <p>{{#str}}value2text, local_partners{{/str}}</p>
+                </div>
+                <div class="ldg-landing-card">
+                    <h3>{{#str}}value3title, local_partners{{/str}}</h3>
+                    <p>{{#str}}value3text, local_partners{{/str}}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{#hasplans}}
+        <section class="ldg-landing-plans" id="planos">
+            <div class="ldg-landing-inner">
+                <h2>{{#str}}planstitle, local_partners{{/str}}</h2>
+                <p class="ldg-landing-lead">{{#str}}planslead, local_partners{{/str}}</p>
+
+                <div class="ldg-landing-grid">
+                    {{#plans}}
+                        <div class="ldg-landing-plan{{#isfree}} ldg-landing-plan-featured{{/isfree}}">
+                            <h3>{{name}}</h3>
+
+                            <p class="ldg-landing-price">
+                                {{#isfree}}{{#str}}planfree, local_partners{{/str}}{{/isfree}}
+                                {{^isfree}}{{monthlyfee}}{{/isfree}}
+                            </p>
+
+                            <p class="ldg-landing-commission">
+                                {{#str}}plancommission, local_partners, {{commissionpct}}{{/str}}
+                            </p>
+
+                            <p class="ldg-landing-plandesc">{{description}}</p>
+                            <p class="ldg-landing-hosting">{{hosting}}</p>
+
+                            {{#hastiers}}
+                                <ul class="ldg-landing-tiers">
+                                    {{#tiers}}
+                                        <li><span>{{label}}</span> <strong>{{resolution}}</strong></li>
+                                    {{/tiers}}
+                                </ul>
+                            {{/hastiers}}
+
+                            <a href="{{applyurl}}" class="btn btn-outline-primary">
+                                {{#str}}planctatext, local_partners{{/str}}
+                            </a>
+                        </div>
+                    {{/plans}}
+                </div>
+
+                <p class="ldg-landing-note">{{#str}}plansnote, local_partners{{/str}}</p>
+            </div>
+        </section>
+    {{/hasplans}}
+
+    <section class="ldg-landing-how">
+        <div class="ldg-landing-inner">
+            <h2>{{#str}}howtitle, local_partners{{/str}}</h2>
+            <ol class="ldg-landing-steps">
+                {{#steps}}
+                    <li>
+                        <span class="ldg-landing-stepnumber">{{number}}</span>
+                        <div>
+                            <h3>{{title}}</h3>
+                            <p>{{text}}</p>
+                        </div>
+                    </li>
+                {{/steps}}
+            </ol>
+        </div>
+    </section>
+
+    <section class="ldg-landing-faq">
+        <div class="ldg-landing-inner">
+            <h2>{{#str}}faqtitle, local_partners{{/str}}</h2>
+            <div class="accordion" id="ldg-landing-faq">
+                {{#faq}}
+                    <div class="accordion-item">
+                        <h3 class="accordion-header" id="{{id}}-header">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#{{id}}"
+                                    aria-expanded="false" aria-controls="{{id}}">
+                                {{question}}
+                            </button>
+                        </h3>
+                        <div id="{{id}}" class="accordion-collapse collapse"
+                             aria-labelledby="{{id}}-header" data-bs-parent="#ldg-landing-faq">
+                            <div class="accordion-body">{{answer}}</div>
+                        </div>
+                    </div>
+                {{/faq}}
+            </div>
+        </div>
+    </section>
+
+    <section class="ldg-landing-cta">
+        <div class="ldg-landing-inner">
+            <h2>{{#str}}ctatitle, local_partners{{/str}}</h2>
+            <p class="ldg-landing-lead">{{#str}}ctalead, local_partners{{/str}}</p>
+            <a href="{{applyurl}}" class="btn btn-primary btn-lg">{{#str}}heroctatext, local_partners{{/str}}</a>
+        </div>
+    </section>
+
+</div>

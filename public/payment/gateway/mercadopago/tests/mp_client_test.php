@@ -16,6 +16,8 @@
 
 namespace paygw_mercadopago;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * Partes puras do cliente do Mercado Pago.
  *
@@ -26,8 +28,8 @@ namespace paygw_mercadopago;
  * @package    paygw_mercadopago
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \paygw_mercadopago\mp_client
  */
+#[CoversClass(\paygw_mercadopago\mp_client::class)]
 final class mp_client_test extends \advanced_testcase {
     /**
      * O verifier respeita o tamanho exigido pela RFC 7636.

@@ -47,6 +47,7 @@ function xmldb_local_marketplace_install() {
     global $DB;
 
     local_marketplace_require_category_themes();
+    local_marketplace_seed_plans();
 
     // As capabilities do db/access.php ainda NAO estao registradas neste ponto:
     // o Moodle roda esta funcao antes de processar o access.php. Sem isto,
@@ -127,4 +128,93 @@ function local_marketplace_require_category_themes() {
         set_config('allowcategorythemes', 1);
         theme_reset_static_caches();
     }
+}
+
+/**
+ * Semeia os planos comerciais de uma instalacao nova.
+ *
+ * IDEMPOTENTE por shortname, e so INSERE: nunca faz update. A razao e que preco
+ * muda por decisao comercial, e nao por deploy. Depois da instalacao, tudo se
+ * ajusta em /local/marketplace/admin/plan_edit.php - se este seed atualizasse
+ * as linhas, o proximo upgrade desfaria a tabela de precos do usuario sem aviso.
+ *
+ * Os valores sao os que a plataforma EXIBE em publico. Margem, custo de banda e
+ * comparacao com concorrente nao entram aqui nem em nenhum arquivo versionado.
+ * Sao iniciais e provisorios de proposito: a tela existe para corrigi-los sem
+ * tocar em codigo.
+ *
+ * @return int Quantos planos foram criados.
+ */
+function local_marketplace_seed_plans(): int {
+    $planos = [
+        [
+            'shortname' => 'starter',
+            'name' => get_string('planstartername', 'local_marketplace'),
+            'description' => get_string('planstarterdesc', 'local_marketplace'),
+            'monthlyfee' => 0,
+            'commissionpct' => 9.9,
+            'hostingmodel' => \local_marketplace\plan::HOSTING_NATIVE,
+            'sortorder' => 10,
+            // A trava de resolucao so existe no plano em que a banda e nossa.
+            //
+            // O teto do meio e 200,00 e nao 199,90 de proposito. A regra
+            // comercial diz "R$ 50,00 a R$ 199,90: 1080p" e "acima de R$ 200,00:
+            // 4K" - entre os dois ha uma faixa de dez centavos que o texto nao
+            // cobre, e um curso de R$ 199,95 cairia no 4K por omissao, que e
+            // exatamente o que a trava existe para evitar. Com 200,00 o teto e
+            // inclusive e a faixa seguinte comeca de fato ACIMA de 200.
+            'tiers' => [
+                ['maxprice' => 49.90, 'maxresolution' => '720p'],
+                ['maxprice' => 200.00, 'maxresolution' => '1080p'],
+                ['maxprice' => null, 'maxresolution' => '4k'],
+            ],
+        ],
+        [
+            'shortname' => 'pro',
+            'name' => get_string('planproname', 'local_marketplace'),
+            'description' => get_string('planprodesc', 'local_marketplace'),
+            'monthlyfee' => 97,
+            'commissionpct' => 3.9,
+            'hostingmodel' => \local_marketplace\plan::HOSTING_BYOS,
+            'sortorder' => 20,
+            // Sem faixas: no BYOS quem paga a banda e o produtor, entao nao ha
+            // margem nossa para proteger.
+            'tiers' => [],
+        ],
+        [
+            'shortname' => 'scale',
+            'name' => get_string('planscalename', 'local_marketplace'),
+            'description' => get_string('planscaledesc', 'local_marketplace'),
+            'monthlyfee' => 197,
+            'commissionpct' => 0,
+            'hostingmodel' => \local_marketplace\plan::HOSTING_BYOS,
+            'sortorder' => 30,
+            'tiers' => [],
+        ],
+    ];
+
+    $created = 0;
+
+    foreach ($planos as $dados) {
+        if (\local_marketplace\plan::get_record_by_shortname($dados['shortname'])) {
+            continue;
+        }
+
+        $tiers = $dados['tiers'];
+        unset($dados['tiers']);
+
+        $plan = new \local_marketplace\plan(0, (object) $dados);
+        $plan->create();
+        $created++;
+
+        $ordem = 10;
+        foreach ($tiers as $tier) {
+            $tier['planid'] = (int) $plan->get('id');
+            $tier['sortorder'] = $ordem;
+            (new \local_marketplace\plan_tier(0, (object) $tier))->create();
+            $ordem += 10;
+        }
+    }
+
+    return $created;
 }

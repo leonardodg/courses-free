@@ -17,7 +17,10 @@
         <FIELD NAME="accountid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Conta que recebe: e dela que sai o token para consultar o pagamento."/>
         <FIELD NAME="amount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="currency" TYPE="char" LENGTH="3" NOTNULL="true" DEFAULT="BRL" SEQUENCE="false"/>
-        <FIELD NAME="feeamount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="marketplace_fee enviado. Para conferir contra o extrato: a taxa do MP sai antes, entao este valor NAO e 25% do bruto."/>
+        <FIELD NAME="feeamount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="marketplace_fee enviado, em moeda. E valor absoluto: a plataforma recebe exatamente isto. A taxa do MP sai antes, do lado do vendedor - o que muda quem absorve a taxa, e nao quanto a plataforma recebe."/>
+        <FIELD NAME="feepercent" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Percentual APLICADO. Guardado porque a taxa da empresa muda, e sem ele a linha nao explica como chegou naquele marketplace_fee."/>
+        <FIELD NAME="feebase" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="gross" SEQUENCE="false" COMMENT="Base APLICADA. Aqui e SEMPRE gross, e nao por escolha: o marketplace_fee e valor absoluto e a taxa do MP so e conhecida depois, entao nao ha como cobrar sobre o liquido. Com net configurado, esta coluna registra gross - que e o que de fato aconteceu."/>
+        <FIELD NAME="feesource" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="site" SEQUENCE="false" COMMENT="De onde os termos vieram: policy|company|plan|site."/>
         <FIELD NAME="status" TYPE="char" LENGTH="30" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|approved|rejected|refunded|cancelled, espelhando o Mercado Pago."/>
         <FIELD NAME="paymentid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Registro em {payments}, criado so na aprovacao."/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

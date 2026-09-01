@@ -49,6 +49,27 @@ if ($hassiteconfig) {
         PARAM_FLOAT
     ));
 
+    // Base de calculo da comissao, para quem nao declarar a propria.
+    //
+    // E o ultimo degrau: plano e empresa podem ter base propria, e quando tem,
+    // ela vem junto com a taxa deles. Este valor vale para o degrau que so
+    // definiu a taxa e para a venda que nao passa por empresa nenhuma.
+    //
+    // ATENCAO: "liquido" nao e aplicavel em todo gateway. O Mercado Pago cobra
+    // por valor absoluto (marketplace_fee) e a taxa dele so e conhecida depois,
+    // entao ali a venda sai sobre o bruto e registra isso. O que a venda grava
+    // e o que foi APLICADO, e nao o que esta configurado aqui.
+    $settings->add(new admin_setting_configselect(
+        'local_marketplace/commissionbase',
+        get_string('commissionbase', 'local_marketplace'),
+        get_string('commissionbase_desc', 'local_marketplace'),
+        \local_marketplace\commission::BASE_GROSS,
+        [
+            \local_marketplace\commission::BASE_GROSS => get_string('commissionbasegross', 'local_marketplace'),
+            \local_marketplace\commission::BASE_NET => get_string('commissionbasenet', 'local_marketplace'),
+        ]
+    ));
+
     // Pais em que a primeira conta de uma empresa nova e provisionada. Nao
     // limita nada: a empresa pode receber conta em outros paises depois, e e a
     // OFERTA que diz onde cada plano vende.
@@ -65,6 +86,16 @@ if ($hassiteconfig) {
     ));
 
     $ADMIN->add('local_marketplace_cat', $settings);
+
+    // Os planos vem antes das empresas na lista de propositio: e neles que se
+    // define a comissao padrao de uma classe de empresas, e o cadastro de
+    // empresa ja oferece a escolha.
+    $ADMIN->add('local_marketplace_cat', new admin_externalpage(
+        'local_marketplace_plans',
+        get_string('plans', 'local_marketplace'),
+        new moodle_url('/local/marketplace/admin/plans.php'),
+        'local/marketplace:manageall'
+    ));
 
     $ADMIN->add('local_marketplace_cat', new admin_externalpage(
         'local_marketplace_companies',

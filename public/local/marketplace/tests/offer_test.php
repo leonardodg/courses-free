@@ -16,14 +16,16 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * Regras de acesso e de cobranca da oferta.
  *
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\offer
  */
+#[CoversClass(\local_marketplace\offer::class)]
 final class offer_test extends \advanced_testcase {
     /**
      * Monta uma oferta sem gravar: as regras testadas nao tocam o banco.

@@ -25,8 +25,10 @@
 require(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
+use local_marketplace\api;
 use local_marketplace\company;
 use local_marketplace\member;
+use local_marketplace\plan;
 
 admin_externalpage_setup('local_marketplace_companies');
 
@@ -56,6 +58,7 @@ $table->head = [
     get_string('companyshortname', 'local_marketplace'),
     get_string('members', 'local_marketplace'),
     get_string('paymentsection', 'local_marketplace'),
+    get_string('commissioneffective', 'local_marketplace'),
     get_string('companystatus', 'local_marketplace'),
     '',
 ];
@@ -81,6 +84,27 @@ foreach ($companies as $c) {
         );
     }
 
+    // A comissao efetiva e a ORIGEM dela. Sem dizer de onde o numero veio,
+    // por uma empresa no plano Starter e ver 25% na tela parece defeito - e na
+    // verdade e a comissao negociada com ela vencendo a do plano, que e o
+    // comportamento desejado.
+    $negotiated = $c->get_commission_percent();
+    $plan = $c->get_plan();
+
+    if ($negotiated !== null) {
+        $pct = $negotiated;
+        $origem = get_string('commissionfromcompany', 'local_marketplace');
+    } else if ($plan && $plan->get('status') === plan::STATUS_ACTIVE) {
+        $pct = (float) $plan->get('commissionpct');
+        $origem = get_string('commissionfromplan', 'local_marketplace', format_string($plan->get('name')));
+    } else {
+        $pct = api::default_commission_percent();
+        $origem = get_string('commissionfromsite', 'local_marketplace');
+    }
+
+    $commission = format_float($pct, 2) . '%'
+        . html_writer::tag('div', s($origem), ['class' => 'text-muted small']);
+
     $actions = html_writer::link(
         new moodle_url('/local/marketplace/admin/company_edit.php', ['id' => $c->get('id')]),
         get_string('edit'),
@@ -100,6 +124,7 @@ foreach ($companies as $c) {
         s($c->get('shortname')),
         count(member::get_by_company((int) $c->get('id'))),
         $payment,
+        $commission,
         get_string('status' . $c->get('status'), 'local_marketplace'),
         $actions,
     ];

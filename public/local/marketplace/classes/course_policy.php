@@ -68,6 +68,15 @@ class course_policy extends persistent {
                 'type' => PARAM_FLOAT,
                 'default' => self::DEFAULT_COMMISSION,
             ],
+            'commissionbase' => [
+                'type' => PARAM_ALPHA,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+                // O nulo entra na lista de proposito: o validador de choices do
+                // persistent roda mesmo com NULL_ALLOWED, e sem ele "herda a
+                // base do site" seria recusado como valor invalido.
+                'choices' => [null, commission::BASE_GROSS, commission::BASE_NET],
+            ],
         ];
     }
 

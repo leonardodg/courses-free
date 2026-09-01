@@ -61,9 +61,18 @@ class payment_processor {
 
         // A comissao e regra do marketplace, nao do gateway. O guarda de
         // componente vive la dentro, para nao existir em copia em cada gateway.
+        //
+        // Vem taxa E base: o Asaas consegue aplicar as duas bases, entao aqui a
+        // base configurada e sempre a aplicada - o que nem sempre vale para
+        // outro gateway.
         $feepercent = 25.0;
+        $feebase = 'gross';
+        $feesource = 'site';
         if (class_exists('\local_marketplace\api')) {
-            $feepercent = \local_marketplace\api::commission_for($component, $itemid);
+            $terms = \local_marketplace\api::commission_terms_for($component, $itemid);
+            $feepercent = $terms->percent;
+            $feebase = $terms->base;
+            $feesource = $terms->source;
         }
 
         $reference = 'mdl-' . $userid . '-' . $itemid . '-' . random_string(12);
@@ -84,6 +93,8 @@ class payment_processor {
             'currency' => $currency,
             'feeamount' => 0,
             'feepercent' => $feepercent,
+            'feebase' => $feebase,
+            'feesource' => $feesource,
             'billingtype' => self::billing_type(),
             'environment' => $environment,
             'status' => 'PENDING',
@@ -126,6 +137,7 @@ class payment_processor {
                 : '',
             'splitwalletid' => credentials::platform_wallet($environment),
             'splitpercent' => $feepercent,
+            'splitbase' => $feebase,
         ]);
 
         $invoiceurl = (string) ($response['invoiceUrl'] ?? '');
@@ -136,10 +148,10 @@ class payment_processor {
         $record->asaaspaymentid = (string) ($response['id'] ?? '');
         $record->customerid = $customerid;
         $record->status = (string) ($response['status'] ?? 'PENDING');
-        // O split incide sobre o netValue, e nao sobre o valor cheio: o Asaas
-        // ja tirou a propria taxa antes de dividir. Guardamos o que de fato vai
-        // ser repassado, porque 25% do bruto e outro numero.
-        $record->feeamount = self::fee_from($response, $amount, $feepercent);
+        // Guardamos o que o gateway devolveu, e nao o que calculamos: na criacao
+        // os dois batem, mas estorno parcial e split recusado mudam o numero
+        // depois, e o relatorio tem que seguir o extrato.
+        $record->feeamount = self::fee_from($response, $amount, $feepercent, '', $feebase);
         $record->timemodified = time();
         $DB->update_record(self::TABLE, $record);
 
@@ -224,7 +236,17 @@ class payment_processor {
                 (int) $record->paymentid,
                 (int) $record->itemid,
                 (float) $record->feeamount,
-                $asaaspaymentid
+                $asaaspaymentid,
+                // Os termos vem da LINHA, e nao de uma nova resolucao: entre a
+                // criacao da cobranca e o webhook a configuracao pode ter
+                // mudado, e a venda tem que registrar o que foi cobrado.
+                class_exists('\local_marketplace\commission')
+                    ? new \local_marketplace\commission(
+                        (float) $record->feepercent,
+                        (string) $record->feebase,
+                        (string) $record->feesource
+                    )
+                    : null
             );
         }
 
@@ -289,7 +311,8 @@ class payment_processor {
      * pior que nenhum.
      *
      * Sem split na resposta - na criacao da cobranca, quando ele ainda nao
-     * existe - cai no percentual sobre o netValue, que e a estimativa correta.
+     * existe - cai no percentual sobre o valor BRUTO, que e a base combinada
+     * com o parceiro e a mesma que o build_split usa para montar o fixedValue.
      *
      * @param array $payment Resposta da API.
      * @param float $amount
@@ -301,7 +324,8 @@ class payment_processor {
         array $payment,
         float $amount,
         float $feepercent,
-        string $walletid = ''
+        string $walletid = '',
+        string $base = 'gross'
     ): float {
         $splits = $payment['split'] ?? [];
 
@@ -322,12 +346,20 @@ class payment_processor {
             return round($total, 2);
         }
 
-        $base = (float) ($payment['netValue'] ?? 0);
-        if ($base <= 0) {
-            $base = $amount;
+        // A estimativa tem que usar a MESMA base do split que foi enviado, senao
+        // a tela mostra uma comissao e o gateway recebe outra.
+        if ($base === 'net') {
+            $net = (float) ($payment['netValue'] ?? 0);
+
+            // Sem netValue na resposta - acontece na criacao da cobranca - o
+            // valor cheio e a unica base disponivel. Superestima a comissao, e
+            // e o erro menos ruim: o numero certo chega pelo webhook, com o
+            // split real, e ate la e melhor prometer menos ao vendedor do que
+            // mais.
+            return round(($net > 0 ? $net : $amount) * ($feepercent / 100), 2);
         }
 
-        return round($base * ($feepercent / 100), 2);
+        return round($amount * ($feepercent / 100), 2);
     }
 
     /**

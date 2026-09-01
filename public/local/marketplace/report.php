@@ -159,6 +159,7 @@ if ($view === 'transactions') {
         get_string('user'),
         get_string('reportgross', 'local_marketplace'),
         get_string('reportcommission', 'local_marketplace'),
+        get_string('reportcommissionterms', 'local_marketplace'),
         get_string('reportgateway', 'local_marketplace'),
         get_string('reportexternalid', 'local_marketplace'),
     ];
@@ -173,6 +174,15 @@ if ($view === 'transactions') {
             $u ? fullname($u) : '?',
             helper::get_cost_as_string((float) $s->amount, $s->currency),
             helper::get_cost_as_string((float) $s->feeamount, $s->currency),
+            // Os termos APLICADOS naquela venda, e nao os de hoje: e por isso
+            // que eles foram fotografados na linha.
+            format_float((float) $s->feepercent, 2) . '% '
+                . get_string('commissionbase' . $s->feebase, 'local_marketplace')
+                . html_writer::tag(
+                    'div',
+                    get_string('commissionsource' . $s->feesource, 'local_marketplace'),
+                    ['class' => 'text-muted small']
+                ),
             s($s->gateway),
             $s->externalid ? s($s->externalid) : '-',
         ];

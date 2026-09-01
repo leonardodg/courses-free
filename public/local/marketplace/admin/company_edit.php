@@ -85,6 +85,7 @@ if ($existing) {
         'name' => $existing->get('name'),
         'shortname' => $existing->get('shortname'),
         'cnpj' => $existing->get('cnpj'),
+        'planid' => $existing->get('planid'),
         'commissionpct' => $existing->get('commissionpct'),
         'themename' => $existing->get('themename'),
         'hostname' => $existing->get('hostname'),

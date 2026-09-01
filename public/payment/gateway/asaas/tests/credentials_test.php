@@ -16,6 +16,8 @@
 
 namespace paygw_asaas;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * A credencial do vendedor: cifrada, e separada por ambiente.
  *
@@ -26,8 +28,8 @@ namespace paygw_asaas;
  * @package    paygw_asaas
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \paygw_asaas\credentials
  */
+#[CoversClass(\paygw_asaas\credentials::class)]
 final class credentials_test extends \advanced_testcase {
     /** @var int Conta de pagamento de teste. */
     protected int $accountid;

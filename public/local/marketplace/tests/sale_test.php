@@ -16,6 +16,9 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversMethod;
+
 /**
  * Registro de venda neutro de gateway.
  *
@@ -27,9 +30,9 @@ namespace local_marketplace;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\sale
- * @covers     \local_marketplace\api::record_sale
  */
+#[CoversClass(\local_marketplace\sale::class)]
+#[CoversMethod(\local_marketplace\api::class, 'record_sale')]
 final class sale_test extends \advanced_testcase {
     /** @var company */
     protected $company;
@@ -205,5 +208,64 @@ final class sale_test extends \advanced_testcase {
         $companyid = (int) $this->company->get('id');
         $this->assertCount(0, sale::get_for_company($companyid, time() - (30 * DAYSECS)));
         $this->assertCount(1, sale::get_for_company($companyid, time() - (90 * DAYSECS)));
+    }
+
+    /**
+     * A venda guarda os termos APLICADOS, e eles nao mudam depois.
+     *
+     * E o ponto inteiro de fotografar taxa e base na linha. Sem isso, uma venda
+     * de seis meses atras so poderia ser explicada relendo a configuracao de
+     * hoje - e a empresa, o plano e o padrao do site mudam. O relatorio passaria
+     * a contar uma historia diferente da do extrato do gateway, e a que muda
+     * seria a nossa.
+     *
+     * @return void
+     */
+    public function test_os_termos_ficam_fotografados(): void {
+        $paymentid = $this->make_payment('asaas');
+
+        $sale = api::record_sale(
+            'local_marketplace',
+            $paymentid,
+            (int) $this->offer->get('id'),
+            9.90,
+            'ext-1',
+            new commission(9.9, commission::BASE_GROSS, commission::SOURCE_PLAN)
+        );
+
+        // Muda TUDO o que poderia influenciar uma nova resolucao.
+        set_config('commissionbase', commission::BASE_NET, 'local_marketplace');
+        set_config('defaultfeepercent', 40, 'local_marketplace');
+        $this->company->set('commissionpct', 30.0);
+        $this->company->set('commissionbase', commission::BASE_NET);
+        $this->company->update();
+
+        $reread = sale::get_record(['id' => $sale->get('id')]);
+
+        $this->assertEquals(9.9, $reread->get('feepercent'));
+        $this->assertSame(commission::BASE_GROSS, $reread->get('feebase'));
+        $this->assertSame(commission::SOURCE_PLAN, $reread->get('feesource'));
+    }
+
+    /**
+     * Sem termos informados, a venda resolve os de agora.
+     *
+     * E o caminho do chamador antigo. Funciona, mas registra a configuracao do
+     * momento do registro e nao a da cobranca - por isso os gateways passam os
+     * termos que eles de fato aplicaram.
+     *
+     * @return void
+     */
+    public function test_sem_termos_resolve_os_atuais(): void {
+        set_config('commissionbase', commission::BASE_NET, 'local_marketplace');
+        $this->company->set('commissionpct', 12.0);
+        $this->company->update();
+
+        $paymentid = $this->make_payment('asaas');
+        $sale = api::record_sale('local_marketplace', $paymentid, (int) $this->offer->get('id'), 12.0);
+
+        $this->assertEquals(12.0, $sale->get('feepercent'));
+        $this->assertSame(commission::BASE_NET, $sale->get('feebase'));
+        $this->assertSame(commission::SOURCE_COMPANY, $sale->get('feesource'));
     }
 }

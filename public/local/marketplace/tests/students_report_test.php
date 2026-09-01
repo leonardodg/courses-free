@@ -16,6 +16,8 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversMethod;
+
 /**
  * Quem sao os alunos de uma empresa.
  *
@@ -26,9 +28,9 @@ namespace local_marketplace;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\entitlement::get_for_company
- * @covers     \local_marketplace\entitlement::count_active_students
  */
+#[CoversMethod(\local_marketplace\entitlement::class, 'get_for_company')]
+#[CoversMethod(\local_marketplace\entitlement::class, 'count_active_students')]
 final class students_report_test extends \advanced_testcase {
     /** @var company */
     protected $company;

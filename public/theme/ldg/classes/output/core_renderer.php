@@ -1,0 +1,238 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+namespace theme_ldg\output;
+
+use moodle_url;
+use theme_config;
+use theme_ldg\util\settings;
+
+/**
+ * Renderer principal do tema LDG.
+ *
+ * Herda do Moove e sobrescreve exatamente os metodos em que ele faz
+ * theme_config::load('moove') fixo. Sao seis:
+ *
+ *   standard_head_html()        Google Analytics e a fonte do Google Fonts
+ *   get_theme_logo_url()        logo
+ *   get_theme_logo_dark_url()   logo do modo escuro
+ *   favicon()                   favicon
+ *   body_attributes()           modo escuro
+ *   render_darkmode_controls()  o botao de alternar modo escuro
+ *
+ * Esquecer um nao produz erro: o site fica no ar lendo o setting do PAI, que
+ * nunca foi configurado. O sintoma e "sumiu o logo", e ninguem procura no
+ * lugar certo. Ao atualizar o theme_moove, reconferir esta lista.
+ *
+ * @package    theme_ldg
+ * @copyright  2026 Leonardo Della Giustina
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class core_renderer extends \theme_moove\output\core_renderer {
+    /**
+     * HTML do <head>, com o Google Analytics e a fonte deste tema.
+     *
+     * Nao chama parent::standard_head_html() de proposito. O do Moove le os
+     * settings DELE, e o theme_moove/fontsite ja nasce com 'Roboto' gravado na
+     * instalacao do pai - o site sairia baixando duas fontes do Google e
+     * aplicando a errada. Pulamos um degrau e refazemos o trabalho com a config
+     * certa; o degrau abaixo (Boost) continua sendo chamado, para nao perder o
+     * que ele acrescenta.
+     *
+     * @return string
+     */
+    public function standard_head_html() {
+        $output = \theme_boost\output\core_renderer::standard_head_html();
+
+        $theme = theme_config::load('ldg');
+
+        if (!empty($theme->settings->googleanalytics)) {
+            $gacode = trim($theme->settings->googleanalytics);
+            $output .= "<script async src='https://www.googletagmanager.com/gtag/js?id=" . s($gacode) . "'></script>
+                        <script>
+                            window.dataLayer = window.dataLayer || [];
+                            function gtag() {
+                                dataLayer.push(arguments);
+                            }
+                            gtag('js', new Date());
+                            gtag('config', '" . s($gacode) . "');
+                        </script>";
+        }
+
+        $sitefont = $theme->settings->fontsite ?? 'Inter';
+
+        if ($sitefont !== 'Moodle') {
+            // O preconnect economiza um RTT no handshake com o Google Fonts, e
+            // essa fonte esta no caminho critico do primeiro render.
+            $output .= '<link rel="preconnect" href="https://fonts.googleapis.com">
+                        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                        <link href="https://fonts.googleapis.com/css2?family=' . urlencode($sitefont) .
+                ':ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">';
+        }
+
+        return $output;
+    }
+
+    /**
+     * Atributos da tag <body>.
+     *
+     * Refeito, e nao estendido, por dois motivos. O do Moove monta a string
+     * inteira no return - nao ha como injetar nada sem reescrever a string. E
+     * ele decide o modo escuro por *user preference*, que visitante anonimo nao
+     * tem: a landing e a tela de login sairiam claras para todo o publico de
+     * captacao, que e justamente quem o design dark foi feito para atender.
+     *
+     * @param string|array $additionalclasses Classes extras para o body.
+     * @return string
+     */
+    public function body_attributes($additionalclasses = []) {
+        if (!is_array($additionalclasses)) {
+            $additionalclasses = explode(' ', $additionalclasses);
+        }
+
+        // A barra de acessibilidade continua sendo do usuario logado, e e o
+        // unico pedaco de preferencia de usuario que o filho preserva.
+        $hasaccessibilitybar = get_user_preferences('thememoovesettings_enableaccessibilitytoolbar', '');
+        if ($hasaccessibilitybar) {
+            $additionalclasses[] = 'hasaccessibilitybar';
+
+            $fontsizeclass = get_user_preferences('accessibilitystyles_fontsizeclass', '');
+            if ($fontsizeclass) {
+                $additionalclasses[] = $fontsizeclass;
+            }
+
+            $sitecolorclass = get_user_preferences('accessibilitystyles_sitecolorclass', '');
+            if ($sitecolorclass) {
+                $additionalclasses[] = $sitecolorclass;
+            }
+        }
+
+        $fonttype = get_user_preferences('thememoovesettings_fonttype', '');
+        if ($fonttype) {
+            $additionalclasses[] = $fonttype;
+        }
+
+        $settings = new settings();
+        $colormode = $settings->color_mode();
+
+        if ($colormode === 'dark') {
+            // A classe do Moove tem que vir junto: o amd/src/darkmode.js dele
+            // decide o estado inicial do botao olhando para ela, e nao para o
+            // data-bs-theme. Sem a classe, o botao nasce marcado ao contrario.
+            $additionalclasses[] = 'moove-darkmode';
+        }
+
+        $additionalclasses[] = 'ldg-' . $colormode;
+
+        return " id='{$this->body_id()}' class='{$this->body_css_classes($additionalclasses)}'" .
+            " data-bs-theme='{$colormode}' ";
+    }
+
+    /**
+     * URL da logo principal.
+     *
+     * Cai na logo embarcada em pix/ quando nao ha upload. Sem esse fallback o
+     * tema nasce sem marca nenhuma: o Moove desce para a logo do site, que
+     * tambem esta vazia, e o navbar renderiza um <img> com src vazio - um
+     * icone de imagem quebrada ao lado do nome do site.
+     *
+     * @return string
+     */
+    public function get_theme_logo_url() {
+        $theme = theme_config::load('ldg');
+
+        $logo = $theme->setting_file_url('logo', 'logo');
+
+        if (!empty($logo)) {
+            return $logo;
+        }
+
+        return (new moodle_url('/theme/ldg/pix/logo.svg'))->out(false);
+    }
+
+    /**
+     * URL da logo do modo escuro.
+     *
+     * O navbar e escuro nos DOIS modos, entao a logo embarcada e a mesma: um
+     * wordmark branco. Sao dois arquivos, e nao um, para que trocar a logo do
+     * modo escuro no futuro nao exija tocar em codigo.
+     *
+     * @return string
+     */
+    public function get_theme_logo_dark_url() {
+        $theme = theme_config::load('ldg');
+
+        $logo = $theme->setting_file_url('logodark', 'logodark');
+
+        if (!empty($logo)) {
+            return $logo;
+        }
+
+        return (new moodle_url('/theme/ldg/pix/logo_dark.svg'))->out(false);
+    }
+
+    /**
+     * URL do favicon.
+     *
+     * @return moodle_url
+     */
+    public function favicon() {
+        global $CFG;
+
+        $theme = theme_config::load('ldg');
+
+        $favicon = $theme->setting_file_url('favicon', 'favicon');
+
+        if (!empty($favicon)) {
+            // O setting_file_url devolve URL absoluta; o core espera relativa
+            // ao wwwroot para nao quebrar quando o site responde por mais de um
+            // dominio - que e exatamente o caso aqui, com dominio por vendedor.
+            $urlreplace = preg_replace('|^https?://|i', '//', $CFG->wwwroot);
+            $favicon = str_replace($urlreplace, '', $favicon);
+
+            return new moodle_url($favicon);
+        }
+
+        return \theme_boost\output\core_renderer::favicon();
+    }
+
+    /**
+     * Botao de alternar entre claro e escuro.
+     *
+     * Refeito porque o do Moove le theme_moove/enabledarkmode - o setting do
+     * PAI, que nunca configuramos e vale 1 por padrao. Aqui quem manda e o
+     * theme_ldg/enablecolormodetoggle.
+     *
+     * Continua so para usuario autenticado, como no Moove: a escolha e gravada
+     * como preferencia de usuario, e visitante anonimo nao tem onde guardar.
+     * Para ele vale o padrao do site.
+     *
+     * @return string
+     */
+    public function render_darkmode_controls() {
+        if (!isloggedin() || isguestuser()) {
+            return '';
+        }
+
+        $settings = new settings();
+
+        if (!$settings->color_mode_toggle_enabled()) {
+            return '';
+        }
+
+        return $this->render_from_template('theme_moove/moove/darkmode', []);
+    }
+}

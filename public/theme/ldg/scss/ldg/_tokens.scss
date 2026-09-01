@@ -1,0 +1,146 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// Tokens do design system LDG.
+//
+// Aqui vao CUSTOM PROPERTIES, e nao variaveis SCSS. As variaveis do Bootstrap
+// ($primary, $body-bg, $body-bg-dark, $border-radius) sao trabalho do
+// theme_ldg_get_pre_scss, que roda ANTES de tudo isto.
+//
+// O tema tem DOIS modos de verdade, e os componentes nao sabem em qual estao:
+// todo parcial le token, e os tokens e que mudam de valor. Regra escopada em
+// [data-bs-theme] so existe onde o efeito e mesmo exclusivo de um modo, como o
+// vidro fosco da navbar.
+
+// ---------------------------------------------------------------------------
+// Valores que NAO mudam entre os modos.
+// ---------------------------------------------------------------------------
+:root {
+    // Azul escuro da marca, amostrado do band_LDG.png. E o mesmo nos dois
+    // modos: no claro ele e o cromo (navbar, rodape, navegacao secundaria) e a
+    // cor do texto; no escuro ele so aparece em detalhe.
+    --ldg-navy: #0e192b;
+    --ldg-navy-soft: #16273f;
+
+    // Acento. O azul cheio e para SUPERFICIE (botao, barra de progresso). Para
+    // TEXTO ha um tom por modo, mais abaixo, porque #007AFF nao passa no
+    // contraste da WCAG AA nem sobre #121212 nem sobre #f4f6fa.
+    --ldg-accent: #007aff;
+    --ldg-accent-hover: #3394ff;
+    --ldg-secondary: #8e24aa;
+
+    // Escala tipografica de marketing. Usada pela landing e pelas paginas
+    // institucionais - NAO pelo corpo do Moodle, que mantem a escala do
+    // Bootstrap. Um h1 de 48px dentro de um curso competiria com o conteudo.
+    --ldg-fs-hero: 4rem;
+    --ldg-fs-h1: 3rem;
+    --ldg-fs-h2: 2.25rem;
+    --ldg-fs-h3: 1.5rem;
+    --ldg-fs-body: 1rem;
+    --ldg-fs-caption: 0.875rem;
+
+    // Ritmo de 8px, gutter de 24px, container de 1440px.
+    --ldg-space: 0.5rem;
+    --ldg-gutter: 1.5rem;
+    --ldg-container: 1440px;
+
+    // Altura da navbar. E token porque o drawer, o course index e o sticky do
+    // cabecalho de atividade dependem dela para nao se sobreporem.
+    --ldg-navbar-height: 64px;
+}
+
+// ---------------------------------------------------------------------------
+// Modo claro. Padrao do :root para o caso de o atributo nao chegar ao HTML.
+// ---------------------------------------------------------------------------
+:root,
+[data-bs-theme="light"] {
+    --ldg-bg: #f4f6fa;
+    --ldg-surface: #ffffff;
+    --ldg-surface-raised: #ffffff;
+    --ldg-border: #d5dce6;
+    --ldg-text: #0e192b;
+    --ldg-text-muted: #5a6b82;
+    --ldg-accent-text: #0062cc;
+    --ldg-field-bg: #ffffff;
+
+    // O cromo e navy nos DOIS modos. E o que da identidade ao modo claro sem
+    // transformar o conteudo em texto branco sobre azul, que seria ilegivel
+    // para leitura longa de curso.
+    --ldg-chrome-bg: var(--ldg-navy);
+    --ldg-chrome-bg-soft: var(--ldg-navy-soft);
+    --ldg-chrome-text: #ffffff;
+    --ldg-chrome-border: rgba(255, 255, 255, 0.12);
+
+    // No fundo claro a sombra volta a ter funcao, e e o azul da marca
+    // diluido - sombra cinza sobre fundo azulado suja a cor.
+    --ldg-shadow-card: 0 2px 8px rgba(14, 25, 43, 0.08);
+    --ldg-shadow-raised: 0 8px 24px rgba(14, 25, 43, 0.16);
+    --ldg-hover-overlay: rgba(14, 25, 43, 0.05);
+}
+
+// ---------------------------------------------------------------------------
+// Modo escuro. E o padrao do site, definido em theme_ldg/defaultcolormode.
+// ---------------------------------------------------------------------------
+[data-bs-theme="dark"] {
+    --ldg-bg: #121212;
+    --ldg-surface: #1e1e1e;
+    --ldg-surface-raised: #2a2a2a;
+    --ldg-border: #3a3b3c;
+    --ldg-text: #ffffff;
+    --ldg-text-muted: #b0b3b8;
+    --ldg-accent-text: #3394ff;
+    --ldg-field-bg: #121212;
+
+    --ldg-chrome-bg: #1e1e1e;
+    --ldg-chrome-bg-soft: #2a2a2a;
+    --ldg-chrome-text: #ffffff;
+    --ldg-chrome-border: #3a3b3c;
+
+    // No fundo quase preto a sombra quase nao aparece: quem separa as camadas
+    // e o tom da superficie, e nao a sombra.
+    --ldg-shadow-card: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --ldg-shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --ldg-hover-overlay: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 767.98px) {
+    :root {
+        --ldg-navbar-height: 50px;
+        --ldg-gutter: 1rem;
+        --ldg-fs-hero: 2.5rem;
+        --ldg-fs-h1: 2rem;
+    }
+}
+
+// As custom properties do Moove apontam para a escala de cinza do Bootstrap e
+// para $brand-primary. Sao poucas, mas mandam na navbar, na navegacao
+// secundaria e no fundo dos cards dele - sem isto o site fica com duas paletas
+// ao mesmo tempo, e a navegacao secundaria sai azul-eletrico chapado.
+:root,
+[data-bs-theme="light"] {
+    --moove-navbar-bg-color: var(--ldg-chrome-bg);
+    --moove-secondary-navigation-bg-color: var(--ldg-chrome-bg-soft);
+    --moove-bg-white: var(--ldg-surface);
+    --moove-gray-bg: var(--ldg-bg);
+    --moove-link-color: var(--ldg-accent-text);
+}
+
+[data-bs-theme="dark"] {
+    --moove-navbar-bg-color: var(--ldg-chrome-bg);
+    --moove-secondary-navigation-bg-color: var(--ldg-chrome-bg-soft);
+    --moove-bg-white: var(--ldg-surface);
+    --moove-gray-bg: var(--ldg-bg);
+    --moove-link-color: var(--ldg-accent-text);
+}

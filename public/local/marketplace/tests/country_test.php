@@ -16,6 +16,8 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * Mapa de pais para moeda.
  *
@@ -27,8 +29,8 @@ namespace local_marketplace;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\country
  */
+#[CoversClass(\local_marketplace\country::class)]
 final class country_test extends \advanced_testcase {
     /**
      * Cada pais atendido devolve a moeda dele.

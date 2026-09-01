@@ -50,6 +50,22 @@ class sale extends persistent {
             'offerid' => ['type' => PARAM_INT],
             'companyid' => ['type' => PARAM_INT],
             'feeamount' => ['type' => PARAM_FLOAT, 'default' => 0],
+            'feepercent' => ['type' => PARAM_FLOAT, 'default' => 0],
+            'feebase' => [
+                'type' => PARAM_ALPHA,
+                'default' => commission::BASE_GROSS,
+                'choices' => [commission::BASE_GROSS, commission::BASE_NET],
+            ],
+            'feesource' => [
+                'type' => PARAM_ALPHA,
+                'default' => commission::SOURCE_SITE,
+                'choices' => [
+                    commission::SOURCE_POLICY,
+                    commission::SOURCE_COMPANY,
+                    commission::SOURCE_PLAN,
+                    commission::SOURCE_SITE,
+                ],
+            ],
             'externalid' => [
                 'type' => PARAM_RAW,
                 'null' => NULL_ALLOWED,
@@ -63,8 +79,9 @@ class sale extends persistent {
      *
      * @param int $companyid
      * @param int $since Timestamp minimo, 0 para tudo.
-     * @return \stdClass[] Linhas com saleid, feeamount, externalid, offerid,
-     *                     amount, currency, gateway, userid e timecreated.
+     * @return \stdClass[] Linhas com saleid, feeamount, feepercent, feebase,
+     *                     feesource, externalid, offerid, amount, currency,
+     *                     gateway, userid e timecreated.
      */
     public static function get_for_company(int $companyid, int $since = 0): array {
         global $DB;
@@ -76,7 +93,8 @@ class sale extends persistent {
             $params['since'] = $since;
         }
 
-        $sql = "SELECT s.id AS saleid, s.feeamount, s.externalid, s.offerid, s.companyid,
+        $sql = "SELECT s.id AS saleid, s.feeamount, s.feepercent, s.feebase, s.feesource,
+                       s.externalid, s.offerid, s.companyid,
                        p.id AS paymentid, p.amount, p.currency, p.gateway, p.userid, p.timecreated
                   FROM {" . self::TABLE . "} s
                   JOIN {payments} p ON p.id = s.paymentid
@@ -95,7 +113,8 @@ class sale extends persistent {
     public static function get_for_user(int $userid): array {
         global $DB;
 
-        $sql = "SELECT s.id AS saleid, s.feeamount, s.externalid, s.offerid, s.companyid,
+        $sql = "SELECT s.id AS saleid, s.feeamount, s.feepercent, s.feebase, s.feesource,
+                       s.externalid, s.offerid, s.companyid,
                        p.id AS paymentid, p.amount, p.currency, p.gateway, p.userid, p.timecreated
                   FROM {" . self::TABLE . "} s
                   JOIN {payments} p ON p.id = s.paymentid

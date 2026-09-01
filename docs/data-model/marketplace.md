@@ -200,7 +200,7 @@ Transações do Asaas. Mesma ideia, com duas diferenças que valem.
 |---|---|
 | `environment` | `sandbox` ou `production`. Guardado **na linha** porque uma cobrança criada em homologação não pode ser consultada com a chave de produção: as bases não compartilham dados. |
 | `feepercent` | Percentual resolvido no momento da compra. Guardado porque a comissão da empresa pode mudar depois, e a venda antiga precisa continuar explicável. |
-| `feeamount` | Comissão em moeda, calculada sobre o `netValue` — que é onde o Asaas aplica o split. R$ 100 viram R$ 97,52 líquidos, e 25% disso são R$ 24,38. |
+| `feeamount` | Comissão em moeda, calculada sobre o valor **bruto**: R$ 100 a 25% são R$ 25,00. Vai aos gateways como valor absoluto (`fixedValue` no Asaas, `marketplace_fee` no Mercado Pago), e não como percentual — o `percentualValue` do Asaas incidiria sobre o `netValue` e devolveria menos. Depois da criação vale o que o gateway devolveu. |
 | `billingtype` | `UNDEFINED` deixa o aluno escolher · `PIX` · `BOLETO` · `CREDIT_CARD`. |
 
 A credencial do vendedor **não** fica aqui: vive cifrada no

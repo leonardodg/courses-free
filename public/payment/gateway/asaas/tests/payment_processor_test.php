@@ -16,28 +16,32 @@
 
 namespace paygw_asaas;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * As regras que decidem dinheiro e acesso.
  *
  * @package    paygw_asaas
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \paygw_asaas\payment_processor
  */
+#[CoversClass(\paygw_asaas\payment_processor::class)]
 final class payment_processor_test extends \advanced_testcase {
     /**
-     * A comissao sai do netValue, nao do valor cheio.
+     * A comissao sai do valor BRUTO, e o netValue da resposta e ignorado.
      *
-     * O Asaas tira a propria taxa antes de dividir. Calcular 25% de R$ 100
-     * daria R$ 25,00, mas o que de fato e repassado sao 25% de R$ 99,01. A
-     * diferenca e pequena por venda e vira divergencia de conciliacao no mes.
+     * Foi o contrario ate a comissao passar a ser sobre o bruto: enquanto o
+     * split ia como percentualValue, o Asaas dividia o liquido e a estimativa
+     * tinha que acompanhar. Agora o split vai como fixedValue calculado sobre o
+     * cheio, e estimar sobre o liquido criaria divergencia com o que foi
+     * efetivamente enviado ao gateway.
      *
      * @return void
      */
-    public function test_fee_uses_net_value(): void {
+    public function test_fee_uses_gross_value(): void {
         $fee = payment_processor::fee_from(['netValue' => 99.01], 100.0, 25.0);
 
-        $this->assertEqualsWithDelta(24.75, $fee, 0.001);
+        $this->assertEqualsWithDelta(25.00, $fee, 0.001);
     }
 
     /**
@@ -111,15 +115,17 @@ final class payment_processor_test extends \advanced_testcase {
     }
 
     /**
-     * Sem split na resposta, o percentual sobre o liquido e a estimativa certa.
+     * Sem split na resposta, o percentual sobre o BRUTO e a estimativa certa.
      *
-     * E o caso da criacao da cobranca, quando o split ainda nao existe.
+     * E o caso da criacao da cobranca, quando o split ainda nao existe. O
+     * numero tem que bater com o fixedValue que o build_split acabou de montar,
+     * senao a tela mostra uma comissao e o gateway recebe outra.
      *
      * @return void
      */
     public function test_without_split_falls_back_to_percentage(): void {
         $this->assertEqualsWithDelta(
-            24.38,
+            25.00,
             payment_processor::fee_from(['netValue' => 97.52], 100.0, 25.0, 'plataforma'),
             0.001
         );
@@ -272,5 +278,33 @@ final class payment_processor_test extends \advanced_testcase {
             '/payment/gateway/asaas/webhook.php',
             payment_processor::webhook_url()->out(false)
         );
+    }
+
+    /**
+     * Com base liquida, a estimativa usa o netValue da resposta.
+     *
+     * Tem que acompanhar o split enviado: mandamos percentualValue, entao a
+     * estimativa que mostramos precisa ser do liquido tambem.
+     *
+     * @return void
+     */
+    public function test_base_liquida_estima_sobre_o_net(): void {
+        $fee = payment_processor::fee_from(['netValue' => 97.52], 100.0, 25.0, '', 'net');
+
+        $this->assertEqualsWithDelta(24.38, $fee, 0.001);
+    }
+
+    /**
+     * Base liquida sem netValue ainda na resposta superestima, de proposito.
+     *
+     * E o momento da criacao da cobranca. O numero certo chega pelo webhook com
+     * o split real; ate la e melhor prometer menos ao vendedor do que mais.
+     *
+     * @return void
+     */
+    public function test_base_liquida_sem_net_usa_o_cheio(): void {
+        $fee = payment_processor::fee_from([], 100.0, 25.0, '', 'net');
+
+        $this->assertEqualsWithDelta(25.00, $fee, 0.001);
     }
 }

@@ -16,6 +16,9 @@
 
 namespace local_marketplace;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversMethod;
+
 /**
  * Hierarquia da comissao: curso, empresa, site.
  *
@@ -26,10 +29,12 @@ namespace local_marketplace;
  * @package    local_marketplace
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_marketplace\api::resolve_commission_percent
- * @covers     \local_marketplace\api::commission_for
- * @covers     \local_marketplace\api::default_commission_percent
  */
+#[CoversMethod(\local_marketplace\api::class, 'resolve_commission_percent')]
+#[CoversMethod(\local_marketplace\api::class, 'commission_for')]
+#[CoversMethod(\local_marketplace\api::class, 'resolve_commission')]
+#[CoversClass(\local_marketplace\commission::class)]
+#[CoversMethod(\local_marketplace\api::class, 'default_commission_percent')]
 final class commission_test extends \advanced_testcase {
     /** @var company */
     protected $company;
@@ -257,5 +262,223 @@ final class commission_test extends \advanced_testcase {
         $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
 
         $this->assertEquals(25.0, api::commission_for('enrol_fee', (int) $offer->get('id')));
+    }
+
+    /**
+     * Cria um plano e vincula a empresa a ele.
+     *
+     * @param float $pct Comissao do plano.
+     * @param string $status Situacao do plano.
+     * @return plan
+     */
+    protected function assign_plan(float $pct): plan {
+        $plan = new plan(0, (object) [
+            'shortname' => 'p' . random_int(1000, 9999),
+            'name' => 'Plano',
+            'commissionpct' => $pct,
+        ]);
+        $plan->create();
+
+        $this->company->set('planid', (int) $plan->get('id'));
+        $this->company->update();
+
+        return $plan;
+    }
+
+    /**
+     * Sem comissao negociada, vale a do plano.
+     *
+     * @return void
+     */
+    public function test_plan_overrides_site(): void {
+        $this->assign_plan(9.9);
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(9.9, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * A comissao negociada com a empresa vence a do plano.
+     *
+     * E a garantia de que ligar planos nao mexe em contrato ja fechado: quem
+     * tinha valor negociado continua com ele, mesmo entrando num plano.
+     *
+     * @return void
+     */
+    public function test_company_overrides_plan(): void {
+        $this->assign_plan(9.9);
+        $this->company->set('commissionpct', 15.0);
+        $this->company->update();
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(15.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * Plano arquivado nao governa comissao: cai no padrao do site.
+     *
+     * Arquivar existe para tirar um plano de circulacao. Se ele continuasse
+     * valendo, arquivar seria so um rotulo.
+     *
+     * @return void
+     */
+    public function test_archived_plan_falls_back_to_site(): void {
+        // Arquivar DEPOIS de vincular, que e como acontece na pratica: o
+        // administrador tira de circulacao um plano que empresas ja usam.
+        // Vincular um plano ja arquivado e recusado pelo validate_planid.
+        $plan = $this->assign_plan(9.9);
+        $plan->set('status', plan::STATUS_ARCHIVED);
+        $plan->update();
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(25.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * A politica do curso continua vencendo o plano.
+     *
+     * @return void
+     */
+    public function test_course_policy_still_wins_over_plan(): void {
+        $this->assign_plan(9.9);
+        $this->set_course_policy(5.0);
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(5.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * Empresa sem plano se comporta exatamente como antes de planos existirem.
+     *
+     * E o teste que prova que a migracao foi neutra.
+     *
+     * @return void
+     */
+    public function test_no_plan_behaves_as_before(): void {
+        $this->assertNull($this->company->get('planid'));
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+
+        $this->assertEquals(25.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * A base sai do MESMO degrau que deu o percentual.
+     *
+     * E a regra central deste desenho. Resolver base e percentual em cadeias
+     * separadas produziria "taxa do plano com base do site" - uma combinacao
+     * que nenhum contrato tem, e que o parceiro nao conseguiria conferir.
+     *
+     * @return void
+     */
+    public function test_a_base_vem_do_degrau_que_deu_a_taxa(): void {
+        set_config('commissionbase', commission::BASE_GROSS, 'local_marketplace');
+
+        // O plano diz liquido; a empresa nao negociou nada, entao o plano vence.
+        $plan = plan::get_record_by_shortname('starter');
+        $plan->set('commissionpct', 9.9);
+        $plan->set('commissionbase', commission::BASE_NET);
+        $plan->update();
+
+        $this->company->set('planid', (int) $plan->get('id'));
+        $this->company->update();
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+        $terms = api::resolve_commission($offer);
+
+        $this->assertEquals(9.9, $terms->percent);
+        $this->assertSame(commission::BASE_NET, $terms->base);
+        $this->assertSame(commission::SOURCE_PLAN, $terms->source);
+    }
+
+    /**
+     * Negociar com a empresa troca taxa E base, e o plano deixa de valer.
+     *
+     * @return void
+     */
+    public function test_empresa_traz_a_propria_base(): void {
+        set_config('commissionbase', commission::BASE_NET, 'local_marketplace');
+
+        $plan = plan::get_record_by_shortname('starter');
+        $plan->set('commissionbase', commission::BASE_NET);
+        $plan->update();
+
+        $this->company->set('planid', (int) $plan->get('id'));
+        $this->company->set('commissionpct', 15.0);
+        $this->company->set('commissionbase', commission::BASE_GROSS);
+        $this->company->update();
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+        $terms = api::resolve_commission($offer);
+
+        $this->assertEquals(15.0, $terms->percent);
+        $this->assertSame(commission::BASE_GROSS, $terms->base);
+        $this->assertSame(commission::SOURCE_COMPANY, $terms->source);
+    }
+
+    /**
+     * Degrau que nao declara base herda a do site.
+     *
+     * O NULO e o que permite o contrato acompanhar uma mudanca de politica da
+     * plataforma. Gravar a base padrao em toda linha congelaria isso.
+     *
+     * @return void
+     */
+    public function test_base_nula_herda_a_do_site(): void {
+        set_config('commissionbase', commission::BASE_NET, 'local_marketplace');
+
+        $this->company->set('commissionpct', 15.0);
+        $this->company->set('commissionbase', null);
+        $this->company->update();
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+        $terms = api::resolve_commission($offer);
+
+        $this->assertEquals(15.0, $terms->percent);
+        $this->assertSame(commission::BASE_NET, $terms->base);
+        // A taxa continua sendo a negociada, mesmo com a base herdada.
+        $this->assertSame(commission::SOURCE_COMPANY, $terms->source);
+    }
+
+    /**
+     * Base invalida no banco nao derruba a compra.
+     *
+     * Isto e resolvido no meio de um checkout. Lancar excecao porque uma coluna
+     * ficou com valor inesperado deixaria o aluno com o carrinho na mao.
+     *
+     * @return void
+     */
+    public function test_base_invalida_cai_no_padrao(): void {
+        set_config('commissionbase', commission::BASE_GROSS, 'local_marketplace');
+
+        $this->assertSame(commission::BASE_GROSS, commission::normalise_base('qualquer-coisa'));
+        $this->assertSame(commission::BASE_GROSS, commission::normalise_base(null));
+        $this->assertSame(commission::BASE_GROSS, commission::normalise_base(''));
+    }
+
+    /**
+     * O percentual continua contido entre 0 e 100 no objeto de valor.
+     *
+     * @return void
+     */
+    public function test_objeto_de_valor_contem_o_percentual(): void {
+        $this->assertEquals(100.0, (new commission(150.0, null, commission::SOURCE_SITE))->percent);
+        $this->assertEquals(0.0, (new commission(-5.0, null, commission::SOURCE_SITE))->percent);
+    }
+
+    /**
+     * A comissao em moeda sai da base que quem chama escolheu.
+     *
+     * @return void
+     */
+    public function test_amount_on(): void {
+        $terms = new commission(9.9, commission::BASE_GROSS, commission::SOURCE_PLAN);
+
+        $this->assertEqualsWithDelta(9.90, $terms->amount_on(100.00), 0.001);
+        $this->assertEqualsWithDelta(9.65, $terms->amount_on(97.52), 0.001);
     }
 }

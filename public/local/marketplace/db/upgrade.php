@@ -258,6 +258,84 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082547, 'local', 'marketplace');
     }
 
+    if ($oldversion < 2026083110) {
+        $dbman = $DB->get_manager();
+
+        // As tabelas ANTES do campo que as referencia: a chave estrangeira de
+        // company.planid aponta para local_marketplace_plan.
+        foreach (['local_marketplace_plan', 'local_marketplace_plan_tier'] as $tablename) {
+            $table = new xmldb_table($tablename);
+            if (!$dbman->table_exists($table)) {
+                $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', $tablename);
+            }
+        }
+
+        // NULLABLE de proposito. Toda empresa que ja existe sai deste upgrade
+        // com planid nulo, o degrau do plano na cadeia de comissao nao dispara,
+        // e NENHUMA venda de producao muda de valor hoje. Era o requisito: o
+        // split so foi provado uma vez, e ligar planos nao pode mexer nisso.
+        $table = new xmldb_table('local_marketplace_company');
+        $field = new xmldb_field('planid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'commissionpct');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+            $dbman->add_key($table, new xmldb_key(
+                'planid',
+                XMLDB_KEY_FOREIGN,
+                ['planid'],
+                'local_marketplace_plan',
+                ['id']
+            ));
+        }
+
+        // Semeia os planos publicos. O seed e idempotente por shortname e so
+        // insere - um site que ja tenha planos passa por aqui sem mudanca.
+        require_once(__DIR__ . '/install.php');
+        local_marketplace_seed_plans();
+
+        upgrade_plugin_savepoint(true, 2026083110, 'local', 'marketplace');
+    }
+
+    if ($oldversion < 2026090110) {
+        $dbman = $DB->get_manager();
+
+        // Base de calculo da comissao, configuravel em cada degrau da cadeia.
+        //
+        // Todas nascem NULAS, e nao com 'gross': nulo significa "este contrato
+        // nao define base, herda a do site". Gravar 'gross' em toda linha
+        // existente inventaria uma clausula que ninguem negociou, e depois nao
+        // haveria como distinguir quem escolheu bruto de quem so herdou.
+        foreach (['local_marketplace_company', 'local_marketplace_plan', 'local_marketplace_course_policy'] as $tablename) {
+            $table = new xmldb_table($tablename);
+            $field = new xmldb_field('commissionbase', XMLDB_TYPE_CHAR, '10', null, null, null, null, 'commissionpct');
+
+            if ($dbman->table_exists($table) && !$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        // A FOTO dos termos na venda. As vendas que ja existem recebem os
+        // defaults da coluna - 'gross' e 'site' - porque e a melhor
+        // aproximacao disponivel, e nao porque seja verdade sobre elas.
+        $table = new xmldb_table('local_marketplace_sale');
+
+        $field = new xmldb_field('feepercent', XMLDB_TYPE_NUMBER, '5, 2', null, XMLDB_NOTNULL, null, '0', 'feeamount');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('feebase', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'gross', 'feepercent');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('feesource', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'site', 'feebase');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026090110, 'local', 'marketplace');
+    }
+
     return true;
 }
 

@@ -1,0 +1,84 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_ldg/landing
+
+    Pagina inicial quando a landing de captacao toma o lugar dela.
+
+    O tema e dono do CHROME - cabecalho, rodape, scripts - e o plugin e dono do
+    MIOLO. Nenhum dos dois conhece as tabelas do outro: o conteudo chega pronto
+    em `landing`, vindo de local_partners\landing::render().
+
+    Nao ha drawer nem course index aqui: e uma pagina de marketing para
+    visitante anonimo, e o menu lateral e feito de destinos pessoais que ele
+    nao tem.
+
+    Context variables required for this template:
+    * sitename - nome curto do site
+    * output - o renderer
+    * bodyattributes - atributos da tag body
+    * primarymoremenu, mobileprimarynav, usermenu, langmenu - navegacao
+    * landing - html do miolo, ja renderizado pelo local_partners
+    * os campos de rodape do theme_ldg\util\settings::footer()
+
+    Example context (json):
+    {
+        "sitename": "LDG",
+        "bodyattributes": "class='ldg-has-landing'",
+        "landing": "<div class='ldg-landing'></div>"
+    }
+}}
+{{> theme_boost/head }}
+
+<body {{{ bodyattributes }}}>
+<div class="toast-wrapper mx-auto py-0 fixed-top" role="status" aria-live="polite"></div>
+
+{{{ output.standard_top_of_body_html }}}
+
+{{> theme_moove/navbar }}
+
+<div id="page" data-region="mainpage" class="drawers drag-container">
+    <div id="topofscroll" class="main-inner">
+        <div id="region-main-box">
+            <section id="region-main" aria-label="{{#str}}content{{/str}}">
+                {{{ landing }}}
+
+                {{!
+                    O marcador de conteudo principal e OBRIGATORIO: o
+                    core_renderer::header() quebra com "page layout file does
+                    not contain the main content placeholder" sem ele, porque e
+                    aqui que ele corta a pagina entre header() e footer().
+
+                    Abaixo da landing sai o que o Moodle monta para a pagina
+                    inicial - lista de cursos, categorias, novidades. Quem
+                    escolhe isso e a mesma tela de Configuracoes da pagina
+                    inicial onde se liga a landing: para ter so a landing,
+                    esvazie os itens de conteudo la. E o mesmo arranjo que o
+                    proprio Moove usa na frontpage dele.
+                }}
+                {{{ output.main_content }}}
+            </section>
+        </div>
+    </div>
+
+    {{> theme_moove/footer }}
+</div>
+
+{{{ output.standard_end_of_body_html }}}
+
+</body>
+</html>
