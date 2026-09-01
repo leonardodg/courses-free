@@ -87,6 +87,9 @@ if ($existing) {
         'cnpj' => $existing->get('cnpj'),
         'planid' => $existing->get('planid'),
         'commissionpct' => $existing->get('commissionpct'),
+        // Nulo vira string vazia: e a opcao "herdar a base do site". Sem isto o
+        // campo era gravado e nunca lido de volta.
+        'commissionbase' => $existing->get('commissionbase') ?? '',
         'themename' => $existing->get('themename'),
         'hostname' => $existing->get('hostname'),
     ]);

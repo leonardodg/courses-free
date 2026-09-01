@@ -331,4 +331,55 @@ final class approval_test extends \advanced_testcase {
             'memberrole' => 'owner',
         ]));
     }
+
+    /**
+     * Aprovar com o dono em BRANCO funciona, e cria a conta.
+     *
+     * Regressao encontrada por behat: o autocomplete do moodleform manda string
+     * vazia quando ninguem foi escolhido, e nao null. O `?? null` do chamador
+     * nao pegava, '' chegava num parametro ?int e estourava TypeError -
+     * quebrando justamente o caminho que a propria tela instrui a usar quando o
+     * candidato ainda nao tem conta.
+     *
+     * @return void
+     */
+    public function test_aprovar_com_dono_vazio_como_o_formulario_manda(): void {
+        global $DB;
+
+        $application = $this->make_application(['contactemail' => 'semconta@exemplo.com']);
+        $antes = $DB->count_records('user', ['deleted' => 0]);
+
+        // Exatamente o que chega do formulario: string vazia, nao null.
+        $company = api::approve($application, (object) [
+            'shortname' => 'semconta',
+            'ownerid' => '',
+        ]);
+
+        $this->assertNotEmpty($company->get('id'));
+        $this->assertEquals($antes + 1, $DB->count_records('user', ['deleted' => 0]));
+    }
+
+    /**
+     * Zero tambem nao e um usuario.
+     *
+     * @return void
+     */
+    public function test_aprovar_com_dono_zero(): void {
+        global $DB;
+
+        $application = $this->make_application(['contactemail' => 'zero@exemplo.com']);
+
+        $company = api::approve($application, (object) [
+            'shortname' => 'donozero',
+            'ownerid' => '0',
+        ]);
+
+        $owner = $DB->get_record('local_marketplace_member', [
+            'companyid' => $company->get('id'),
+            'memberrole' => 'owner',
+        ]);
+
+        $this->assertNotFalse($owner, 'a empresa precisa ter dono');
+        $this->assertNotEquals(0, (int) $owner->userid);
+    }
 }
