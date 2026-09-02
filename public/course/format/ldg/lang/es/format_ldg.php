@@ -28,7 +28,10 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['courseprogress'] = '{$a}% del curso completado';
 $string['courseprogressbar'] = 'Progreso del curso';
+$string['durationfor'] = 'Duración de {$a}, en segundos';
+$string['durationseconds'] = 'segundos';
 $string['hidefromothers'] = 'Ocultar módulo';
+$string['invalidduration'] = 'La duración no puede ser negativa.';
 $string['lessondone'] = '(completada)';
 $string['lessonlist'] = 'Clases';
 $string['lessonlocked'] = '(bloqueada)';

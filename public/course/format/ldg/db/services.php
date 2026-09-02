@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Versao do format_ldg.
+ * Servicos do format_ldg.
  *
  * @package    format_ldg
  * @author     LeoDG <callme@leodg.dev>
@@ -25,15 +25,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component    = 'format_ldg';
-$plugin->release      = '0.1.0';
-$plugin->version      = 2026090300;
-$plugin->requires     = 2026042000;
-$plugin->supported    = [502, 502];
-
-// ALPHA de proposito. A tela do portal ja existe - lista de aulas, progresso e
-// a aula embutida - mas o plugin ainda nao tem teste automatizado nem o SCSS
-// que o deixa apresentavel, e o estilo mora no theme_ldg. Declarar STABLE, como
-// o wizard gera por padrao, e o tipo de coisa descoberta por quem instalou
-// confiando. Sobe para BETA quando o passo 7 fechar.
-$plugin->maturity     = MATURITY_ALPHA;
+$functions = [
+    'format_ldg_set_duration' => [
+        'classname' => 'format_ldg\external\set_duration',
+        'description' => 'Grava a duracao de uma aula do formato LDG.',
+        'type' => 'write',
+        // Chamado pela edicao inline na propria pagina do curso, entao precisa
+        // estar disponivel para AJAX. NAO entra em nenhum servico externo: nao
+        // ha caso de uso fora da tela, e expor a escrita para token de
+        // integracao seria superficie a mais sem ganho.
+        'ajax' => true,
+        'capabilities' => 'moodle/course:manageactivities',
+    ],
+];

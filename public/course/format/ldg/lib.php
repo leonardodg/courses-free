@@ -225,6 +225,23 @@ class format_ldg extends core_courseformat\base {
     }
 
     /**
+     * Limpeza quando o CURSO e apagado.
+     *
+     * Vale reparar no que este gancho NAO e: ele nao roda quando o curso troca
+     * de formato. Isso e de proposito - trocar para Topics e voltar tem que
+     * preservar as duracoes, senao experimentar formato custa retrabalho. A
+     * linha orfa nesse meio-tempo nao incomoda ninguem, porque a tabela nao tem
+     * chave estrangeira para course_modules.
+     *
+     * @return void
+     */
+    public function delete_format_data() {
+        parent::delete_format_data();
+
+        \format_ldg\lesson::delete_for_course($this->courseid);
+    }
+
+    /**
      * A secao 0 fica sempre visivel.
      *
      * @param int|stdClass|section_info $section

@@ -31,6 +31,7 @@ use core_availability\info;
 use core_courseformat\base as course_format;
 use core\output\named_templatable;
 use core\output\renderer_base;
+use format_ldg\lesson;
 use format_ldg\section_progress;
 use renderable;
 use stdClass;
@@ -132,6 +133,11 @@ class lessonlist implements named_templatable, renderable {
         return (object) [
             'modules' => $modulos,
             'hasmodules' => !empty($modulos),
+            // A duracao e editada aqui mesmo, com a edicao ligada. Uma tela de
+            // formulario so para um numero seria caro para quem vai preencher
+            // dezenas deles em sequencia.
+            'canedit' => $format->show_editor()
+                && has_capability('moodle/course:manageactivities', $format->get_context()),
         ];
     }
 
@@ -152,17 +158,32 @@ class lessonlist implements named_templatable, renderable {
     ): array {
         $aulas = [];
 
+        $candidatos = [];
+
         foreach ($modinfo->sections[$sectionnum] ?? [] as $cmid) {
             $cm = $modinfo->cms[$cmid];
 
-            if (!$cm->is_visible_on_course_page() || !$cm->is_of_type_that_can_display()) {
-                continue;
+            if ($cm->is_visible_on_course_page() && $cm->is_of_type_that_can_display()) {
+                $candidatos[] = $cm;
             }
+        }
 
+        // Uma consulta para o modulo inteiro. Perguntar a duracao aula por aula
+        // daria uma consulta por linha - o N+1 que ja mordeu este projeto.
+        $duracoes = lesson::durations_for(array_map(fn($cm) => $cm->id, $candidatos));
+
+        foreach ($candidatos as $cm) {
             $acompanha = $completion->is_enabled($cm) != COMPLETION_TRACKING_NONE
                 && isloggedin() && !isguestuser();
 
+            $duracao = $duracoes[$cm->id] ?? null;
+
             $aulas[] = (object) [
+                'duration' => $duracao,
+                'hasduration' => $duracao !== null,
+                // O format_time() do core, e nao uma conta a mao: ele ja traduz
+                // e ja escolhe entre segundos, minutos e horas.
+                'durationtext' => $duracao !== null ? format_time($duracao) : '',
                 'cmid' => $cm->id,
                 'name' => $cm->get_formatted_name(),
                 'modname' => $cm->modname,

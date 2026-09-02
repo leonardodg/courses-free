@@ -147,8 +147,24 @@
                                             </span>
                                         {{/trackscompletion}}
                                     </span>
+                                    {{#hasduration}}
+                                        <span class="ldg-lessonlist__duration">{{durationtext}}</span>
+                                    {{/hasduration}}
                                 </a>
                             {{/locked}}
+                            {{#canedit}}
+                                <label class="ldg-lessonlist__duration-edit">
+                                    <span class="visually-hidden">
+                                        {{#str}}durationfor, format_ldg, {{name}}{{/str}}
+                                    </span>
+                                    <input type="number" min="0" step="1"
+                                           class="form-control form-control-sm"
+                                           data-region="ldg-duration"
+                                           data-cmid="{{cmid}}"
+                                           value="{{duration}}"
+                                           placeholder="{{#str}}durationseconds, format_ldg{{/str}}">
+                                </label>
+                            {{/canedit}}
                         </li>
                     {{/lessons}}
                 </ul>
@@ -159,3 +175,10 @@
         <p class="ldg-lessonlist__empty">{{#str}}nolessons, format_ldg{{/str}}</p>
     {{/hasmodules}}
 </nav>
+{{#canedit}}
+{{#js}}
+require(['format_ldg/duration'], function(duration) {
+    duration.init();
+});
+{{/js}}
+{{/canedit}}
