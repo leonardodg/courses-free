@@ -140,6 +140,51 @@ class format_ldg extends core_courseformat\base {
     }
 
     /**
+     * A aula em foco, ou null quando o curso nao tem nenhuma disponivel.
+     *
+     * Vem do parametro lesson da URL. O valor NAO e usado como veio: um cmid de
+     * outro curso, de atividade apagada ou de aula que a pessoa nao pode ver
+     * viraria uma tela quebrada, ou pior, o conteudo de um curso que ela nao
+     * comprou dentro do iframe. Por isso passa por modinfo e por uservisible
+     * antes de valer.
+     *
+     * Sem parametro valido, cai na primeira aula disponivel - abrir o curso e
+     * nao ver nada seria um beco sem saida.
+     *
+     * @return cm_info|null
+     */
+    public function get_selected_cm(): ?cm_info {
+        $modinfo = $this->get_modinfo();
+        $pedido = optional_param('lesson', 0, PARAM_INT);
+
+        $primeira = null;
+
+        foreach ($modinfo->get_section_info_all() as $section) {
+            if (!$this->is_section_visible($section)) {
+                continue;
+            }
+
+            foreach ($modinfo->sections[$section->sectionnum] ?? [] as $cmid) {
+                $cm = $modinfo->cms[$cmid];
+
+                if (!$cm->is_visible_on_course_page() || !$cm->is_of_type_that_can_display()) {
+                    continue;
+                }
+
+                if ($pedido && $cm->id == $pedido && $cm->uservisible) {
+                    return $cm;
+                }
+
+                if ($primeira === null && $cm->uservisible) {
+                    $primeira = $cm;
+                }
+            }
+        }
+
+        return $primeira;
+    }
+
+    /**
      * Opcoes do formato, por curso.
      *
      * @param bool $foreditform

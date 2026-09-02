@@ -26,7 +26,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['courseprogress'] = '{$a}% do curso concluído';
+$string['courseprogressbar'] = 'Progresso do curso';
 $string['hidefromothers'] = 'Ocultar módulo';
+$string['lessondone'] = '(concluída)';
+$string['lessonlist'] = 'Aulas';
+$string['lessonlocked'] = '(bloqueada)';
+$string['lessontodo'] = '(não concluída)';
+$string['moduleprogress'] = '{$a->complete} de {$a->total}';
+$string['nolessons'] = 'Este curso ainda não tem aulas.';
 $string['plugin_description'] = 'O curso aparece como um portal do aluno: uma aula por vez, com a lista completa ao lado e o progresso à vista.';
 $string['pluginname'] = 'Portal LDG';
 $string['privacy:metadata'] = 'O formato de curso LDG não armazena nenhum dado pessoal.';
