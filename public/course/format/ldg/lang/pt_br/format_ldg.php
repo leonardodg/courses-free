@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for format_ldg.
+ * Strings do format_ldg.
  *
  * @package    format_ldg
  * @category   string
@@ -26,10 +26,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['hidefromothers'] = 'Hide module';
-$string['plugin_description'] = 'The course is shown as a student portal: one lesson at a time, with the full lesson list beside it and the progress in sight.';
-$string['pluginname'] = 'LDG portal';
-$string['privacy:metadata'] = 'The LDG course format plugin does not store any personal data.';
-$string['section0name'] = 'Course introduction';
-$string['sectionname'] = 'Module';
-$string['showfromothers'] = 'Show module';
+$string['hidefromothers'] = 'Ocultar módulo';
+$string['plugin_description'] = 'O curso aparece como um portal do aluno: uma aula por vez, com a lista completa ao lado e o progresso à vista.';
+$string['pluginname'] = 'Portal LDG';
+$string['privacy:metadata'] = 'O formato de curso LDG não armazena nenhum dado pessoal.';
+$string['section0name'] = 'Abertura do curso';
+$string['sectionname'] = 'Módulo';
+$string['showfromothers'] = 'Mostrar módulo';
