@@ -29,7 +29,7 @@ use local_marketplace\offer;
  * ja perdeu aula, e a chance de ele culpar a plataforma e alta.
  *
  * @package    local_marketplace
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class notify_expiring extends \core\task\scheduled_task {

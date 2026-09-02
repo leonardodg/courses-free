@@ -20,7 +20,7 @@
  * ORDEM ALFABETICA OBRIGATORIA, e paridade exata de chaves com en e pt_br.
  *
  * @package    theme_ldg
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -43,7 +43,7 @@ $string['advancedsettings'] = 'Avanzado';
 $string['brandcolor'] = 'Color de la marca';
 $string['brandcolordesc'] = 'El color de acento usado en botones, enlaces, anillos de foco y barras de progreso.';
 $string['brandsettings'] = 'Marca';
-$string['choosereadme'] = 'LDG es el tema de la plataforma, desarrollado por Leonardo Della Giustina. Se construye directamente sobre Boost, el tema del núcleo de Moodle, y aplica el design system LDG: oscuro por defecto, con un modo claro donde predomina el azul oscuro, acento en azul eléctrico y la tipografía Inter. Añade un menú lateral de navegación plegable, una barra de accesibilidad y la landing de socios como portada del sitio.';
+$string['choosereadme'] = 'LDG es el tema de la plataforma, desarrollado por LeoDG. Se construye directamente sobre Boost, el tema del núcleo de Moodle, y aplica el design system LDG: oscuro por defecto, con un modo claro donde predomina el azul oscuro, acento en azul eléctrico y la tipografía Inter. Añade un menú lateral de navegación plegable, una barra de accesibilidad y la landing de socios como portada del sitio.';
 $string['closedrawer'] = 'Cerrar el menú de navegación';
 $string['colormodedark'] = 'Oscuro';
 $string['colormodelight'] = 'Claro';
@@ -90,9 +90,16 @@ $string['preset'] = 'Preset del tema';
 $string['presetdesc'] = 'El preset base compilado antes de los tokens de LDG. Cambiarlo repinta todo el sitio.';
 $string['presetfiles'] = 'Presets adicionales';
 $string['presetfilesdesc'] = 'Suba sus propios archivos SCSS de preset para que aparezcan en la lista de arriba.';
-$string['privacy:metadata'] = 'El tema LDG no almacena ningún dato personal. Las preferencias de accesibilidad y de modo oscuro que aparecen en pantalla son del tema Moove, que las declara por su cuenta.';
+$string['privacy:metadata:preference:accessibilitybar'] = 'Si la persona eligió mostrar la barra de accesibilidad.';
+$string['privacy:metadata:preference:darkmode'] = 'Si la persona eligió el modo oscuro.';
 $string['privacy:metadata:preference:fontsizeclass'] = 'El tamaño de fuente que la persona eligió en la barra de accesibilidad.';
+$string['privacy:metadata:preference:navmenucollapsed'] = 'Si la persona dejó el menú lateral plegado.';
 $string['privacy:metadata:preference:sitecolorclass'] = 'El contraste que la persona eligió en la barra de accesibilidad.';
+$string['privacy:preference:accessibilitybar'] = 'Elegiste mostrar la barra de accesibilidad: {$a}';
+$string['privacy:preference:darkmode'] = 'Elegiste el modo oscuro: {$a}';
+$string['privacy:preference:fontsizeclass'] = 'El tamaño de fuente que elegiste en la barra de accesibilidad: {$a}';
+$string['privacy:preference:navmenucollapsed'] = 'Dejaste el menú lateral plegado: {$a}';
+$string['privacy:preference:sitecolorclass'] = 'El contraste que elegiste en la barra de accesibilidad: {$a}';
 $string['rawscss'] = 'SCSS sin procesar';
 $string['rawscssdesc'] = 'SCSS añadido al final de la compilación. Gana sobre todo lo demás, y por eso sirve de válvula de escape cuando algo hay que corregir antes del próximo despliegue.';
 $string['rawscsspre'] = 'SCSS inicial sin procesar';

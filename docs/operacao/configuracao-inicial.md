@@ -157,7 +157,33 @@ configuração**. Só o bloco precisa de uma ação:
 ele, o aluno não tem onde ver o que vence — e **não há cobrança automática**, ele
 precisa agir.
 
-## 8. Tarefas agendadas
+## 8. `format_ldg`, por curso
+
+O formato de curso **não tem configuração de site** — ele se escolhe curso a
+curso, em *Configurações do curso → Formato → **Portal LDG***.
+
+Duas coisas precisam estar ligadas para o portal fazer sentido:
+
+| O quê | Onde | Sem isso |
+|---|---|---|
+| Conclusão de atividades | no curso, e em cada atividade | não há progresso para mostrar, e as barras somem — o que é diferente de aparecerem zeradas |
+| `theme_ldg` como tema do site | Aparência → Temas | **o formato aparece sem estilo nenhum** |
+
+**O estilo do formato vive no tema**, em `theme/ldg/scss/ldg/_format.scss`. O
+formato entrega marcação semântica e quem pinta é o tema — com outro tema ele
+funciona, mas sem colunas, sem cores e sem barra desenhada.
+
+**O índice lateral fica desligado nos cursos com este formato.** É deliberado: a
+lista de aulas já cumpre esse papel na mesma tela. Se alguém reclamar que "sumiu
+o índice do curso", é isto, e não um defeito.
+
+**Com a edição ligada a tela muda** — a coluna principal volta a ser a pilha de
+seções do core, porque arrastar atividade não funciona dentro de um quadro
+embutido. Para ver o curso como o aluno vê, desligue a edição.
+
+Detalhes e armadilhas: `public/course/format/ldg/README.md`.
+
+## 9. Tarefas agendadas
 
 `/admin/tool/task/scheduledtasks.php` — confira as duas:
 

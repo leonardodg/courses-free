@@ -294,3 +294,30 @@ Transações do Asaas. Mesma ideia, com duas diferenças que valem.
 A credencial do vendedor **não** fica aqui: vive cifrada no
 `payment_gateways.config` do core, por ambiente. Ver
 [ADR-0003](../adr/0003-quem-cria-a-cobranca-emite-a-nota.md).
+
+### `format_ldg_lesson`
+
+A duração de cada aula, no formato de curso **Portal LDG**.
+
+**Não é dado de pessoa.** Guarda o tempo do *vídeo*, por atividade — não o tempo
+que alguém assistiu. É essa distinção que mantém o `format_ldg` como
+`null_provider` de privacidade: sem `userid`, isto é conteúdo do curso. Se um dia
+passar a guardar progresso de reprodução por usuário, o provider deixa de valer.
+
+| Campo | Para que serve |
+|---|---|
+| `cmid` | O `course_modules.id` da aula. Índice **único**. |
+| `duration` | Segundos. **Nulo é "não sei"**, e a lista simplesmente não mostra nada — diferente de zero, que seria uma aula de duração nenhuma. |
+
+**Sem chave estrangeira para `course_modules`, de propósito.** A atividade pode
+ser apagada e o curso pode trocar de formato; a linha órfã não pode impedir nem
+uma coisa nem outra. Dado de formato nunca pode travar a troca de formato.
+
+Por isso a limpeza é seletiva: trocar para o formato de seções e voltar
+**preserva** as durações, e só a exclusão do **curso** apaga, pelo
+`delete_format_data()`.
+
+O backup carrega a duração pelo ponto de conexão de **módulo**, e no restore o
+`cmid` vem sempre da tarefa, nunca do arquivo — restaurar cria atividades com ids
+novos, e gravar o id antigo apontaria a duração para a atividade errada. Esse
+erro não dá mensagem: só aparecem números trocados.

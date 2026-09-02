@@ -20,7 +20,7 @@
  * verdade - ES6 aqui vira "No define call" no navegador.
  *
  * @module     paygw_asaas/gateways_modal
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['paygw_asaas/repository', 'core/notification'], function(Repository, Notification) {

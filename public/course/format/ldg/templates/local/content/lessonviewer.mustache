@@ -1,0 +1,121 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    A aula em foco, embutida.
+
+    ARMADILHA: nao escreva tag mustache dentro deste comentario. O comentario
+    termina no primeiro fecha-chaves duplo, e a tag citada em prosa vira secao
+    de verdade sem fechamento.
+
+    O quadro nasce com uma altura minima em vez de zero. Se nascesse zerado, o
+    salto ate o script medir a altura seria visivel em toda troca de aula.
+
+    O link "abrir a atividade" nao e enfeite: e a saida para quando o quadro nao
+    serve - impressao, leitor de tela que se perde no aninhamento, ou uma
+    atividade que recusa ser embutida.
+
+    @template format_ldg/local/content/lessonviewer
+    @author    LeoDG <callme@leodg.dev>
+    @copyright 2026 LeoDG <callme@leodg.dev>
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Context variables required for this template:
+    * haslesson - Se ha aula para mostrar
+    * name - Nome da aula
+    * frameurl - Endereco embutido
+    * openurl - Endereco direto da atividade
+    * completion - Dados do botao de conclusao do core
+
+    Example context (json):
+    {
+        "haslesson": true,
+        "cmid": 42,
+        "name": "Aula 1 - O que e o portal",
+        "modname": "page",
+        "modfullname": "Pagina",
+        "hasframe": true,
+        "frameurl": "https://example.com/mod/page/view.php?id=42",
+        "openurl": "https://example.com/mod/page/view.php?id=42",
+        "hasdescription": false,
+        "description": "",
+        "hascompletion": false
+    }
+}}
+<div class="ldg-lesson" data-region="ldg-lesson">
+    {{#haslesson}}
+        <div class="ldg-lesson__head">
+            <h2 class="ldg-lesson__title">{{name}}</h2>
+            <a class="ldg-lesson__open" href="{{openurl}}" target="_blank" rel="noopener">
+                {{#str}}openactivity, format_ldg{{/str}}
+                <span class="visually-hidden">{{#str}}opensinnewwindow, format_ldg{{/str}}</span>
+            </a>
+        </div>
+
+        {{#hasdescription}}
+            <div class="ldg-lesson__description">{{{description}}}</div>
+        {{/hasdescription}}
+
+        {{#hasframe}}
+            <div class="ldg-lesson__frame-wrap">
+                <iframe class="ldg-lesson__frame"
+                        id="ldg-lesson-frame-{{cmid}}"
+                        src="{{frameurl}}"
+                        title="{{name}}"
+                        loading="lazy"
+                        allowfullscreen></iframe>
+            </div>
+        {{/hasframe}}
+
+        {{#hascompletion}}
+            {{#completion}}
+                {{#uservisible}}
+                    <div class="ldg-lesson__completion" data-region="completion-info">
+                        {{#ismanual}}
+                            {{#showmanualcompletion}}
+                                {{> core_course/completion_manual }}
+                            {{/showmanualcompletion}}
+                        {{/ismanual}}
+                        {{#isautomatic}}
+                            <div class="automatic-completion-conditions" data-region="completionrequirements"
+                                 role="region"
+                                 aria-label="{{#str}}completionrequirements, core_course, {{activityname}}{{/str}}">
+                                <div class="automatic-completion-title">
+                                    <strong>{{#str}}completionrequirements, core_completion{{/str}}</strong>
+                                </div>
+                                <ul class="activity-completion-list">
+                                    {{#completiondetails}}
+                                        {{> core_course/completion_automatic }}
+                                    {{/completiondetails}}
+                                </ul>
+                            </div>
+                        {{/isautomatic}}
+                    </div>
+                {{/uservisible}}
+            {{/completion}}
+        {{/hascompletion}}
+    {{/haslesson}}
+    {{^haslesson}}
+        <div class="ldg-lesson__empty">
+            <p>{{#str}}nolessonselected, format_ldg{{/str}}</p>
+        </div>
+    {{/haslesson}}
+</div>
+{{#js}}
+require(['format_ldg/player'], function(player) {
+    player.init('{{cmid}}');
+});
+{{/js}}

@@ -42,7 +42,7 @@ use local_partners\application;
  * e registro do negocio e nao some porque um revisor pediu remocao.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements

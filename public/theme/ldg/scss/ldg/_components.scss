@@ -1,7 +1,7 @@
 // Tema LDG.
 //
-// @author    Leonardo Della Giustina
-// @copyright 2026 Leonardo Della Giustina
+// @author    LeoDG <callme@leodg.dev>
+// @copyright 2026 LeoDG <callme@leodg.dev>
 // @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 // Componentes alinhados ao design system.
@@ -168,4 +168,61 @@ a:focus-visible .icon,
         background-color: var(--ldg-accent-hover);
         color: #ffffff;
     }
+}
+
+// Avisos.
+//
+// O Bootstrap monta o .alert com --bs-alert-bg, e o alert-secondary recebe o
+// --bs-secondary-bg-subtle: #f5f6f8 no claro e #292a2c no escuro. Cinza nos dois
+// - o mesmo cinza ja reclamado nos botoes. A tela de inscricao usa justamente
+// esse, entao o aviso mais visto do site era o mais apagado.
+//
+// A cor deixa de carregar o significado sozinha: o fundo passa a ser a mesma
+// superficie dos cartoes, e quem diz o que e a mensagem e uma BARRA a esquerda.
+// Isso resolve dois problemas de uma vez - o cinza some, e o aviso para de
+// depender de fundo saturado, que no modo escuro sempre sai sujo.
+//
+// Barra, e nao so texto colorido: contraste de cor sozinho nao serve a quem nao
+// distingue as cores, e a barra da posicao e espessura alem do matiz.
+.alert {
+    background-color: var(--ldg-surface-raised);
+    border: 1px solid var(--ldg-border);
+    border-left: 4px solid var(--ldg-accent);
+    border-radius: 0.5rem;
+    color: var(--ldg-text);
+
+    .close,
+    .btn-close {
+        color: var(--ldg-text-muted);
+    }
+
+    a:not(.btn) {
+        color: var(--ldg-accent-text);
+    }
+}
+
+.alert-success {
+    border-left-color: var(--bs-success);
+}
+
+// O Moodle usa alert-error em alguns lugares antigos, e alert-danger nos novos.
+.alert-danger,
+.alert-error {
+    border-left-color: var(--bs-danger);
+}
+
+.alert-warning {
+    border-left-color: var(--bs-warning);
+}
+
+.alert-info {
+    border-left-color: var(--bs-info);
+}
+
+// O neutro fica com o azul da marca, e nao com cinza: e o aviso das telas de
+// inscricao, que e onde o aluno decide comprar.
+.alert-secondary,
+.alert-light,
+.alert-dark {
+    border-left-color: var(--ldg-accent);
 }

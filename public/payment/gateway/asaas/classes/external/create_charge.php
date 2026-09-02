@@ -26,7 +26,7 @@ use paygw_asaas\payment_processor;
  * Cria a cobranca e devolve para onde mandar o aluno.
  *
  * @package    paygw_asaas
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class create_charge extends external_api {

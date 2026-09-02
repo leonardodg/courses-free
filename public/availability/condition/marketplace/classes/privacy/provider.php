@@ -24,7 +24,7 @@ namespace availability_marketplace\privacy;
  * relatorio que o titular recebe fica incompleto sem ninguem perceber.
  *
  * @package    availability_marketplace
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements \core_privacy\local\metadata\null_provider {

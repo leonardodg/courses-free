@@ -27,7 +27,7 @@ use paygw_mercadopago\mp_client;
  * do aluno, meses depois de alguem ter configurado tudo corretamente.
  *
  * @package    paygw_mercadopago
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class refresh_tokens extends scheduled_task {

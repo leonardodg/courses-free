@@ -32,7 +32,7 @@ require_once($CFG->libdir . '/formslib.php');
  * API, cifrada e gravada - e nunca mais renderizada.
  *
  * @package    paygw_asaas
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class link_form extends \moodleform {

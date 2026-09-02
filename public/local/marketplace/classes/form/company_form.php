@@ -31,7 +31,7 @@ require_once($GLOBALS['CFG']->libdir . '/formslib.php');
  * que e objeto global - aparece na arvore que todos os usuarios veem.
  *
  * @package    local_marketplace
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class company_form extends \moodleform {

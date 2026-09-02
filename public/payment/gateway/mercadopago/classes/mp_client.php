@@ -32,7 +32,7 @@ use moodle_exception;
  * respeita proxy e timeout do site, e nao acrescenta nada para manter.
  *
  * @package    paygw_mercadopago
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mp_client {

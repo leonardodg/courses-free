@@ -63,26 +63,54 @@ faz de template `core/*` some — sem erro, servindo o template do core.
 nunca é instanciada. Também aqui não há erro: o site fica no ar lendo os
 settings do **Moove**, que nunca configuramos. O sintoma é "sumiu o logo".
 
-## Os seis overrides, e por que existem
+## Os dez overrides do renderer, e por que existem
 
-O Moove faz `theme_config::load('moove')` fixo em vários pontos. Herdar esses
-métodos faria o filho ler a configuração do pai. `classes/output/core_renderer.php`
-sobrescreve:
+> Esta seção já descreveu "os seis métodos em que o Moove faz
+> `theme_config::load('moove')` fixo". **Isso deixou de valer** quando o tema
+> saiu da herança dele: o pai passou a ser o `theme_boost`, que é core, e não há
+> mais tema de terceiro para ler configuração errada. Hoje cada override existe
+> por conta própria — e são dez, não seis.
 
-| Método | O que estaria errado sem o override |
+`classes/output/core_renderer.php` sobrescreve, em três grupos:
+
+**Marca** — o Boost não tem esses settings, então não há o que herdar.
+
+| Método | Sem ele |
 |---|---|
-| `standard_head_html()` | Google Analytics e fonte do Moove — o `fontsite` dele já nasce `Roboto`, então o site baixaria duas fontes e aplicaria a errada |
-| `get_theme_logo_url()` | logo do Moove |
-| `get_theme_logo_dark_url()` | logo escura do Moove |
-| `favicon()` | favicon do Moove |
-| `body_attributes()` | modo escuro por preferência de usuário — que visitante anônimo não tem |
-| `render_darkmode_controls()` | um botão de alternar que não alterna nada |
+| `get_theme_logo_url()` | sem marca: não há logo configurada nem embarcada |
+| `get_theme_logo_dark_url()` | idem, no modo escuro |
+| `favicon()` | o favicon do Moodle |
+| `should_display_logo()` | o `navbar.mustache` cai no ramo de "não há logo" |
+| `should_display_theme_logo()` | idem |
+| `get_logo()` | idem |
+| `get_logo_dark()` | idem |
 
-E `classes/util/settings.php` existe pelo mesmo motivo: a classe equivalente do
-Moove carrega `'moove'` no construtor.
+**Os quatro últimos andam juntos.** Remover um só já derruba o ramo do template:
+a navbar passa a imprimir o **nome do site em texto**, e o sintoma parece "a logo
+sumiu" — ninguém procura no renderer.
 
-**Ao atualizar o `theme_moove`, reconfira esta tabela.** Um `theme_config::load`
-novo no pai vira um bug silencioso aqui.
+**Modo de cor** — o Boost decide por preferência de usuário, e visitante anônimo
+não tem preferência.
+
+| Método | Sem ele |
+|---|---|
+| `body_attributes()` | a landing e o login sairiam claros para todo o público de captação, que é quem o design escuro atende. Também é aqui que entra a classe `ldg-embedded` |
+| `render_darkmode_controls()` | o Boost não tem esse botão; ele existe por conta própria |
+
+**Cabeçalho**
+
+| Método | Sem ele |
+|---|---|
+| `standard_head_html()` | sem Google Analytics e sem a fonte do design system |
+
+**`standard_head_html()` chama o do Boost antes de acrescentar.** Trocar isso por
+um `return` próprio faria o core perder o que ele põe no `<head>`, e em silêncio.
+A chamada é explícita (`\theme_boost\output\core_renderer::...`) em vez de
+`parent::` por herança da época em que era preciso **pular** um degrau; hoje as
+duas formas seriam equivalentes.
+
+`classes/util/settings.php` existe pela razão análoga: a classe equivalente do
+tema de origem carregava `'moove'` fixo no construtor.
 
 ## Escuro é o padrão, claro é suportado
 
@@ -154,8 +182,8 @@ Peças envolvidas:
 |---|---|
 | `classes/output/navmenu.php` | monta os grupos a partir da configuração do site |
 | `templates/ldg/navmenu.mustache` | o menu, com o course index no meio |
-| `layout/drawers.php` | substitui o do Moove; o drawer esquerdo deixa de exigir curso |
-| `templates/theme_moove/drawers.mustache` | override: troca a condição do drawer |
+| `layout/drawers.php` | substitui o do Boost; o drawer esquerdo deixa de exigir curso |
+| `templates/drawers.mustache` | override: troca a condição do drawer |
 | `amd/src/navmenu.js` | recolher/expandir, e grava a preferência |
 | `scss/ldg/_navmenu.scss` | trilho no desktop, off-canvas no mobile |
 
@@ -179,6 +207,35 @@ Duas armadilhas que custaram tempo aqui:
 - **Não escreva chaves duplas de mustache dentro de um comentário `{{! }}`.**
   O comentário termina no primeiro `}}`, e o resto vira tag de verdade — foi
   assim que o `drawers.mustache` quebrou com `Missing closing tag`.
+
+## Os seis overrides do Moove que NÃO foram trazidos
+
+Ao sair da herança do Moove, seis templates dele ficaram para trás. Foram
+avaliados um a um contra o **original do core**, e a decisão foi **não trazer
+nenhum**. Fica registrado para a pergunta não voltar.
+
+| Template | Por que ficou fora |
+|---|---|
+| `mod_quiz/timer` | usa `ml-auto`, `mr-2`, `ml-3` — Bootstrap **4**. Não estão no `bs4-compat.scss` do Boost, então o cronômetro perderia a margem automática e os espaçamentos. Ainda troca `btn-secondary` por `btn-light` (o botão cinza que já foi reclamado) e **apaga o rótulo** `timeleft` em favor de um ícone sozinho |
+| `mod_quiz/list_of_attempts` | troca a `<ul>` semântica por `<div>`, perde a grade responsiva `row-cols-1 row-cols-md-2` do core e depende de `.moove-attempts-list`, que não existe mais |
+| `mod_quiz/attempt_summary_information` | troca uma `<table>` com `<caption class="visually-hidden">` e `<th scope="row">` por `<div>` e `<h5>`. É dado tabular: isso quebra a associação rótulo/valor no leitor de tela |
+| `core_enrol/enrol_page` | só acrescenta ganchos `enrol-card__*` que nenhum SCSS nosso consome, e **remove** `fs-6 fw-bold` do título. Sem o CSS do Moove, fica estritamente pior que o core |
+| `core_enrol/enrolment_options` | remove o `id="notice"` e envolve a mensagem num `alert alert-secondary` — cinza outra vez |
+| `core/full_header` | troca `header-maxwidth d-print-none` por `moove-container-fluid py-4`. Além da classe órfã que já causou a pior quebra visual da migração, perde o `d-print-none` (o cabeçalho passa a sair na impressão) e o `data-for="page-heading"`, que é gancho de JS e de Behat |
+
+O padrão é o mesmo nos seis: são de uma era anterior do Bootstrap, trocam
+marcação semântica por `div`, e dependem de CSS que saiu junto com o Moove. O
+template do core, no 5.2, já é a versão melhor — e o que nos faltava era só a
+**cor**, que já vem dos tokens: `.card` e `.btn` em
+`scss/ldg/_components.scss`, `.table` em `scss/ldg/_surfaces.scss`.
+
+**Uma lacuna real ficou:** `.alert` não é estilizado em lugar nenhum do tema.
+Nas telas de inscrição o aviso do core sai no cinza do Bootstrap. Isso é um
+argumento para escrever a regra de `.alert` — não para trazer o template do
+Moove, que resolvia a mesma coisa quebrando outras cinco.
+
+**Antes de reabrir qualquer um destes, compare com o core do momento, não com o
+Moove.** O core andou; o Moove, para estes arquivos, não.
 
 ## `scss/ldg/_corefixes.scss` precisa ser revisado a cada upgrade do Moodle
 
