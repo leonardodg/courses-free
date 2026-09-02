@@ -121,3 +121,26 @@
     --bs-secondary: #{$gray-700};
     --bs-secondary-rgb: 42, 42, 42;
 }
+
+// -----------------------------------------------------------------------------
+// activity-details
+// -----------------------------------------------------------------------------
+//
+// A caixa de "Completion requirements" no topo da atividade nasce com um cinza
+// claro FIXO do core. No modo escuro ela vira uma faixa quase branca com o texto
+// branco por cima - ilegivel.
+//
+// Foi vista pela primeira vez DENTRO do quadro do formato de curso, que e onde a
+// atividade aparece embutida, mas o problema nao e do formato: acontece em
+// qualquer atividade aberta no modo escuro.
+// O seletor precisa BATER a especificidade do core, que e
+// `.path-mod .activity-details:not(:empty)`. Uma versao mais curta perde, mesmo
+// vindo depois - foi o que aconteceu na primeira tentativa.
+//
+// As duas formas porque `data-bs-theme` e `path-mod` ficam no MESMO elemento, o
+// body: uma delas casa como ancestral, a outra como o proprio elemento.
+[data-bs-theme="dark"] .path-mod .activity-details:not(:empty),
+[data-bs-theme="dark"].path-mod .activity-details:not(:empty) {
+    background-color: var(--ldg-surface-raised);
+    color: var(--ldg-text);
+}
