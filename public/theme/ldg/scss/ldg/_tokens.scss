@@ -1,3 +1,9 @@
+// Tema LDG.
+//
+// @author    Leonardo Della Giustina
+// @copyright 2026 Leonardo Della Giustina
+// @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -101,7 +107,10 @@
     --ldg-text: #ffffff;
     --ldg-text-muted: #b0b3b8;
     --ldg-accent-text: #3394ff;
-    --ldg-field-bg: #121212;
+    // #1E1E1E, e nao #121212: o design system pede "Input Field: Background
+    // #1E1E1E" - o campo e uma superficie elevada, nao o fundo da pagina. Com o
+    // mesmo tom do fundo ele deixa de parecer um campo.
+    --ldg-field-bg: #1e1e1e;
 
     --ldg-chrome-bg: #1e1e1e;
     --ldg-chrome-bg-soft: #2a2a2a;
@@ -110,7 +119,7 @@
 
     // No fundo quase preto a sombra quase nao aparece: quem separa as camadas
     // e o tom da superficie, e nao a sombra.
-    --ldg-shadow-card: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --ldg-shadow-card: 0 4px 6px rgba(0, 0, 0, 0.3);
     --ldg-shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.6);
     --ldg-hover-overlay: rgba(255, 255, 255, 0.06);
 }
@@ -124,23 +133,3 @@
     }
 }
 
-// As custom properties do Moove apontam para a escala de cinza do Bootstrap e
-// para $brand-primary. Sao poucas, mas mandam na navbar, na navegacao
-// secundaria e no fundo dos cards dele - sem isto o site fica com duas paletas
-// ao mesmo tempo, e a navegacao secundaria sai azul-eletrico chapado.
-:root,
-[data-bs-theme="light"] {
-    --moove-navbar-bg-color: var(--ldg-chrome-bg);
-    --moove-secondary-navigation-bg-color: var(--ldg-chrome-bg-soft);
-    --moove-bg-white: var(--ldg-surface);
-    --moove-gray-bg: var(--ldg-bg);
-    --moove-link-color: var(--ldg-accent-text);
-}
-
-[data-bs-theme="dark"] {
-    --moove-navbar-bg-color: var(--ldg-chrome-bg);
-    --moove-secondary-navigation-bg-color: var(--ldg-chrome-bg-soft);
-    --moove-bg-white: var(--ldg-surface);
-    --moove-gray-bg: var(--ldg-bg);
-    --moove-link-color: var(--ldg-accent-text);
-}

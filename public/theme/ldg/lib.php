@@ -25,10 +25,11 @@
 /**
  * Conteudo SCSS principal.
  *
- * Reaproveita a cadeia inteira do Moove e acrescenta os tokens do design system
- * DEPOIS, para que vencam as variaveis do pai. Nao reimplementamos a cadeia
- * dele: os import paths do compilador ja incluem theme/moove/scss, entao os
- * imports relativos de dentro do default.scss dele continuam resolvendo.
+ * Reaproveita a cadeia do Boost - que vem com o Moodle - e acrescenta os tokens
+ * do design system DEPOIS, para que vencam as variaveis do pai. Nao
+ * reimplementamos a cadeia dele: os import paths do compilador ja incluem
+ * theme/boost/scss, entao os imports relativos de dentro do default.scss dele
+ * continuam resolvendo.
  *
  * @param theme_config $theme O objeto de configuracao do tema.
  * @return string
@@ -36,9 +37,9 @@
 function theme_ldg_get_main_scss_content($theme) {
     global $CFG;
 
-    require_once($CFG->dirroot . '/theme/moove/lib.php');
+    require_once($CFG->dirroot . '/theme/boost/lib.php');
 
-    $scss = theme_moove_get_main_scss_content($theme);
+    $scss = theme_boost_get_main_scss_content($theme);
     $scss .= "\n" . file_get_contents($CFG->dirroot . '/theme/ldg/scss/ldg/_tokens.scss');
     $scss .= "\n" . file_get_contents($CFG->dirroot . '/theme/ldg/scss/default.scss');
 
@@ -48,11 +49,12 @@ function theme_ldg_get_main_scss_content($theme) {
 /**
  * Variaveis SCSS a prepender.
  *
- * ATENCAO: o theme_moove_get_pre_scss TAMBEM roda, e ANTES deste, recebendo a
- * config do FILHO - o theme_config junta os callbacks dos pais e o proprio numa
- * lista so. Como as duas funcoes emitem '$var: valor;' sem !default, a ultima
- * atribuicao vence, e a ultima e esta. Nada a desfazer, mas toda vez que este
- * tema declarar um setting com nome igual a um do Moove e preciso perguntar
+ * ATENCAO: o theme_boost_get_pre_scss TAMBEM roda, e ANTES deste, recebendo a
+ * config deste tema - o theme_config junta os callbacks dos pais e o proprio
+ * numa lista so. Como as duas funcoes emitem '$var: valor;' sem !default, a
+ * ultima atribuicao vence, e a ultima e esta. Nada a desfazer, mas toda vez que
+ * este tema declarar um setting com nome igual a um do Boost e preciso
+ * perguntar
  * "o callback dele vai reagir a isso?".
  *
  * @param theme_config $theme O objeto de configuracao do tema.
@@ -148,12 +150,11 @@ function theme_ldg_get_pre_scss($theme) {
 /**
  * SCSS extra, acrescentado no fim da compilacao.
  *
- * O setting da imagem de fundo do login se chama 'loginbg' - e NAO 'loginbgimg'
- * como no Moove - de proposito. O theme_moove_get_extra_scss roda antes deste
- * com a config do filho; se encontrasse 'loginbgimg' preenchido, emitiria o CSS
- * do fundo E o setting 'scss' do admin, e este callback emitiria tudo de novo.
- * Com o nome diferente ele encontra vazio, sai no `return ''` da linha 77 do
- * lib.php dele, e este callback faz o trabalho inteiro uma vez so.
+ * O setting da imagem de fundo do login se chama 'loginbg'. O nome nasceu
+ * diferente do 'loginbgimg' de um tema de terceiro de quem este ja foi filho,
+ * para que o callback dele encontrasse vazio e nao emitisse o CSS do fundo duas
+ * vezes. A dependencia acabou, o nome ficou - trocar agora exigiria migrar o
+ * arquivo ja enviado no config_plugins, e nao ha ganho nisso.
  *
  * De quebra isso contorna um bug do Moove: aquele mesmo `return ''` descarta o
  * setting 'scss' do administrador sempre que nao ha imagem de login.
@@ -200,7 +201,13 @@ function theme_ldg_get_extra_scss($theme) {
 function theme_ldg_get_precompiled_css() {
     global $CFG;
 
-    return file_get_contents($CFG->dirroot . '/theme/moove/style/moodle.css');
+    // O CSS de emergencia e o do BOOST, que vem com o Moodle.
+    //
+    // Apontava para theme/moove/style/moodle.css, e isso deixou de ser um
+    // fallback no momento em que o Moove deixou de ser dependencia: se ele nao
+    // estivesse instalado, a funcao que existe para o site nao ficar sem estilo
+    // seria justamente a que quebraria a pagina.
+    return file_get_contents($CFG->dirroot . '/theme/boost/style/moodle.css');
 }
 
 /**
@@ -219,6 +226,40 @@ function theme_ldg_user_preferences(): array {
             'type' => PARAM_INT,
             'null' => NULL_NOT_ALLOWED,
             'default' => 0,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+        // As duas da barra de acessibilidade. Sem declarar aqui, o
+        // core_user_update_user_preferences RECUSA a gravacao vinda do
+        // navegador, e a escolha se perde no proximo carregamento.
+        //
+        // PARAM_ALPHANUMEXT aceita letra, numero, hifen e sublinhado - que e
+        // exatamente o formato das classes (fontsize-inc-3, sitecolor-color-2)
+        // e nada alem disso.
+        // O alternador de modo de cor grava aqui. A chave e a mesma que o
+        // util\settings::color_mode() le no servidor.
+        'dark-mode-on' => [
+            'type' => PARAM_INT,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => 0,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+        // Liga ou desliga a barra de acessibilidade, por usuario.
+        'theme_ldg-accessibilitybar' => [
+            'type' => PARAM_INT,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => 0,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+        'accessibilitystyles_fontsizeclass' => [
+            'type' => PARAM_ALPHANUMEXT,
+            'null' => NULL_ALLOWED,
+            'default' => '',
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+        'accessibilitystyles_sitecolorclass' => [
+            'type' => PARAM_ALPHANUMEXT,
+            'null' => NULL_ALLOWED,
+            'default' => '',
             'permissioncallback' => [core_user::class, 'is_current_user'],
         ],
     ];
@@ -256,4 +297,36 @@ function theme_ldg_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
     }
 
     send_file_not_found();
+}
+
+/**
+ * Acrescenta a acessibilidade a pagina de preferencias do usuario.
+ *
+ * O callback e o mecanismo nativo: o /user/preferences.php monta a tela a
+ * partir dos nos que os plugins registram aqui. Entrar por ele significa que a
+ * opcao aparece onde o usuario ja procura preferencia, sem inventar um menu.
+ *
+ * @param navigation_node $navigation No de configuracoes do usuario.
+ * @param stdClass $user
+ * @param context_user $usercontext
+ * @param stdClass $course
+ * @param context_course $coursecontext
+ * @return void
+ */
+function theme_ldg_extend_navigation_user_settings($navigation, $user, $usercontext, $course, $coursecontext) {
+    global $USER;
+
+    // So para a propria pessoa: a barra e preferencia dela, e um administrador
+    // ligando isso na conta de outro seria mexer na tela de quem nao pediu.
+    if (empty($USER->id) || $USER->id != $user->id || isguestuser()) {
+        return;
+    }
+
+    $navigation->add(
+        get_string('accessibility', 'theme_ldg'),
+        new moodle_url('/theme/ldg/accessibility.php'),
+        navigation_node::TYPE_SETTING,
+        null,
+        'theme_ldg_accessibility'
+    );
 }

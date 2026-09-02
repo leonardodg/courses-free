@@ -15,7 +15,15 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template theme_moove/drawers
+    Layout principal, com os drawers lateral e direito.
+
+    @template theme_ldg/drawers
+    @author    Leonardo Della Giustina
+    @copyright 2026 Leonardo Della Giustina
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+{{!
+    @template theme_ldg/drawers
 
     OVERRIDE do theme_ldg sobre o template do Moove.
 
@@ -34,7 +42,7 @@
     botao so, uma preferencia so - e toda a mecanica de recolher, foco e
     fechar no resize continua sendo a do Boost, sem nada novo para manter.
 
-    MANUTENCAO: copia do template do Moove. Ao atualizar o theme_moove,
+    MANUTENCAO: derivado do drawers.mustache do Boost. Ao atualizar o Moodle,
     comparar com o dele e trazer o que mudou.
 
     Moove drawer template.
@@ -72,7 +80,7 @@
 {{> theme_boost/head }}
 
 <body {{{ bodyattributes }}}>
-{{> theme_moove/moove/accessibilitybar }}
+{{> theme_ldg/accessibilitybar }}
 
 {{> core/local/toast/wrapper}}
 
@@ -80,9 +88,9 @@
 
     {{{ output.standard_top_of_body_html }}}
 
-    {{> theme_moove/navbar }}
+    {{> theme_ldg/navbar }}
     {{#hasleftdrawer}}
-        {{< theme_moove/drawer }}
+        {{< theme_boost/drawer }}
             {{$id}}theme_boost-drawers-courseindex{{/id}}
             {{$drawerheadercontent}}
                 {{! Expandir e recolher tudo so faz sentido com o course index dentro. }}
@@ -102,23 +110,23 @@
             {{$drawerpreferencename}}drawer-open-index{{/drawerpreferencename}}
             {{$drawerstate}}show-drawer-left{{/drawerstate}}
             {{$tooltipplacement}}right{{/tooltipplacement}}
-            {{$closebuttontext}}{{#str}}closecourseindex, core{{/str}}{{/closebuttontext}}
-        {{/ theme_moove/drawer}}
+            {{! O rotulo segue o QUE a gaveta contem naquela pagina.
+                Ela guarda o menu de navegacao sempre, e o course index so
+                dentro de curso - anunciar "fechar indice do curso" no
+                Dashboard descreve algo que nao esta ali, e quem usa leitor de
+                tela ouve exatamente isso. }}
+            {{$closebuttontext}}
+                {{#courseindex}}{{#str}}closecourseindex, core{{/str}}{{/courseindex}}
+                {{^courseindex}}{{#str}}closedrawer, theme_ldg{{/str}}{{/courseindex}}
+            {{/closebuttontext}}
+        {{/ theme_boost/drawer}}
     {{/hasleftdrawer}}
     {{#hasblocks}}
-        {{< theme_moove/drawer }}
+        {{< theme_boost/drawer }}
             {{$id}}theme_boost-drawers-blocks{{/id}}
             {{$drawerclasses}}drawer drawer-right{{#blockdraweropen}} show{{/blockdraweropen}}{{/drawerclasses}}
             {{$drawercontent}}
                 <div class="d-print-none">
-                    <!-- Modo de edição-->
-                    {{#addblockbutton}}
-                        <div class="alert alert-info" role="alert">
-                            <p>{{#str}}readspeaker_text, theme_moove{{/str}}</p>
-                            <p class="mb-0"><a href="https://www.readspeaker.com/conecti-me">{{#str}}readspeaker_link, theme_moove{{/str}}</a></p>
-                        </div>
-                    {{/addblockbutton}}
-
                     {{{ addblockbutton }}}
                     {{{ sidepreblocks }}}
                 </div>
@@ -129,7 +137,7 @@
             {{$tooltipplacement}}left{{/tooltipplacement}}
             {{$drawercloseonresize}}1{{/drawercloseonresize}}
             {{$closebuttontext}}{{#str}}closeblockdrawer, core{{/str}}{{/closebuttontext}}
-        {{/ theme_moove/drawer}}
+        {{/ theme_boost/drawer}}
     {{/hasblocks}}
     <div id="page" data-region="mainpage" data-usertour="scroller" class="drawers {{#courseindexopen}}show-drawer-left{{/courseindexopen}} {{#blockdraweropen}}show-drawer-right{{/blockdraweropen}} drag-container">
 
@@ -172,6 +180,14 @@
                 {{/hasblocks}}
             </div>
 
+            {{#secondarymoremenu}}
+                <div class="secondary-navigation d-print-none">
+                    <div class="ldg-container-fluid">
+                        {{> core/moremenu}}
+                    </div>
+                </div>
+            {{/secondarymoremenu}}
+
             <div id="page-content" class="pb-3 d-print-block">
                 <div id="region-main-box">
                     {{#hasregionmainsettingsmenu}}
@@ -204,7 +220,7 @@
             </div>
         </div>
     </div>
-    {{> theme_moove/footer }}
+    {{> theme_ldg/footer }}
 
     {{{ output.standard_after_main_region_html }}}
 </div>

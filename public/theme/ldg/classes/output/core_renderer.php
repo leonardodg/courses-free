@@ -41,7 +41,7 @@ use theme_ldg\util\settings;
  * @copyright  2026 Leonardo Della Giustina
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_renderer extends \theme_moove\output\core_renderer {
+class core_renderer extends \theme_boost\output\core_renderer {
     /**
      * HTML do <head>, com o Google Analytics e a fonte deste tema.
      *
@@ -103,38 +103,39 @@ class core_renderer extends \theme_moove\output\core_renderer {
             $additionalclasses = explode(' ', $additionalclasses);
         }
 
-        // A barra de acessibilidade continua sendo do usuario logado, e e o
-        // unico pedaco de preferencia de usuario que o filho preserva.
-        $hasaccessibilitybar = get_user_preferences('thememoovesettings_enableaccessibilitytoolbar', '');
-        if ($hasaccessibilitybar) {
+        // A barra de acessibilidade e OPT-IN.
+        //
+        // Ela ja foi sempre visivel aqui, e o resultado era uma faixa fixa
+        // acima da navbar em toda pagina, para todo mundo. Barra permanente
+        // ocupa altura util e some com a hierarquia do topo; quem precisa do
+        // recurso liga uma vez e ele fica.
+        //
+        // Visitante anonimo nao tem preferencia, e portanto nao ve a barra -
+        // esta certo: nao ha onde guardar a escolha dele.
+        if (!empty(get_user_preferences('theme_ldg-accessibilitybar', 0))) {
             $additionalclasses[] = 'hasaccessibilitybar';
-
-            $fontsizeclass = get_user_preferences('accessibilitystyles_fontsizeclass', '');
-            if ($fontsizeclass) {
-                $additionalclasses[] = $fontsizeclass;
-            }
-
-            $sitecolorclass = get_user_preferences('accessibilitystyles_sitecolorclass', '');
-            if ($sitecolorclass) {
-                $additionalclasses[] = $sitecolorclass;
-            }
         }
 
-        $fonttype = get_user_preferences('thememoovesettings_fonttype', '');
-        if ($fonttype) {
-            $additionalclasses[] = $fonttype;
+        // O valor vem do PARAM_ALPHANUMEXT declarado em theme_ldg_user_prefe-
+        // rences(), entao ja chega limitado a letra, numero, hifen e sublinhado
+        // - nao da para injetar atributo pelo nome da classe.
+        foreach (['accessibilitystyles_fontsizeclass', 'accessibilitystyles_sitecolorclass'] as $preference) {
+            $class = get_user_preferences($preference, '');
+
+            if ($class) {
+                $additionalclasses[] = $class;
+            }
         }
 
         $settings = new settings();
         $colormode = $settings->color_mode();
 
-        if ($colormode === 'dark') {
-            // A classe do Moove tem que vir junto: o amd/src/darkmode.js dele
-            // decide o estado inicial do botao olhando para ela, e nao para o
-            // data-bs-theme. Sem a classe, o botao nasce marcado ao contrario.
-            $additionalclasses[] = 'moove-darkmode';
-        }
-
+        // Uma classe so, e o data-bs-theme abaixo.
+        //
+        // Havia tambem uma 'moove-darkmode' aqui, porque o darkmode.js do Moove
+        // decidia o estado do botao olhando para ela. O colormode.js deste tema
+        // le o data-bs-theme, que e o que o Bootstrap 5 de fato consulta -
+        // entao a classe extra virou codigo morto.
         $additionalclasses[] = 'ldg-' . $colormode;
 
         return " id='{$this->body_id()}' class='{$this->body_css_classes($additionalclasses)}'" .
@@ -233,6 +234,62 @@ class core_renderer extends \theme_moove\output\core_renderer {
             return '';
         }
 
-        return $this->render_from_template('theme_moove/moove/darkmode', []);
+        return $this->render_from_template('theme_ldg/colormode', []);
+    }
+
+    /**
+     * Ha logo para mostrar na navbar?
+     *
+     * Vinha do Moove por heranca. Sem estes tres metodos o navbar.mustache cai
+     * no ramo {{^should_display_logo}} e imprime o NOME DO SITE em texto - foi
+     * exatamente o que aconteceu ao sair do Moove, e o sintoma pareceu "a logo
+     * sumiu" quando na verdade o metodo e que nao existia mais.
+     *
+     * @return bool
+     */
+    public function should_display_logo() {
+        return $this->should_display_theme_logo() || parent::should_display_navbar_logo();
+    }
+
+    /**
+     * O tema tem logo propria configurada?
+     *
+     * @return bool
+     */
+    public function should_display_theme_logo() {
+        return !empty($this->get_theme_logo_url());
+    }
+
+    /**
+     * A logo para fundo claro.
+     *
+     * A do tema vence a do site: quem subiu logo aqui quer a dela.
+     *
+     * @return string|bool
+     */
+    public function get_logo() {
+        $logo = $this->get_theme_logo_url();
+
+        if ($logo) {
+            return $logo;
+        }
+
+        $logo = $this->get_logo_url();
+
+        return $logo ? $logo->out(false) : false;
+    }
+
+    /**
+     * A logo para fundo escuro.
+     *
+     * Cai na clara quando nao ha variante escura - melhor uma logo com contraste
+     * ruim do que nenhuma.
+     *
+     * @return string|bool
+     */
+    public function get_logo_dark() {
+        $logo = $this->get_theme_logo_dark_url();
+
+        return $logo ?: $this->get_logo();
     }
 }

@@ -14,27 +14,40 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Tema global da plataforma. Filho do Moove.
- *
- * @package    theme_ldg
- * @copyright  2026 Leonardo Della Giustina
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace theme_ldg\form;
+
+use moodleform;
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'theme_ldg';
-$plugin->version   = 2026090210;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->supported = [502, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+require_once($GLOBALS['CFG']->libdir . '/formslib.php');
 
-// O Moove NAO declara $plugin->supported, entao a versao abaixo e a unica
-// garantia de que o pai instalado e o 5.2.1 - a release que este filho conhece.
-// Subir o Moove sem reconferir os overrides de core_renderer e util\settings e
-// a forma mais provavel de este tema quebrar em silencio.
-$plugin->dependencies = [
-    'theme_boost' => 2026042000,
-];
+/**
+ * Preferencias de acessibilidade.
+ *
+ * @package    theme_ldg
+ * @author     Leonardo Della Giustina
+ * @copyright  2026 Leonardo Della Giustina
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class accessibility_form extends moodleform {
+    /**
+     * Monta o formulario.
+     *
+     * @return void
+     */
+    protected function definition() {
+        $mform = $this->_form;
+
+        $mform->addElement(
+            'advcheckbox',
+            'accessibilitybar',
+            get_string('accessibilitybar', 'theme_ldg'),
+            get_string('accessibilitybardesc', 'theme_ldg')
+        );
+        $mform->addHelpButton('accessibilitybar', 'accessibilitybar', 'theme_ldg');
+        $mform->setType('accessibilitybar', PARAM_INT);
+
+        $this->add_action_buttons(true, get_string('savechanges'));
+    }
+}

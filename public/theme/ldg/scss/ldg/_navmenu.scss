@@ -1,3 +1,9 @@
+// Tema LDG.
+//
+// @author    Leonardo Della Giustina
+// @copyright 2026 Leonardo Della Giustina
+// @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -253,5 +259,44 @@ $ldg-navmenu-rail: 68px;
         // proposito: ele esconde o drawer com um `left` negativo calculado
         // sobre 285px. Estreitar aqui sem recalcular aquele `left` deixaria
         // uma tira do menu aparecendo com o drawer fechado.
+    }
+}
+
+// O "X" de fechar a gaveta esquerda so existe no MOBILE.
+//
+// No desktop esta gaveta nao fecha: ela recolhe para o trilho de icones, e quem
+// faz isso e o proprio botao de recolher. O "X" herdado do Boost tentava
+// esconder a gaveta inteira, o trilho permanecia, e o clique parecia nao fazer
+// nada - o pior tipo de controle, porque nao ha como saber se falhou.
+//
+// No celular nao ha trilho: a gaveta cobre a tela e fechar e a unica saida.
+@include media-breakpoint-up(md) {
+    // O cabecalho INTEIRO da gaveta sai, e nao so o botao.
+    //
+    // Esconder apenas o .drawertoggle deixava o .drawerheader vazio no lugar,
+    // ocupando altura: era o vao grande acima do primeiro icone do trilho.
+    #theme_boost-drawers-courseindex .drawerheader {
+        display: none;
+    }
+
+    // O rodape acompanha o deslocamento do trilho.
+    //
+    // O #page recebe margin-left, mas o rodape fica FORA dele no layout - por
+    // isso o trilho passava por cima do rodape e cortava o texto. Deslocar o
+    // rodape junto e o que devolve as duas coisas ao mesmo eixo.
+    body.has-ldg-navmenu {
+        #page-footer,
+        .footer-dark,
+        .footer-light {
+            margin-left: var(--ldg-navmenu-width);
+        }
+    }
+
+    body.has-ldg-navmenu.ldg-navmenu-is-collapsed {
+        #page-footer,
+        .footer-dark,
+        .footer-light {
+            margin-left: var(--ldg-navmenu-rail);
+        }
     }
 }

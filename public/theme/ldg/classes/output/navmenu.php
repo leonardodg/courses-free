@@ -64,7 +64,7 @@ class navmenu implements renderable, templatable {
         'switchroleto,moodle' => 'fa-user-gear',
         'switchrolereturn,moodle' => 'fa-rotate-left',
         'logout,moodle' => 'fa-right-from-bracket',
-        'accessibility,theme_moove' => 'fa-universal-access',
+        'accessibility,theme_ldg' => 'fa-universal-access',
     ];
 
     /**

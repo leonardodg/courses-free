@@ -19,13 +19,13 @@
  *
  * E o layout de quase todas as paginas: o config.php do Boost aponta base,
  * standard, course, incourse, admin e companhia para este arquivo, e o
- * layout_file() procura em [ldg, moove, boost] - entao este substitui o do
+ * layout_file() procura em [ldg, boost] - entao este substitui o do
  * Moove para todas elas de uma vez.
  *
  * O que muda em relacao ao do Moove: o drawer ESQUERDO deixa de existir so
  * dentro de curso. Ele passa a conter o menu de navegacao da plataforma e, se
  * houver, o course index empilhado abaixo. Ver o override de
- * templates/theme_moove/drawers.mustache.
+ * templates/drawers.mustache.
  *
  * @package    theme_ldg
  * @copyright  2026 Leonardo Della Giustina
@@ -150,4 +150,4 @@ $templatecontext = [
 
 $templatecontext = array_merge($templatecontext, $themesettings->footer());
 
-echo $OUTPUT->render_from_template('theme_moove/drawers', $templatecontext);
+echo $OUTPUT->render_from_template('theme_ldg/drawers', $templatecontext);

@@ -1,3 +1,9 @@
+// Tema LDG.
+//
+// @author    Leonardo Della Giustina
+// @copyright 2026 Leonardo Della Giustina
+// @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -65,4 +71,97 @@ body.pagelayout-login {
         box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.35);
         color: var(--ldg-text);
     }
+}
+
+// -----------------------------------------------------------------------------
+// Painel da marca, no login
+// -----------------------------------------------------------------------------
+//
+// O painel esquerdo e SEMPRE escuro, nos dois modos: e a superficie de marca, e
+// a identidade nao deve mudar de cor porque o usuario prefere tela clara.
+//
+// O fundo e um degrade, e nao um preto chapado. Preto liso ao lado de um
+// formulario tambem escuro le como "sem estilo" - o degrade e a luz difusa dao
+// profundidade sem custar imagem nenhuma, e continuam funcionando quando o
+// administrador nao subiu foto de fundo.
+.ldg-login .login-layout-left {
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    overflow: hidden;
+    background:
+        radial-gradient(120% 100% at 15% 0%, rgba(0, 122, 255, .22) 0%, transparent 55%),
+        radial-gradient(90% 80% at 90% 100%, rgba(0, 122, 255, .12) 0%, transparent 60%),
+        linear-gradient(160deg, #16243d 0%, var(--ldg-navy) 45%, #070d18 100%);
+}
+
+.ldg-login-brand {
+    position: relative;
+    z-index: 1;
+    max-width: 30rem;
+    text-align: left;
+    color: #ffffff;
+}
+
+.ldg-login-logo {
+    margin-bottom: 2.5rem;
+
+    // Aqui a logo e o elemento principal, e nao um item de barra - por isso a
+    // altura e maior que a da navbar.
+    .logo {
+        max-height: 4.5rem;
+        width: auto;
+    }
+}
+
+.ldg-login-headline {
+    font-size: clamp(1.75rem, 2.4vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    color: #ffffff;
+}
+
+.ldg-login-lead {
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+    color: rgba(255, 255, 255, .72);
+}
+
+// -----------------------------------------------------------------------------
+// Lado do formulario
+// -----------------------------------------------------------------------------
+//
+// Uma superficie um degrau acima do fundo, e nao o mesmo tom: o formulario
+// precisa parecer um objeto sobre a pagina, senao a tela inteira vira um bloco
+// cinza so - que foi exatamente a reclamacao.
+.ldg-login .login-layout-right {
+    align-items: center;
+    background-color: var(--ldg-bg);
+}
+
+.ldg-login .login-container {
+    padding: 2rem;
+    border-radius: 12px;
+    background-color: var(--ldg-surface);
+    border: 1px solid var(--ldg-border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .28);
+}
+
+[data-bs-theme="light"] .ldg-login .login-container {
+    box-shadow: 0 10px 30px rgba(14, 25, 43, .10);
+}
+
+// O botao de mostrar a senha vinha com #f8f9fa embutido pelo core - claro sobre
+// campo escuro, foi o retangulo cinza que aparecia colado no campo de senha.
+.login-container .login-form .toggle-sensitive-wrapper .toggle-sensitive-btn {
+    --bs-btn-bg: var(--ldg-field-bg);
+    --bs-btn-hover-bg: var(--ldg-field-bg);
+    --bs-btn-active-bg: var(--ldg-field-bg);
+    --bs-btn-border-color: var(--ldg-border);
+    --bs-btn-hover-border-color: var(--ldg-border);
+    --bs-btn-active-border-color: var(--ldg-border);
+    color: var(--ldg-text);
 }

@@ -1,3 +1,9 @@
+// Tema LDG.
+//
+// @author    Leonardo Della Giustina
+// @copyright 2026 Leonardo Della Giustina
+// @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -22,6 +28,17 @@
 // passam a ler o mesmo token.
 
 .navbar.fixed-top {
+    // O FUNDO precisa estar aqui.
+    //
+    // Enquanto este tema foi filho do Moove, quem pintava a navbar era o CSS
+    // dele, lendo a custom property --moove-navbar-bg-color que os tokens
+    // alimentavam. Ao sair do Moove ninguem mais consumia aquele alias, e a
+    // navbar voltou ao fundo claro do Bootstrap - com o resto da pagina escuro.
+    //
+    // O !important existe porque o Boost marca a navbar com .bg-body, que e
+    // uma utility do Bootstrap e vence por especificidade de classe empatada
+    // com ordem de declaracao.
+    background-color: var(--ldg-chrome-bg) !important;
     height: var(--ldg-navbar-height);
     border-bottom: 1px solid var(--ldg-border);
 
@@ -76,13 +93,18 @@
 // claro e #1E1E1E no escuro. Mantendo o comportamento dele, o modo claro
 // mostraria a logo escura - preta sobre navy - e a marca sumiria.
 .navbar .navbar-brand {
-    .logo.light {
-        display: none;
+    // O ARQUIVO manda no tamanho se ninguem limitar.
+    //
+    // A marca e um SVG de 300x115 intrinsecos. Sem max-height ele renderiza no
+    // tamanho natural e estoura a navbar de 64px - o sintoma parece "a logo
+    // sumiu", porque o que aparece e um pedaco dela ou nada.
+    //
+    // max-height, e nao height: assim uma logo mais quadrada nao e esticada.
+    .logo {
+        max-height: calc(var(--ldg-navbar-height) - 24px);
+        width: auto;
     }
 
-    .logo.dark {
-        display: block;
-    }
 }
 
 .secondary-navigation {
@@ -168,5 +190,115 @@ body .secondary-navigation .moremenu .nav-tabs .nav-link {
     .drawer-right {
         top: calc(var(--ldg-navbar-height) + 1px);
         height: calc(100vh - var(--ldg-navbar-height));
+    }
+}
+
+// Mesma historia da navbar: a cor vinha do Moove lendo
+// --moove-secondary-navigation-bg-color.
+.secondary-navigation {
+    background-color: var(--ldg-chrome-bg-soft);
+
+    .nav-link {
+        color: var(--ldg-chrome-text);
+    }
+}
+
+// Container do chrome.
+//
+// Era .moove-container-fluid, e as regras vinham do CSS do Moove. Ao sair do
+// Moove a classe continuou na marcacao SEM NENHUMA regra, e navbar e rodape
+// perderam a largura - foi a quebra visual mais visivel da migracao.
+.ldg-container-fluid {
+    width: 100%;
+    padding: 0;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+// Alternador de modo de cor.
+//
+// Os SVGs de sol e lua vem no template sem width/height proprios - o dimensiona-
+// mento vinha do CSS do tema de terceiro. Sem estas regras eles colapsam para
+// zero, e sobra so o interruptor solto na navbar, sem dizer o que alterna.
+#toggle-darkmode {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    color: var(--ldg-chrome-text);
+
+    .icon-sun {
+        width: 22px;
+        height: 22px;
+        margin-right: .25rem;
+    }
+
+    .icon-moon {
+        width: 18px;
+        height: 18px;
+        margin-left: .25rem;
+    }
+}
+
+// Navegacao secundaria (as abas do administrador).
+//
+// O Boost pinta `.secondary-navigation .navigation` com o $body-bg CLARO
+// compilado como literal - mesma familia de seletores que motivou o
+// _corefixes.scss. A regra do contêiner externo nao adianta: quem pinta a faixa
+// visivel e a interna.
+.secondary-navigation {
+    background-color: var(--ldg-chrome-bg-soft);
+
+    .navigation {
+        background-color: var(--ldg-chrome-bg-soft);
+        border-bottom-color: var(--ldg-border);
+    }
+
+    .nav-link,
+    .nav-tabs .nav-link {
+        color: var(--ldg-chrome-text);
+
+        &.active {
+            color: var(--ldg-accent-text);
+            border-bottom-color: var(--ldg-accent);
+        }
+    }
+}
+
+// Qual variante da logo aparece.
+//
+// A regra e "a logo contrasta com o FUNDO EM QUE ESTA", e nao "com o modo de
+// cor". A distincao importa porque o chrome deste tema e azul-escuro nos DOIS
+// modos: uma logo preta ali sumiria mesmo no modo claro.
+//
+// Padrao - a logo acompanha o fundo da pagina.
+.logo.light {
+    display: block;
+}
+
+.logo.dark {
+    display: none;
+}
+
+[data-bs-theme="dark"] {
+    .logo.light {
+        display: none;
+    }
+
+    .logo.dark {
+        display: block;
+    }
+}
+
+// Excecao - superficies que sao escuras NOS DOIS MODOS. Quem acrescentar uma
+// superficie assim (um hero, um rodape escuro) marca com .ldg-on-dark e a logo
+// se resolve sozinha.
+.navbar .navbar-brand,
+.ldg-on-dark {
+    .logo.light {
+        display: none;
+    }
+
+    .logo.dark {
+        display: block;
     }
 }

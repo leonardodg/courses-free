@@ -1,3 +1,9 @@
+// Tema LDG.
+//
+// @author    Leonardo Della Giustina
+// @copyright 2026 Leonardo Della Giustina
+// @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -90,4 +96,28 @@
 .formlistingmore,
 .formlistingrow {
     background-color: var(--ldg-bg);
+}
+
+// -----------------------------------------------------------------------------
+// A moldura branca em volta de todo o conteudo
+// -----------------------------------------------------------------------------
+//
+// O core compila `#page.drawers .main-inner { background-color: #fff }` com o
+// branco LITERAL. E o retangulo claro que emoldurava a pagina inteira no modo
+// escuro - o defeito mais visivel do tema, e nao vinha de nada nosso.
+#page.drawers .main-inner {
+    background-color: var(--ldg-surface);
+}
+
+// -----------------------------------------------------------------------------
+// bg-secondary
+// -----------------------------------------------------------------------------
+//
+// O Bootstrap NAO redefine --bs-secondary nem --bs-secondary-rgb no modo
+// escuro: so o --bs-secondary-bg. Entao toda utility .bg-secondary continua
+// pintando o cinza claro do modo claro - era o circulo cinza do botao de ajuda
+// no rodape.
+[data-bs-theme="dark"] {
+    --bs-secondary: #{$gray-700};
+    --bs-secondary-rgb: 42, 42, 42;
 }
