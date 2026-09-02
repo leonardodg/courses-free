@@ -207,18 +207,44 @@ class format_ldg extends core_courseformat\base {
         }
 
         if ($foreditform && !isset($courseformatoptions['hiddensections']['label'])) {
-            $courseformatoptions['hiddensections']['label'] = new lang_string('hiddensections');
-            $courseformatoptions['hiddensections']['help'] = 'hiddensections';
-            $courseformatoptions['hiddensections']['help_component'] = 'moodle';
-            $courseformatoptions['hiddensections']['element_type'] = 'select';
-            $courseformatoptions['hiddensections']['element_attributes'] = [[
-                0 => new lang_string('hiddensectionscollapsed'),
-                1 => new lang_string('hiddensectionsinvisible'),
-            ]];
+            // O padrao do 5.2 e o choicedropdown, e nao um select com rotulos
+            // soltos: a explicacao de cada opcao vive DENTRO da escolha. O
+            // caminho antigo usava hiddensections_help, que esta na lista de
+            // strings depreciadas do core - e string depreciada nao quebra a
+            // tela, so enche o log de debugging. Foi o behat que pegou.
+            $escolhas = new \core\output\choicelist();
+            $escolhas->set_allow_empty(false);
+            $escolhas->add_option(
+                1,
+                new lang_string('hiddensectionsinvisible'),
+                ['description' => new lang_string('hiddensectionsinvisible_description')]
+            );
+            $escolhas->add_option(
+                0,
+                new lang_string('hiddensectionscollapsed'),
+                ['description' => new lang_string('hiddensectionscollapsed_description')]
+            );
 
-            // O aluno nunca escolhe entre pagina unica e por secao: a tela do
-            // portal e uma so, por desenho. O campo fica fora do formulario.
-            $courseformatoptions['coursedisplay']['element_type'] = 'hidden';
+            $courseformatoptions = array_merge_recursive($courseformatoptions, [
+                'hiddensections' => [
+                    'label' => new lang_string('hiddensections'),
+                    'element_type' => 'choicedropdown',
+                    'element_attributes' => [$escolhas],
+                ],
+                // O aluno nunca escolhe entre pagina unica e por secao: a tela
+                // do portal e uma so, por desenho. O campo fica escondido.
+                //
+                // O LABEL E OBRIGATORIO MESMO ASSIM. O
+                // create_edit_form_elements() do core le ['label'] de TODA
+                // opcao, sem checar antes e sem olhar o element_type - sem ele,
+                // abrir as configuracoes do curso morre com "Undefined array
+                // key label", e o erro aponta para o core, nao para este
+                // arquivo.
+                'coursedisplay' => [
+                    'label' => new lang_string('coursedisplay'),
+                    'element_type' => 'hidden',
+                ],
+            ]);
         }
 
         return $courseformatoptions;

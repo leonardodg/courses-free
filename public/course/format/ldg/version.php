@@ -27,13 +27,12 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->component    = 'format_ldg';
 $plugin->release      = '0.1.0';
-$plugin->version      = 2026090300;
+$plugin->version      = 2026090301;
 $plugin->requires     = 2026042000;
 $plugin->supported    = [502, 502];
 
-// ALPHA de proposito. A tela do portal ja existe - lista de aulas, progresso e
-// a aula embutida - mas o plugin ainda nao tem teste automatizado nem o SCSS
-// que o deixa apresentavel, e o estilo mora no theme_ldg. Declarar STABLE, como
-// o wizard gera por padrao, e o tipo de coisa descoberta por quem instalou
-// confiando. Sobe para BETA quando o passo 7 fechar.
-$plugin->maturity     = MATURITY_ALPHA;
+// BETA, e nao STABLE. A tela do portal esta completa, com 19 testes de unidade
+// e 6 cenarios de behat passando, mas nada disso foi visto num NAVEGADOR ainda,
+// e o celular nao foi testado no aparelho. STABLE se declara depois de alguem
+// usar, e nao depois de o teste passar.
+$plugin->maturity     = MATURITY_BETA;
