@@ -23,19 +23,35 @@ use theme_ldg\util\settings;
 /**
  * Renderer principal do tema LDG.
  *
- * Herda do Moove e sobrescreve exatamente os metodos em que ele faz
- * theme_config::load('moove') fixo. Sao seis:
+ * Herda do BOOST, que e core. A lista abaixo ja foi descrita como "os metodos
+ * em que o Moove faz theme_config::load('moove') fixo", e isso deixou de valer
+ * quando o tema saiu da heranca dele: nao ha mais pai de terceiro para ler
+ * setting errado. Hoje cada override existe por conta propria.
  *
- *   standard_head_html()        Google Analytics e a fonte do Google Fonts
- *   get_theme_logo_url()        logo
+ * Sao DEZ, em tres grupos:
+ *
+ * MARCA - o Boost nao tem esses settings, entao nao ha o que herdar
+ *   get_theme_logo_url()        logo, com fallback para a embarcada em pix/
  *   get_theme_logo_dark_url()   logo do modo escuro
- *   favicon()                   favicon
- *   body_attributes()           modo escuro
- *   render_darkmode_controls()  o botao de alternar modo escuro
+ *   favicon()                   favicon proprio
+ *   should_display_logo()       decide o ramo do navbar.mustache
+ *   should_display_theme_logo() idem
+ *   get_logo()                  idem
+ *   get_logo_dark()             idem
  *
- * Esquecer um nao produz erro: o site fica no ar lendo o setting do PAI, que
- * nunca foi configurado. O sintoma e "sumiu o logo", e ninguem procura no
- * lugar certo. Ao atualizar o theme_moove, reconferir esta lista.
+ * MODO DE COR - o Boost decide por preferencia de usuario, e visitante anonimo
+ * nao tem preferencia
+ *   body_attributes()           a classe, o data-bs-theme e o modo embutido
+ *   render_darkmode_controls()  o botao de alternar
+ *
+ * MARCA NO <head>
+ *   standard_head_html()        Google Analytics e a fonte do Google Fonts.
+ *                               CHAMA o do Boost antes de acrescentar - sem
+ *                               isso o core perde o que poe no head.
+ *
+ * Os quatro do grupo da marca que decidem ramo de template andam JUNTOS. Sem
+ * eles o navbar.mustache cai no ramo de "nao ha logo" e imprime o nome do site
+ * em texto - o sintoma parece "sumiu a logo", e ninguem procura no renderer.
  *
  * @package    theme_ldg
  * @copyright  2026 LeoDG <callme@leodg.dev>
@@ -45,12 +61,16 @@ class core_renderer extends \theme_boost\output\core_renderer {
     /**
      * HTML do <head>, com o Google Analytics e a fonte deste tema.
      *
-     * Nao chama parent::standard_head_html() de proposito. O do Moove le os
-     * settings DELE, e o theme_moove/fontsite ja nasce com 'Roboto' gravado na
-     * instalacao do pai - o site sairia baixando duas fontes do Google e
-     * aplicando a errada. Pulamos um degrau e refazemos o trabalho com a config
-     * certa; o degrau abaixo (Boost) continua sendo chamado, para nao perder o
-     * que ele acrescenta.
+     * CHAMA o do Boost antes de acrescentar. Nao e detalhe: o core poe no head
+     * coisas de que a pagina depende, e trocar esta chamada por um return
+     * proprio quebraria em silencio.
+     *
+     * A chamada e explicita (\theme_boost\...::standard_head_html()) em vez de
+     * parent::, e assim ficou de proposito: quando este tema herdava do Moove
+     * era preciso PULAR um degrau, porque o theme_moove/fontsite ja nasce com
+     * 'Roboto' gravado na instalacao e o site baixaria duas fontes do Google
+     * aplicando a errada. Hoje o Boost e o pai direto e as duas formas seriam
+     * equivalentes - a explicita continua por dizer de qual degrau se trata.
      *
      * @return string
      */
@@ -89,11 +109,15 @@ class core_renderer extends \theme_boost\output\core_renderer {
     /**
      * Atributos da tag <body>.
      *
-     * Refeito, e nao estendido, por dois motivos. O do Moove monta a string
-     * inteira no return - nao ha como injetar nada sem reescrever a string. E
-     * ele decide o modo escuro por *user preference*, que visitante anonimo nao
-     * tem: a landing e a tela de login sairiam claras para todo o publico de
-     * captacao, que e justamente quem o design dark foi feito para atender.
+     * Refeito, e nao estendido, porque o metodo monta a string inteira no
+     * return - nao ha como injetar classe nem atributo sem reescrever a string.
+     *
+     * E porque o modo de cor aqui NAO sai de preferencia de usuario sozinha.
+     * Visitante anonimo nao tem preferencia, e a landing e a tela de login
+     * sairiam claras para todo o publico de captacao - justamente quem o design
+     * escuro foi feito para atender. Quem decide e
+     * \theme_ldg\util\settings::color_mode(), que cai no padrao do site quando
+     * nao ha escolha gravada.
      *
      * @param string|array $additionalclasses Classes extras para o body.
      * @return string
@@ -231,13 +255,14 @@ class core_renderer extends \theme_boost\output\core_renderer {
     /**
      * Botao de alternar entre claro e escuro.
      *
-     * Refeito porque o do Moove le theme_moove/enabledarkmode - o setting do
-     * PAI, que nunca configuramos e vale 1 por padrao. Aqui quem manda e o
+     * O Boost nao tem botao de modo de cor, entao nao ha o que estender - este
+     * metodo existe por conta propria, comandado por
      * theme_ldg/enablecolormodetoggle.
      *
-     * Continua so para usuario autenticado, como no Moove: a escolha e gravada
-     * como preferencia de usuario, e visitante anonimo nao tem onde guardar.
-     * Para ele vale o padrao do site.
+     * So para usuario autenticado: a escolha e gravada como preferencia de
+     * usuario, e visitante anonimo nao tem onde guardar. Para ele vale o padrao
+     * do site. Mostrar o botao para quem nao pode guardar a escolha seria um
+     * controle que se desfaz na proxima pagina.
      *
      * @return string
      */
@@ -258,10 +283,13 @@ class core_renderer extends \theme_boost\output\core_renderer {
     /**
      * Ha logo para mostrar na navbar?
      *
-     * Vinha do Moove por heranca. Sem estes tres metodos o navbar.mustache cai
-     * no ramo {{^should_display_logo}} e imprime o NOME DO SITE em texto - foi
-     * exatamente o que aconteceu ao sair do Moove, e o sintoma pareceu "a logo
-     * sumiu" quando na verdade o metodo e que nao existia mais.
+     * O Boost nao tem este metodo - ele vinha do tema anterior por heranca, e
+     * sumiu junto com ela. Sem ele o navbar.mustache cai no ramo de "nao ha
+     * logo" e imprime o NOME DO SITE em texto. O sintoma pareceu "a logo
+     * sumiu", quando na verdade era o metodo que nao existia mais.
+     *
+     * Anda em conjunto com should_display_theme_logo(), get_logo() e
+     * get_logo_dark(): remover um so ja derruba o ramo do template.
      *
      * @return bool
      */

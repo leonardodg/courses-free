@@ -63,26 +63,54 @@ faz de template `core/*` some — sem erro, servindo o template do core.
 nunca é instanciada. Também aqui não há erro: o site fica no ar lendo os
 settings do **Moove**, que nunca configuramos. O sintoma é "sumiu o logo".
 
-## Os seis overrides, e por que existem
+## Os dez overrides do renderer, e por que existem
 
-O Moove faz `theme_config::load('moove')` fixo em vários pontos. Herdar esses
-métodos faria o filho ler a configuração do pai. `classes/output/core_renderer.php`
-sobrescreve:
+> Esta seção já descreveu "os seis métodos em que o Moove faz
+> `theme_config::load('moove')` fixo". **Isso deixou de valer** quando o tema
+> saiu da herança dele: o pai passou a ser o `theme_boost`, que é core, e não há
+> mais tema de terceiro para ler configuração errada. Hoje cada override existe
+> por conta própria — e são dez, não seis.
 
-| Método | O que estaria errado sem o override |
+`classes/output/core_renderer.php` sobrescreve, em três grupos:
+
+**Marca** — o Boost não tem esses settings, então não há o que herdar.
+
+| Método | Sem ele |
 |---|---|
-| `standard_head_html()` | Google Analytics e fonte do Moove — o `fontsite` dele já nasce `Roboto`, então o site baixaria duas fontes e aplicaria a errada |
-| `get_theme_logo_url()` | logo do Moove |
-| `get_theme_logo_dark_url()` | logo escura do Moove |
-| `favicon()` | favicon do Moove |
-| `body_attributes()` | modo escuro por preferência de usuário — que visitante anônimo não tem |
-| `render_darkmode_controls()` | um botão de alternar que não alterna nada |
+| `get_theme_logo_url()` | sem marca: não há logo configurada nem embarcada |
+| `get_theme_logo_dark_url()` | idem, no modo escuro |
+| `favicon()` | o favicon do Moodle |
+| `should_display_logo()` | o `navbar.mustache` cai no ramo de "não há logo" |
+| `should_display_theme_logo()` | idem |
+| `get_logo()` | idem |
+| `get_logo_dark()` | idem |
 
-E `classes/util/settings.php` existe pelo mesmo motivo: a classe equivalente do
-Moove carrega `'moove'` no construtor.
+**Os quatro últimos andam juntos.** Remover um só já derruba o ramo do template:
+a navbar passa a imprimir o **nome do site em texto**, e o sintoma parece "a logo
+sumiu" — ninguém procura no renderer.
 
-**Ao atualizar o `theme_moove`, reconfira esta tabela.** Um `theme_config::load`
-novo no pai vira um bug silencioso aqui.
+**Modo de cor** — o Boost decide por preferência de usuário, e visitante anônimo
+não tem preferência.
+
+| Método | Sem ele |
+|---|---|
+| `body_attributes()` | a landing e o login sairiam claros para todo o público de captação, que é quem o design escuro atende. Também é aqui que entra a classe `ldg-embedded` |
+| `render_darkmode_controls()` | o Boost não tem esse botão; ele existe por conta própria |
+
+**Cabeçalho**
+
+| Método | Sem ele |
+|---|---|
+| `standard_head_html()` | sem Google Analytics e sem a fonte do design system |
+
+**`standard_head_html()` chama o do Boost antes de acrescentar.** Trocar isso por
+um `return` próprio faria o core perder o que ele põe no `<head>`, e em silêncio.
+A chamada é explícita (`\theme_boost\output\core_renderer::...`) em vez de
+`parent::` por herança da época em que era preciso **pular** um degrau; hoje as
+duas formas seriam equivalentes.
+
+`classes/util/settings.php` existe pela razão análoga: a classe equivalente do
+tema de origem carregava `'moove'` fixo no construtor.
 
 ## Escuro é o padrão, claro é suportado
 
