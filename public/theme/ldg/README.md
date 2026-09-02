@@ -154,8 +154,8 @@ Peças envolvidas:
 |---|---|
 | `classes/output/navmenu.php` | monta os grupos a partir da configuração do site |
 | `templates/ldg/navmenu.mustache` | o menu, com o course index no meio |
-| `layout/drawers.php` | substitui o do Moove; o drawer esquerdo deixa de exigir curso |
-| `templates/theme_moove/drawers.mustache` | override: troca a condição do drawer |
+| `layout/drawers.php` | substitui o do Boost; o drawer esquerdo deixa de exigir curso |
+| `templates/drawers.mustache` | override: troca a condição do drawer |
 | `amd/src/navmenu.js` | recolher/expandir, e grava a preferência |
 | `scss/ldg/_navmenu.scss` | trilho no desktop, off-canvas no mobile |
 
@@ -179,6 +179,35 @@ Duas armadilhas que custaram tempo aqui:
 - **Não escreva chaves duplas de mustache dentro de um comentário `{{! }}`.**
   O comentário termina no primeiro `}}`, e o resto vira tag de verdade — foi
   assim que o `drawers.mustache` quebrou com `Missing closing tag`.
+
+## Os seis overrides do Moove que NÃO foram trazidos
+
+Ao sair da herança do Moove, seis templates dele ficaram para trás. Foram
+avaliados um a um contra o **original do core**, e a decisão foi **não trazer
+nenhum**. Fica registrado para a pergunta não voltar.
+
+| Template | Por que ficou fora |
+|---|---|
+| `mod_quiz/timer` | usa `ml-auto`, `mr-2`, `ml-3` — Bootstrap **4**. Não estão no `bs4-compat.scss` do Boost, então o cronômetro perderia a margem automática e os espaçamentos. Ainda troca `btn-secondary` por `btn-light` (o botão cinza que já foi reclamado) e **apaga o rótulo** `timeleft` em favor de um ícone sozinho |
+| `mod_quiz/list_of_attempts` | troca a `<ul>` semântica por `<div>`, perde a grade responsiva `row-cols-1 row-cols-md-2` do core e depende de `.moove-attempts-list`, que não existe mais |
+| `mod_quiz/attempt_summary_information` | troca uma `<table>` com `<caption class="visually-hidden">` e `<th scope="row">` por `<div>` e `<h5>`. É dado tabular: isso quebra a associação rótulo/valor no leitor de tela |
+| `core_enrol/enrol_page` | só acrescenta ganchos `enrol-card__*` que nenhum SCSS nosso consome, e **remove** `fs-6 fw-bold` do título. Sem o CSS do Moove, fica estritamente pior que o core |
+| `core_enrol/enrolment_options` | remove o `id="notice"` e envolve a mensagem num `alert alert-secondary` — cinza outra vez |
+| `core/full_header` | troca `header-maxwidth d-print-none` por `moove-container-fluid py-4`. Além da classe órfã que já causou a pior quebra visual da migração, perde o `d-print-none` (o cabeçalho passa a sair na impressão) e o `data-for="page-heading"`, que é gancho de JS e de Behat |
+
+O padrão é o mesmo nos seis: são de uma era anterior do Bootstrap, trocam
+marcação semântica por `div`, e dependem de CSS que saiu junto com o Moove. O
+template do core, no 5.2, já é a versão melhor — e o que nos faltava era só a
+**cor**, que já vem dos tokens: `.card` e `.btn` em
+`scss/ldg/_components.scss`, `.table` em `scss/ldg/_surfaces.scss`.
+
+**Uma lacuna real ficou:** `.alert` não é estilizado em lugar nenhum do tema.
+Nas telas de inscrição o aviso do core sai no cinza do Bootstrap. Isso é um
+argumento para escrever a regra de `.alert` — não para trazer o template do
+Moove, que resolvia a mesma coisa quebrando outras cinco.
+
+**Antes de reabrir qualquer um destes, compare com o core do momento, não com o
+Moove.** O core andou; o Moove, para estes arquivos, não.
 
 ## `scss/ldg/_corefixes.scss` precisa ser revisado a cada upgrade do Moodle
 
