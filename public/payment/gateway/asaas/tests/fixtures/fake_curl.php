@@ -18,7 +18,7 @@
  * Transporte falso para os testes do paygw_asaas.
  *
  * @package    paygw_asaas
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -31,7 +31,7 @@ namespace paygw_asaas;
  * exigiria um nome em camelCase que o phpcs do Moodle recusa.
  *
  * @package    paygw_asaas
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class fake_curl extends \curl {

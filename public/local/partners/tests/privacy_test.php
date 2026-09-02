@@ -24,7 +24,7 @@ use local_partners\privacy\provider;
  * Privacidade das candidaturas.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(\local_partners\privacy\provider::class)]

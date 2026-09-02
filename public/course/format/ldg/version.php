@@ -15,18 +15,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for Ldg
+ * Versao do format_ldg.
  *
  * @package    format_ldg
- * @copyright  2026 YOUR NAME <your@email.com>
+ * @author     LeoDG <callme@leodg.dev>
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component    = 'format_ldg';
-$plugin->release      = '1.0';
-$plugin->version      = 2026090200;
+$plugin->release      = '0.1.0';
+$plugin->version      = 2026090201;
 $plugin->requires     = 2026042000;
 $plugin->supported    = [502, 502];
-$plugin->maturity     = MATURITY_STABLE;
+
+// ALPHA de proposito. O formato instala e roda, mas a tela do portal - lista de
+// aulas, progresso, video embutido - ainda nao existe: quem escolher este
+// formato hoje ve o mesmo que o Topics. Declarar STABLE, como o wizard gera por
+// padrao, e o tipo de coisa que so e descoberta por quem instalou confiando.
+$plugin->maturity     = MATURITY_ALPHA;

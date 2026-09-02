@@ -26,7 +26,7 @@ use local_marketplace\plan;
  * Aprovacao e recusa de candidaturas.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversMethod(\local_partners\api::class, 'approve')]

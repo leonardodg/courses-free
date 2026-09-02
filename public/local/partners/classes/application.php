@@ -29,7 +29,7 @@ use local_marketplace\plan;
  * nao tem auto-atendimento, e esta tabela e a fila que o administrador aprova.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class application extends persistent {

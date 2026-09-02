@@ -22,7 +22,7 @@ use core\output\plugin_renderer_base;
  * Renderer do local_partners.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class renderer extends plugin_renderer_base {

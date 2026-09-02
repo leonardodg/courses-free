@@ -18,14 +18,14 @@
  * Tema global da plataforma. Filho do Moove.
  *
  * @package    theme_ldg
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'theme_ldg';
-$plugin->version   = 2026090211;
+$plugin->version   = 2026090212;
 $plugin->requires  = 2026042000; // Moodle 5.2.
 $plugin->supported = [502, 502];
 $plugin->maturity  = MATURITY_ALPHA;

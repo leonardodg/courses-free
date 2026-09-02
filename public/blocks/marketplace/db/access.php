@@ -18,7 +18,7 @@
  * Capabilities for the My subscriptions block.
  *
  * @package    block_marketplace
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

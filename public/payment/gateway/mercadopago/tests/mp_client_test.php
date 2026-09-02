@@ -26,7 +26,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * desenvolvimento - o Mercado Pago recusa em producao, com mensagem generica.
  *
  * @package    paygw_mercadopago
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(\paygw_mercadopago\mp_client::class)]

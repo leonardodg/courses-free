@@ -20,7 +20,7 @@
  * ORDEM ALFABETICA OBRIGATORIA, e paridade exata de chaves entre os idiomas.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

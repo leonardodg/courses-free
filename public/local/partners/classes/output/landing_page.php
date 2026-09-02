@@ -32,7 +32,7 @@ use moodle_url;
  * reajuste, e o visitante veria um numero que o sistema nao pratica.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class landing_page implements renderable, templatable {

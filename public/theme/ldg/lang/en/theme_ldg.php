@@ -22,7 +22,7 @@
  * pt_br e es.
  *
  * @package    theme_ldg
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -45,7 +45,7 @@ $string['advancedsettings'] = 'Advanced';
 $string['brandcolor'] = 'Brand colour';
 $string['brandcolordesc'] = 'The accent colour used by buttons, links, focus rings and progress bars.';
 $string['brandsettings'] = 'Brand';
-$string['choosereadme'] = 'LDG is the platform theme, developed by Leonardo Della Giustina. It builds directly on Boost, the Moodle core theme, and applies the LDG design system: dark by default with a light mode where deep blue predominates, electric blue accent and the Inter typeface. It adds a collapsible side navigation menu, an accessibility bar and the partner landing page as the site home.';
+$string['choosereadme'] = 'LDG is the platform theme, developed by LeoDG. It builds directly on Boost, the Moodle core theme, and applies the LDG design system: dark by default with a light mode where deep blue predominates, electric blue accent and the Inter typeface. It adds a collapsible side navigation menu, an accessibility bar and the partner landing page as the site home.';
 $string['closedrawer'] = 'Close the navigation menu';
 $string['colormodedark'] = 'Dark';
 $string['colormodelight'] = 'Light';

@@ -20,7 +20,7 @@
  * ORDEM ALFABETICA OBRIGATORIA, e paridade exata de chaves com en e es.
  *
  * @package    theme_ldg
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -43,7 +43,7 @@ $string['advancedsettings'] = 'Avançado';
 $string['brandcolor'] = 'Cor da marca';
 $string['brandcolordesc'] = 'A cor de destaque usada em botões, links, anéis de foco e barras de progresso.';
 $string['brandsettings'] = 'Marca';
-$string['choosereadme'] = 'LDG é o tema da plataforma, desenvolvido por Leonardo Della Giustina. Ele é construído diretamente sobre o Boost, o tema do núcleo do Moodle, e aplica o design system LDG: escuro por padrão, com um modo claro onde o azul escuro predomina, destaque em azul elétrico e a tipografia Inter. Acrescenta menu lateral de navegação recolhível, barra de acessibilidade e a landing de parceria como home do site.';
+$string['choosereadme'] = 'LDG é o tema da plataforma, desenvolvido por LeoDG. Ele é construído diretamente sobre o Boost, o tema do núcleo do Moodle, e aplica o design system LDG: escuro por padrão, com um modo claro onde o azul escuro predomina, destaque em azul elétrico e a tipografia Inter. Acrescenta menu lateral de navegação recolhível, barra de acessibilidade e a landing de parceria como home do site.';
 $string['closedrawer'] = 'Fechar o menu de navegação';
 $string['colormodedark'] = 'Escuro';
 $string['colormodelight'] = 'Claro';

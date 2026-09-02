@@ -33,7 +33,7 @@ use local_marketplace\offer;
  *                   mais caro (ex.: a mentoria do "Completo com mentoria")
  *
  * @package    availability_marketplace
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class condition extends \core_availability\condition {

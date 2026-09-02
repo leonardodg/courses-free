@@ -26,8 +26,8 @@ use core_courseformat\output\section_renderer;
  * course_section_updated() e course_section_updated_cm_item().
  *
  * @package    format_ldg
- * @author     Leonardo Della Giustina
- * @copyright  2026 Leonardo Della Giustina
+ * @author     LeoDG <callme@leodg.dev>
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class renderer extends section_renderer {

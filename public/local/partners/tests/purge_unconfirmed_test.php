@@ -23,7 +23,7 @@ use local_partners\task\purge_unconfirmed;
  * Limpeza das candidaturas nunca confirmadas.
  *
  * @package    local_partners
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(\local_partners\task\purge_unconfirmed::class)]

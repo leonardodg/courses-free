@@ -18,8 +18,8 @@
  * Privacidade do format_ldg.
  *
  * @package    format_ldg
- * @author     Leonardo Della Giustina
- * @copyright  2026 Leonardo Della Giustina
+ * @author     LeoDG <callme@leodg.dev>
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -43,7 +43,7 @@ use core_privacy\local\metadata\null_provider;
  * que decide.
  *
  * @package    format_ldg
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements null_provider {

@@ -26,7 +26,7 @@ use PHPUnit\Framework\Attributes\CoversMethod;
  * de outra empresa nunca pode vazar para este relatorio.
  *
  * @package    local_marketplace
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversMethod(\local_marketplace\entitlement::class, 'get_for_company')]

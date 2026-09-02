@@ -18,7 +18,7 @@
  * Cliente do Asaas com o transporte substituido, para os testes.
  *
  * @package    paygw_asaas
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -36,7 +36,7 @@ require_once(__DIR__ . '/fake_curl.php');
  * cliente sem tocar na rede.
  *
  * @package    paygw_asaas
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class fake_asaas_client extends asaas_client {

@@ -38,7 +38,7 @@ use theme_ldg\util\settings;
  * lugar certo. Ao atualizar o theme_moove, reconferir esta lista.
  *
  * @package    theme_ldg
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class core_renderer extends \theme_boost\output\core_renderer {

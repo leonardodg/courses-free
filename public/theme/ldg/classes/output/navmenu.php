@@ -42,7 +42,7 @@ use moodle_url;
  * curso - foi o que aconteceu na primeira tentativa.
  *
  * @package    theme_ldg
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class navmenu implements renderable, templatable {

@@ -33,7 +33,7 @@ namespace local_marketplace;
  * cliente HTTP de cada gateway, que e onde ela importa.
  *
  * @package    local_marketplace
- * @copyright  2026 Leonardo Della Giustina
+ * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class country {
