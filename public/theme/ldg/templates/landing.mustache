@@ -15,6 +15,14 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
+    Chrome da landing de captacao: navbar, miolo do plugin e rodape.
+
+    @template theme_ldg/landing
+    @author    Leonardo Della Giustina
+    @copyright 2026 Leonardo Della Giustina
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+{{!
     @template theme_ldg/landing
 
     Pagina inicial quando a landing de captacao toma o lugar dela.
@@ -49,7 +57,7 @@
 
 {{{ output.standard_top_of_body_html }}}
 
-{{> theme_moove/navbar }}
+{{> theme_ldg/navbar }}
 
 <div id="page" data-region="mainpage" class="drawers drag-container">
     <div id="topofscroll" class="main-inner">
@@ -75,7 +83,7 @@
         </div>
     </div>
 
-    {{> theme_moove/footer }}
+    {{> theme_ldg/footer }}
 </div>
 
 {{{ output.standard_end_of_body_html }}}

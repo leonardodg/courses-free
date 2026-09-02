@@ -33,11 +33,11 @@ $THEME->name = 'ldg';
 // Lista PLANA, do mais especifico para o mais generico.
 //
 // O theme_config NAO expande os pais dos pais (lib/classes/output/theme_config.php,
-// no laco que monta parent_configs). Declarar so ['moove'] faria o
+// no laco que monta parent_configs). Declarar uma lista vazia faria o
 // mustache_template_finder e o layout_file() pararem de enxergar theme/boost, e
 // todo override que o Boost faz de template core/* sumiria sem erro nenhum -
 // o site continuaria no ar, so que renderizando o template do core.
-$THEME->parents = ['moove', 'boost'];
+$THEME->parents = ['boost'];
 
 $THEME->sheets = [];
 $THEME->editor_sheets = [];
@@ -72,7 +72,7 @@ $THEME->precompiledcsscallback = 'theme_ldg_get_precompiled_css';
 // Os layouts CASCATEIAM: base, depois os pais em ordem reversa, depois o
 // proprio. Herdamos tudo do Moove e do Boost e so declaramos o que
 // sobrescrevemos. Na pratica bastaria existir o arquivo layout/frontpage.php,
-// porque o layout_file() procura em [ldg, moove, boost] - mas declarar aqui
+// porque o layout_file() procura em [ldg, boost] - mas declarar aqui
 // deixa a intencao explicita para quem ler.
 $THEME->layouts = [
     'frontpage' => [

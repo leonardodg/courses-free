@@ -188,8 +188,9 @@ if ($ADMIN->fulltree) {
     // Aba Rodape.
     $page = new admin_settingpage('theme_ldg_footer', get_string('footersettings', 'theme_ldg'));
 
-    // As chaves sao as mesmas do Moove porque o template do rodape e dele:
-    // renomear aqui exigiria forkar o footer.mustache so por causa do nome.
+    // Todos nascem VAZIOS, e e proposital: link de rede social que vem
+    // preenchido por padrao acaba publicado sem ninguem ter escolhido, e no
+    // rodape de uma plataforma comercial isso vira marca de terceiro.
     $footersettings = [
         'website' => PARAM_URL,
         'mobile' => PARAM_TEXT,

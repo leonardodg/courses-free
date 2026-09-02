@@ -60,9 +60,13 @@ if (!isloggedin() || isguestuser()) {
 }
 
 if ($ldglanding === '') {
-    // Sem landing, o comportamento e exatamente o do Moove: nada muda para quem
-    // desliga a opcao, e o site nunca fica sem home.
-    require($CFG->dirroot . '/theme/moove/layout/frontpage.php');
+    // Sem landing, cai no layout padrao do Moodle - o drawers do Boost, que e
+    // o mesmo que este tema ja usa em todas as outras paginas.
+    //
+    // Apontava para o frontpage do Moove, e aquilo deixou de ser um fallback
+    // quando o Moove saiu das dependencias: a linha que existe para o site
+    // nunca ficar sem home era justamente a que quebraria com o Moove ausente.
+    require(__DIR__ . '/drawers.php');
     return;
 }
 
