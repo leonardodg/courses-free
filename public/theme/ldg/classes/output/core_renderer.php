@@ -127,6 +127,24 @@ class core_renderer extends \theme_boost\output\core_renderer {
             }
         }
 
+        // Pagina aberta DENTRO de um quadro perde o cabecalho, o menu e o
+        // rodape - o formato de curso LDG embute a atividade, e ter o site
+        // inteiro de novo dentro dele e sofrivel.
+        //
+        // A deteccao e pelo Sec-Fetch-Dest, que o navegador manda em TODA
+        // navegacao cujo destino e um quadro, inclusive nos cliques dados
+        // dentro dele. Um parametro na URL resolveria a primeira carga e se
+        // perderia no primeiro link - o cabecalho voltaria no meio do quiz.
+        //
+        // O parametro fica como reserva para navegador sem Fetch Metadata. Ele
+        // e so uma dica de aparencia: nao libera nada, nao esconde nada que a
+        // permissao ja nao esconda, entao vir do cliente nao e problema.
+        $destino = $_SERVER['HTTP_SEC_FETCH_DEST'] ?? '';
+
+        if ($destino === 'iframe' || optional_param('ldgembed', 0, PARAM_BOOL)) {
+            $additionalclasses[] = 'ldg-embedded';
+        }
+
         $settings = new settings();
         $colormode = $settings->color_mode();
 

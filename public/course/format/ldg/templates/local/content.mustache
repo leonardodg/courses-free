@@ -31,12 +31,21 @@
     "Missing closing tag" apontando para uma linha que nao existe. Foi
     exatamente o que aconteceu aqui.
 
-    Tres coisas NAO se mexe ao editar aqui:
+    A coluna principal muda conforme a edicao:
+
+    - EDICAO LIGADA: a pilha de secoes do core, igual ao Topics. Arrastar
+      atividade, renomear e o menu de acoes vivem nos ganchos que o core poe
+      naquela marcacao, e nenhum deles funciona dentro de um quadro embutido.
+    - EDICAO DESLIGADA: a aula em foco, embutida.
+
+    Tres coisas NAO se mexe no ramo de edicao:
 
     - o data-for="course_sectionlist" na ul, que e por onde o editor reativo
       encontra a lista de secoes
     - o bloco js do fim, que inicializa o componente de edicao. Sem ele,
-      arrastar atividade para de funcionar - e sem erro nenhum no console
+      arrastar atividade para de funcionar - e sem erro nenhum no console. Ele
+      so e emitido com a edicao ligada, porque sem a lista de secoes na pagina
+      o componente nao tem o que observar
     - o id do course-format na div raiz, usado como raiz do componente
 
     A ordem no HTML e conteudo primeiro, lista depois. No celular a lista cai
@@ -113,6 +122,12 @@
 
     <div class="ldg-portal__body">
         <div class="ldg-portal__main">
+            {{^isediting}}
+                {{#lessonviewer}}
+                    {{> format_ldg/local/content/lessonviewer }}
+                {{/lessonviewer}}
+            {{/isediting}}
+            {{#isediting}}
             <ul class="{{format}} section-list" data-for="course_sectionlist">
                 {{#initialsection}}
                     {{$ core_courseformat/local/content/section }}
@@ -158,6 +173,7 @@
                     {{> core_courseformat/local/content/bulkedittools}}
                 {{/ core_courseformat/local/content/bulkedittools}}
             {{/bulkedittools}}
+            {{/isediting}}
         </div>
 
         {{#lessonlist}}
@@ -165,6 +181,7 @@
         {{/lessonlist}}
     </div>
 </div>
+{{#isediting}}
 {{$ core_courseformat/local/content-js}}
 {{#js}}
 require(['core_courseformat/local/content'], function(component) {
@@ -174,3 +191,4 @@ require(['core_courseformat/local/content'], function(component) {
 });
 {{/js}}
 {{/ core_courseformat/local/content-js}}
+{{/isediting}}

@@ -29,6 +29,7 @@ use core\output\renderer_base;
 use core_completion\progress;
 use core_courseformat\output\local\content as content_base;
 use format_ldg\output\courseformat\content\lessonlist;
+use format_ldg\output\courseformat\content\lessonviewer;
 use stdClass;
 
 /**
@@ -76,6 +77,18 @@ class content extends content_base {
 
         $lista = new lessonlist($this->format, $selecionada);
         $data->lessonlist = $lista->export_for_template($output);
+
+        // Com edicao ligada a tela volta a ser a pilha de secoes do core. Nao e
+        // preferencia: arrastar atividade, renomear e o menu de acoes vivem nos
+        // ganchos que o core poe naquela marcacao, e nenhum deles existe dentro
+        // de um iframe. Professor edita, e depois desliga a edicao para ver o
+        // curso como o aluno ve.
+        $data->isediting = $this->format->show_editor();
+
+        if (!$data->isediting) {
+            $visualizador = new lessonviewer($this->format, $selecionada);
+            $data->lessonviewer = $visualizador->export_for_template($output);
+        }
 
         // O progresso do CURSO o core sabe calcular - nao ha o que replicar
         // aqui. Devolve null quando o curso nao acompanha conclusao, e nesse
