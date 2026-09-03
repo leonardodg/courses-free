@@ -674,6 +674,46 @@ cmd_new() {
   (feature -> dev -> deploy) e nao recebeu a infraestrutura."
     fi
 
+    # --- a base combina com o banco? -----------------------------------------
+    # Mesma regra do bloco acima, pelo mesmo motivo: falha AQUI, antes de criar
+    # qualquer coisa.
+    #
+    # Vale para os dois caminhos, porque nos dois o banco vem da origem: sem
+    # --new-stack ele E o banco do principal, e com --seed clone e uma copia
+    # dele. So o "fresh" nasce vazio e escapa; o "share" e o mais exposto de
+    # todos, porque um upgrade la mexe no banco que o principal usa.
+    if [ "$novo_stack" -eq 0 ] || [ "$seed" != "fresh" ]; then
+        local src_branch seed_ref atrasados sug
+        src_branch="$(git -C "$src_path" branch --show-current)"
+        seed_ref="$(git -C "$src_path" rev-parse HEAD)"
+
+        # A comparacao le o HEAD da origem. Um bump de versao ainda nao
+        # commitado la ja esta no banco e nao aparece aqui.
+        git -C "$src_path" diff --quiet -- '*/version.php' \
+            || warn "'$src_name' tem version.php modificado e nao commitado; a checagem olha so o HEAD"
+
+        atrasados="$(plugins_a_frente "$from" "$seed_ref")"
+        if [ -n "$atrasados" ]; then
+            sug="cf new $name --branch $branch"
+            [ "$novo_stack" -eq 1 ] && sug="$sug --new-stack"
+            die "a base '$from' esta atras do banco que seria semeado.
+
+  O codigo viria de '$from', mas o banco vem de '$src_name', que serve
+  '${src_branch:-$seed_ref}'. Estes plugins nasceriam com o banco na frente do
+  codigo, e o upgrade recusa (cannotdowngrade):
+
+$atrasados
+
+  Duas saidas:
+
+      $sug --from ${src_branch:-$seed_ref}
+          nasce da branch que a origem serve, e o banco bate.
+
+      cf new $name --branch $branch --new-stack --seed fresh
+          banco proprio instalado do zero - sem os cursos de teste."
+        fi
+    fi
+
     # ---------------------------------------------------------------------
     # Caminho padrao: worktree nova, stack existente.
     # ---------------------------------------------------------------------
@@ -859,6 +899,48 @@ EOF
     ok "'$name' pronta em https://localhost:$https"
     [ "$open_code" -eq 1 ] && cmd_code "$name"
 }
+
+# Lista os plugins que a ref do BANCO tem em versao maior que a ref do CODIGO.
+#
+# O "cf new" resolve duas origens diferentes, e nada obrigava as duas a
+# combinarem: o CODIGO nasce de --from (default origin/dev) e o BANCO vem do
+# stack de origem, que serve a branch que estiver la - as vezes uma a frente da
+# dev. Quando esta a frente, o banco chega com plugin mais novo que o codigo e o
+# Moodle recusa: "Cannot downgrade format_ldg from 2026090304 to 2026090301".
+# Sem esta checagem o erro so aparecia no ULTIMO passo do cf new, com a worktree
+# criada, o dump restaurado e o stack no ar.
+#
+# So compara os version.php que MUDARAM entre as duas refs: sao poucos, e um
+# plugin identico nos dois lados nao tem como estar a frente. O version.php do
+# core entra na lista e sai sozinho - ele declara $version, nao $plugin->version.
+plugins_a_frente() {
+    local base_ref="$1" seed_ref="$2"
+    local arq base_php seed_php v_base v_seed comp
+
+    while IFS= read -r arq; do
+        [ -n "$arq" ] || continue
+        base_php="$(git -C "$CF_ROOT" show "$base_ref:$arq" 2>/dev/null || true)"
+        seed_php="$(git -C "$CF_ROOT" show "$seed_ref:$arq" 2>/dev/null || true)"
+
+        v_base="$(printf '%s\n' "$base_php" | version_php_num)"
+        v_seed="$(printf '%s\n' "$seed_php" | version_php_num)"
+
+        # Plugin que existe so de um lado nao e downgrade: se so o banco o
+        # conhece, o Moodle avisa que sobrou e segue; se so o codigo tem, e
+        # instalacao normal.
+        [ -n "$v_base" ] && [ -n "$v_seed" ] || continue
+        [ "$v_seed" -gt "$v_base" ] || continue
+
+        comp="$(printf '%s\n' "$seed_php" | version_php_comp)"
+        printf '      %s: banco em %s, codigo em %s\n' "${comp:-$arq}" "$v_seed" "$v_base"
+    done < <(git -C "$CF_ROOT" diff --name-only "$base_ref" "$seed_ref" -- '*/version.php')
+
+    return 0
+}
+
+# O ponto no lugar da aspa evita ter que escapar aspa dentro de aspa no sed.
+version_php_num()  { sed -n 's/^[[:space:]]*\$plugin->version[[:space:]]*=[[:space:]]*\([0-9]\{1,\}\).*/\1/p' | tail -1; }
+version_php_comp() { sed -n 's/^[[:space:]]*\$plugin->component[[:space:]]*=[[:space:]]*.\([a-z0-9_]\{1,\}\).*/\1/p' | tail -1; }
 
 # Clona banco e moodledata do stack de origem.
 seed_clone() {
@@ -1266,6 +1348,11 @@ coluna WORKTREE que o "cf ls" mostra - por exemplo: paygw-pix.
         separados, ~900 MB) que roda em PARALELO com os outros. Use quando
         precisar das duas features no ar ao mesmo tempo, ou de bancos
         separados. --seed so tem efeito neste modo.
+
+        O banco vem da origem, mas o codigo vem de --from. Se a base estiver
+        atras da branch que a origem serve, o banco chega com plugin mais novo
+        que o codigo e o upgrade recusa - o cf confere antes e recusa primeiro,
+        dizendo qual --from usar (ou --seed fresh, para banco vazio).
 
   cf use <worktree>          o stack atual passa a servir esta worktree
                              (mesmo banco e portas; so troca o codigo)
