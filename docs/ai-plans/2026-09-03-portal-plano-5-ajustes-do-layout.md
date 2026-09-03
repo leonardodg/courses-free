@@ -1,0 +1,294 @@
+# Portal do aluno — Plano 5: os quatro ajustes do layout
+
+> **Para quem executa:** use `superpowers:executing-plans`. Os passos usam `- [ ]`.
+
+**Meta:** fechar as quatro diferenças que a comparação com o mockup expôs, com as
+decisões que o usuário tomou em 03/09/2026.
+
+**Origem:** as capturas do [plano 4](2026-09-03-portal-plano-4-conferencia-visual.md).
+
+## As decisões, como foram dadas
+
+| # | O que apareceu na captura | Decisão |
+|---|---|---|
+| 1 | "Requisitos de conclusão", "Ir para a atividade", "Aula 1 ▶" dentro do quadro | **fica** — é informação que o aluno precisa. Aplicar o design system e encaixar no layout |
+| 2 | Selo PREMIUM do mockup | **não entra** — não há de onde tirar essa informação |
+| 2b | Barra de progresso solta no topo | **corrigir** — vai para o cartão da área do aluno, na coluna esquerda |
+| 3 | Falta a barra anterior/próxima | **acrescentar**, no layout que o desenho pede |
+| 4 | "Redefinir a demonstração nessa página" | **remover** |
+
+## Levantado antes de escrever
+
+- **O link do item 4 é do User Tours**: `<a id="resetpagetour">` dentro de
+  `.usertour`, que entra pelo `standard_after_main_region_html`. Não é do nosso
+  código.
+- **Dentro do quadro**, o que precisa de estilo tem nome certo:
+  `.activity-header`, `.completion-info` /
+  `.automatic-completion-conditions` e `.activity-navigation`, esta já com um
+  `ldg-activity-navigation` do tema.
+- **`body.ldg-embedded` já existe** e esconde navbar, cabeçalho, rodapé e
+  drawers. É onde o estilo do item 1 entra.
+
+## Um ponto em aberto, registrado
+
+Os itens 1 e 3 põem a **mesma navegação em dois lugares**: "Aula 1 ▶" dentro do
+quadro e a barra anterior/próxima no miolo. Foi o que o usuário pediu, e é o que
+se implementa. Se na tela ficar redundante, esconder a do quadro é uma linha em
+`body.ldg-embedded`.
+
+## Restrições globais
+
+- Worktree `format-course-ldg`, branch `fix/format-ldg-navegador`, stack offset 0.
+- Comentários em português sem acentos; documentação e strings com acentos.
+- Strings em `en`, `pt_br` e `es`, em ordem alfabética — **reordenar o arquivo**.
+- Estrutura no `styles.css` do formato; marca no `_format.scss` do tema.
+- Propriedades lógicas (`margin-inline`, `border-inline-start`).
+- **Cor nova entra medida**, nos dois modos.
+- **Editou `styles.css` de plugin? Suba a versão** — `purge_caches` não basta.
+- Nada de push.
+
+---
+
+### Tarefa 1: a barra anterior/próxima
+
+**Arquivos:**
+- Criar: `classes/output/courseformat/content/lessonnav.php`
+- Criar: `templates/local/content/lessonnav.mustache`
+- Modificar: `classes/output/courseformat/content.php`, `templates/local/content.mustache`
+- Modificar: `styles.css`, `_format.scss`, `lang/*`
+- Testar: `tests/lessonnav_test.php`
+
+**Interfaces:**
+- Consome: `catalog`, e a aula em foco do `get_selected_cm()`.
+- Produz: `new lessonnav(course_format $format, catalog $catalog, ?cm_info $selected)`
+  exportando `hasprev`, `prev` (`{name, url}`), `hasnext`, `next`, e `position`
+  (`{index, total, module}`).
+
+O desenho pede três coisas na barra: **aula anterior**, **onde estou** ("Aula 2 de
+5 · Módulo 2") e **próxima aula**.
+
+- [ ] **Passo 1: o teste que falha**
+
+```php
+namespace format_ldg\output\courseformat\content;
+
+use format_ldg\catalog;
+
+#[\PHPUnit\Framework\Attributes\CoversClass(\format_ldg\output\courseformat\content\lessonnav::class)]
+final class lessonnav_test extends \advanced_testcase {
+    /**
+     * Monta um curso com tres aulas e devolve o nav da aula do meio.
+     *
+     * @param int $qual Indice da aula em foco, comecando em zero.
+     * @return \stdClass
+     */
+    private function nav_da_aula(int $qual): \stdClass {
+        global $PAGE;
+
+        $gerador = $this->getDataGenerator();
+        $curso = $gerador->create_course(['format' => 'ldg', 'numsections' => 2]);
+
+        $cms = [];
+        $cms[] = $gerador->create_module('page', ['course' => $curso->id, 'section' => 1, 'name' => 'Aula um']);
+        $cms[] = $gerador->create_module('page', ['course' => $curso->id, 'section' => 1, 'name' => 'Aula dois']);
+        $cms[] = $gerador->create_module('page', ['course' => $curso->id, 'section' => 2, 'name' => 'Aula tres']);
+
+        $format = course_get_format($curso);
+        $modinfo = $format->get_modinfo();
+        $foco = $modinfo->get_cm($cms[$qual]->cmid);
+
+        $nav = new lessonnav($format, new catalog($format), $foco);
+
+        return $nav->export_for_template($PAGE->get_renderer('core'));
+    }
+
+    /**
+     * No meio ha anterior e proxima, e a posicao conta o curso inteiro.
+     *
+     * @return void
+     */
+    public function test_no_meio_tem_os_dois_lados(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $d = $this->nav_da_aula(1);
+
+        $this->assertTrue($d->hasprev);
+        $this->assertSame('Aula um', $d->prev->name);
+        $this->assertTrue($d->hasnext);
+        $this->assertSame('Aula tres', $d->next->name);
+        $this->assertSame(2, $d->position->index);
+        $this->assertSame(3, $d->position->total);
+    }
+
+    /**
+     * A primeira nao tem anterior; a ultima nao tem proxima. Sem isto a barra
+     * mostraria um botao que leva a lugar nenhum.
+     *
+     * @return void
+     */
+    public function test_pontas_nao_inventam_vizinho(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $primeira = $this->nav_da_aula(0);
+        $ultima = $this->nav_da_aula(2);
+
+        $this->assertFalse($primeira->hasprev);
+        $this->assertTrue($primeira->hasnext);
+        $this->assertTrue($ultima->hasprev);
+        $this->assertFalse($ultima->hasnext);
+    }
+
+    /**
+     * Material e forum nao entram na sequencia: a barra e de AULAS.
+     *
+     * @return void
+     */
+    public function test_so_aula_entra_na_sequencia(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $gerador = $this->getDataGenerator();
+        $curso = $gerador->create_course(['format' => 'ldg']);
+        $a = $gerador->create_module('page', ['course' => $curso->id, 'section' => 1, 'name' => 'Aula um']);
+        $gerador->create_module('resource', ['course' => $curso->id, 'section' => 1, 'name' => 'Apostila']);
+        $gerador->create_module('page', ['course' => $curso->id, 'section' => 1, 'name' => 'Aula dois']);
+
+        $format = course_get_format($curso);
+        $foco = $format->get_modinfo()->get_cm($a->cmid);
+        $nav = new lessonnav($format, new catalog($format), $foco);
+        $d = $nav->export_for_template($PAGE->get_renderer('core'));
+
+        $this->assertSame('Aula dois', $d->next->name);
+        $this->assertSame(2, $d->position->total);
+    }
+}
+```
+
+- [ ] **Passo 2: rodar e ver falhar** (classe inexistente).
+
+- [ ] **Passo 3: implementar o `lessonnav`**
+
+A sequência sai do `catalog::AULA`, que já vem na ordem do curso e já respeita
+visibilidade — não se refaz a varredura. A posição é o índice dentro dessa lista;
+o módulo é o nome da seção da aula em foco. As URLs saem de
+`get_view_url(null, ['lesson' => $cm->id])`, para o destino continuar em Aulas.
+
+- [ ] **Passo 4: template, estrutura e marca**
+
+`lessonnav.mustache` com três âncoras — anterior, posição (texto, não link) e
+próxima. No `content.mustache` entra **entre** o quadro e o resto, só no destino
+Aulas. Estrutura (`display:flex`, `justify-content:space-between`, empilhar
+abaixo de `sm`) no `styles.css`; cor, raio e a pílula do "próxima" no
+`_format.scss`, com `--ldg-accent-fill` e `--ldg-on-accent`.
+
+- [ ] **Passo 5: strings nos três idiomas**, reordenando os arquivos:
+  `lessonprev` ("Aula anterior"), `lessonnext` ("Próxima aula"),
+  `lessonposition` ("Aula {$a->index} de {$a->total}").
+
+- [ ] **Passo 6: rodar tudo, subir versão, commitar.**
+
+---
+
+### Tarefa 2: o cartão da área do aluno, e o progresso no lugar certo
+
+**Arquivos:**
+- Modificar: `templates/local/content.mustache`, `styles.css`, `_format.scss`
+
+Hoje a barra de progresso fica solta no topo, atravessando a página. No desenho
+ela vive num cartão na coluna esquerda, acima da navegação.
+
+- [ ] **Passo 1: mover o bloco de progresso** para dentro da região `nav`, no
+  `content.mustache`, envolvido por um cartão `.ldg-portal__student`.
+
+- [ ] **Passo 2: o cartão** ganha saudação com o primeiro nome do aluno e o
+  percentual. **Sem selo PREMIUM** — não há de onde tirar essa informação, e
+  inventar um selo de plano numa tela de curso seria mentir para o aluno.
+
+- [ ] **Passo 3: no celular** o cartão vai para cima do miolo (a coluna `nav` não
+  existe abaixo de `lg`) — uma linha a mais no `grid-template-areas`.
+
+- [ ] **Passo 4: string** `studentgreeting` ("Olá, {$a}!") nos três idiomas.
+
+- [ ] **Passo 5: medir com a sonda** — a barra não pode voltar a atravessar a
+  página, e o cartão não pode empurrar a coluna além dos 280px.
+
+---
+
+### Tarefa 3: o design system dentro do quadro
+
+**Arquivos:**
+- Modificar: `public/theme/ldg/scss/ldg/_format.scss`, bloco `body.ldg-embedded`
+
+O conteúdo do quadro é a `view.php` da atividade, com o CSS do próprio tema — mas
+os blocos do core chegam com a cara do Boost. Três alvos, e nenhum é do nosso
+HTML:
+
+```scss
+body.ldg-embedded {
+    // Os requisitos de conclusao sao INFORMACAO, e nao enfeite: e por eles que o
+    // aluno sabe o que falta. Ficam, com a cara do portal.
+    .activity-header,
+    .completion-info,
+    .automatic-completion-conditions {
+        background-color: var(--ldg-surface);
+        border: 1px solid var(--ldg-border);
+        border-radius: 12px;
+    }
+
+    .activity-navigation {
+        border-top: 1px solid var(--ldg-border);
+    }
+}
+```
+
+- [ ] **Passo 1: escrever o estilo** usando os tokens, sem hex solto.
+- [ ] **Passo 2: conferir com a captura**, e medir o contraste de qualquer par
+  novo.
+- [ ] **Passo 3: subir versão e commitar.**
+
+---
+
+### Tarefa 4: remover o link do User Tours
+
+**Arquivos:**
+- Modificar: `public/theme/ldg/scss/ldg/_format.scss`
+
+O `<a id="resetpagetour">` vem do `tool_usertours`, pelo
+`standard_after_main_region_html` — o mesmo bloco que traz o painel de mensagens,
+que **fica**. Por isso a remoção é do elemento, e não do bloco:
+
+```scss
+body.format-ldg .usertour {
+    display: none;
+}
+```
+
+- [ ] **Passo 1: escrever, e explicar no comentário** que o alvo é o link do
+  tour, não o `standard_after_main_region_html` inteiro.
+- [ ] **Passo 2: conferir no DOM** que `#resetpagetour` não é mais visível e que
+  o painel de mensagens continua presente.
+
+---
+
+### Tarefa 5: conferir e documentar
+
+- [ ] **Passo 1:** sonda visual nos dois viewports e dois modos — as medidas do
+  plano 4 continuam válidas, mais a barra nova.
+- [ ] **Passo 2:** axe-core nos quatro destinos e dois modos: zero graves.
+- [ ] **Passo 3:** `phpunit`, `behat`, `phpcs`.
+- [ ] **Passo 4:** capturas novas para o usuário comparar.
+- [ ] **Passo 5:** README do formato (a barra de navegação e o cartão),
+  `DESIGN.md` (o selo PREMIUM que **não** existe, e por quê), e o registro.
+
+## Como saber que o plano 5 acabou
+
+1. Barra anterior/próxima no miolo, sem botão que leve a lugar nenhum nas pontas.
+2. Progresso dentro do cartão, na coluna esquerda — e no celular, acima do miolo.
+3. Requisitos de conclusão e navegação da atividade com a cara do portal.
+4. `#resetpagetour` fora da tela; painel de mensagens intacto.
+5. Medidas, axe-core e testes verdes.
+6. Capturas entregues.

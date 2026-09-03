@@ -51,3 +51,4 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-09-03 | [Portal, plano 2: destinos e catálogo](2026-09-03-portal-plano-2-destinos-e-catalogo.md) | **executado** — 5 commits; 52 testes e 12 cenários verdes |
 | 2026-09-03 | [Portal, plano 3: marca e tipografia](2026-09-03-portal-plano-3-marca-e-tipografia.md) | **executado** — 4 commits; contraste e fontes medidos no Chrome |
 | 2026-09-03 | [Portal, plano 4: conferência visual](2026-09-03-portal-plano-4-conferencia-visual.md) | **executado** — medidas no alvo, axe-core limpo |
+| 2026-09-03 | [Portal, plano 5: ajustes do layout](2026-09-03-portal-plano-5-ajustes-do-layout.md) | escrito; a executar |
