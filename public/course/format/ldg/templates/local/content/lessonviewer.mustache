@@ -80,33 +80,18 @@
             </div>
         {{/hasframe}}
 
-        {{#hascompletion}}
-            {{#completion}}
-                {{#uservisible}}
-                    <div class="ldg-lesson__completion" data-region="completion-info">
-                        {{#ismanual}}
-                            {{#showmanualcompletion}}
-                                {{> core_course/completion_manual }}
-                            {{/showmanualcompletion}}
-                        {{/ismanual}}
-                        {{#isautomatic}}
-                            <div class="automatic-completion-conditions" data-region="completionrequirements"
-                                 role="region"
-                                 aria-label="{{#str}}completionrequirements, core_course, {{activityname}}{{/str}}">
-                                <div class="automatic-completion-title">
-                                    <strong>{{#str}}completionrequirements, core_completion{{/str}}</strong>
-                                </div>
-                                <ul class="activity-completion-list">
-                                    {{#completiondetails}}
-                                        {{> core_course/completion_automatic }}
-                                    {{/completiondetails}}
-                                </ul>
-                            </div>
-                        {{/isautomatic}}
-                    </div>
-                {{/uservisible}}
-            {{/completion}}
-        {{/hascompletion}}
+        {{!
+            NAO ha bloco de conclusao aqui, e ja houve.
+
+            A atividade embutida desenha o proprio estado de conclusao - o
+            "Completion requirements" e o botao de marcar - porque e a view.php
+            dela que carrega no quadro. Repetir do lado de fora mostrava a MESMA
+            frase duas vezes na mesma tela, uma dentro do quadro e outra logo
+            abaixo. So se via em navegador.
+
+            Se um dia o quadro deixar de existir para algum tipo de atividade,
+            e aqui que o bloco volta.
+        }}
     {{/haslesson}}
     {{^haslesson}}
         <div class="ldg-lesson__empty">

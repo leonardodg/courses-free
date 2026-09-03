@@ -25,6 +25,26 @@
 // e o media-breakpoint-up(lg) que traz as duas colunas. O contrario sempre
 // deixa residuo de largura fixa que so aparece no aparelho.
 
+// O curso no formato portal ocupa a largura toda.
+//
+// O course/view.php do core acrescenta `limitedwidth` ao body, sempre, e o Boost
+// traduz isso num max-width de largura de LEITURA. Faz sentido num curso que e
+// uma coluna de texto; aqui espreme duas colunas em 760px, e a aula - que e o
+// ponto da tela - fica com 420px de largura.
+//
+// Nao da para resolver no formato: quem poe a classe e o core, e quem a
+// interpreta e o tema. Mesmo caminho ja usado pela landing, logo abaixo.
+// So o max-width do .main-inner, e nada mais.
+//
+// A primeira tentativa zerou tambem o #page.drawers, o #region-main-box e o
+// #region-main, copiando o que a landing faz. Errado: aqueles elementos e que
+// carregam o recuo do trilho de icones a esquerda, e sem ele o conteudo passa
+// POR BAIXO do trilho - o titulo aparecia cortado, "oas-vindas". So se ve isso
+// em navegador.
+body.format-ldg #page.drawers .main-inner {
+    max-width: none;
+}
+
 // A pagina do curso.
 .ldg-portal {
     &__progress {
@@ -280,24 +300,21 @@
     }
 }
 
-// A lista comeca RECOLHIDA no celular.
+// LIMITACAO CONHECIDA: no celular os modulos comecam ABERTOS.
 //
-// Aberta, ela empurra a aula para fora da primeira tela, e o aluno rola o
-// indice inteiro antes de chegar ao video - exatamente o que a ordem do HTML
-// tentou evitar. No desktop nao ha esse conflito e ela fica aberta.
-@include media-breakpoint-down(lg) {
-    .ldg-lessonlist__module[open] > .ldg-lessonlist__lessons,
-    .ldg-lessonlist__module[open] > .ldg-lessonlist__module-bar {
-        display: revert;
-    }
-
-    .ldg-lessonlist__module:not([open]) {
-        .ldg-lessonlist__lessons,
-        .ldg-lessonlist__module-bar {
-            display: none;
-        }
-    }
-}
+// Este bloco ja dizia que eles comecavam recolhidos, e era falso - conferido no
+// navegador, com viewport de 390px: `details.open` era `true`. O template emite
+// <details open>, e CSS nao remove atributo. O que havia aqui escondia o
+// conteudo de um <details> FECHADO, que e o que o navegador ja faz sozinho -
+// logo, nao fazia nada.
+//
+// Nao chega a machucar, porque a ordem do HTML poe a AULA antes da lista e isso
+// esta conferido: no celular a pessoa ve o video primeiro e a lista depois. O
+// custo e so uma lista longa embaixo.
+//
+// Resolver de verdade pede JavaScript - fechar os modulos abaixo do breakpoint
+// no carregamento, deixando o controle com a pessoa depois. Nao entrou aqui
+// para nao acrescentar um modulo AMD so por isto.
 
 // A pagina servida DENTRO do quadro da aula.
 //
@@ -319,11 +336,20 @@ body.ldg-embedded {
         display: none !important;
     }
 
+    // Nada aqui pode se esticar ate a altura do quadro.
+    //
+    // O player.js mede o conteudo para decidir a altura do quadro; se o
+    // conteudo acompanhar o quadro, os dois se puxam e a altura cresce sem
+    // parar. Ja aconteceu: 420px viraram 12084px em poucos segundos.
+    min-height: 0 !important;
+
     #page,
     #page.drawers,
     .main-inner {
         margin: 0 !important;
         padding: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
     }
 
     #page.drawers {

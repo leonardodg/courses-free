@@ -28,8 +28,6 @@ namespace format_ldg\output\courseformat\content;
 use cm_info;
 use core\output\named_templatable;
 use core\output\renderer_base;
-use core_completion\cm_completion_details;
-use core_course\output\activity_completion;
 use core_courseformat\base as course_format;
 use renderable;
 use stdClass;
@@ -91,8 +89,6 @@ class lessonviewer implements named_templatable, renderable {
      * @return stdClass
      */
     public function export_for_template(renderer_base $output): stdClass {
-        global $USER;
-
         if ($this->cm === null) {
             return (object) ['haslesson' => false];
         }
@@ -124,16 +120,14 @@ class lessonviewer implements named_templatable, renderable {
         $dados->frameurl = $url->out(false);
         $dados->openurl = $cm->url->out(false);
 
-        $detalhe = cm_completion_details::get_instance($cm, $USER->id);
-
-        // O botao de concluir so aparece quando a conclusao e manual. Na
-        // automatica ele nao existe nem na pagina do curso do core: seria um
-        // botao que mente sobre quem decide.
-        if ($detalhe->has_completion()) {
-            $conclusao = new activity_completion($cm, $detalhe, false);
-            $dados->completion = $conclusao->export_for_template($output);
-            $dados->hascompletion = true;
-        }
+        // A CONCLUSAO NAO E MONTADA AQUI, e ja foi.
+        //
+        // Quem carrega no quadro e a view.php da atividade, e ela ja desenha o
+        // proprio estado de conclusao - os requisitos e o botao de marcar.
+        // Exportar de novo mostrava a MESMA frase duas vezes na tela, uma
+        // dentro do quadro e outra logo abaixo dele. Nenhum teste de servidor
+        // pegaria isso: os dois blocos estao corretos, o problema e existirem
+        // juntos.
 
         return $dados;
     }

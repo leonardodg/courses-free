@@ -56,6 +56,24 @@ define(['core/log'], function(Log) {
     /**
      * Mede o documento de dentro do quadro e aplica a altura.
      *
+     * CUIDADO AO MEXER AQUI: este metodo ja teve um laco de realimentacao que so
+     * aparece em navegador, e nao em nenhum teste.
+     *
+     * scrollHeight NUNCA e menor que a altura do proprio quadro - ele inclui a
+     * area visivel. Entao, medir e somar uma folga faz o quadro crescer a folga
+     * por ciclo do ResizeObserver: 420px viraram 8419px, e depois 12084px, sem
+     * parar. A folga alimentava a proxima medida.
+     *
+     * A saida e ENCOLHER O QUADRO ANTES DE MEDIR. Com ele em zero, o documento
+     * de dentro volta ao tamanho que o conteudo pede, e a medida deixa de
+     * depender do valor anterior - sem dependencia, nao ha realimentacao.
+     *
+     * Medir "o filho mais alto do body" NAO resolve, e isso ja foi tentado: o
+     * #page-wrapper e o #page tambem acompanham a altura do quadro, entao a
+     * medida continua sendo a do proprio quadro. O sintoma vira o oposto - em
+     * vez de crescer sem parar, o quadro trava na altura minima e corta
+     * conteudo.
+     *
      * @param {HTMLIFrameElement} frame
      * @return {void}
      */
@@ -76,12 +94,32 @@ define(['core/log'], function(Log) {
             return;
         }
 
-        var altura = Math.max(
-            doc.body.scrollHeight,
-            doc.documentElement ? doc.documentElement.scrollHeight : 0
+        var atual = parseInt(frame.style.height, 10) || 0;
+
+        // ENCOLHE ANTES DE MEDIR. Enquanto o quadro tem altura, o documento de
+        // dentro se estica ate ela - #page-wrapper e #page acompanham - e
+        // qualquer medida devolve a altura do proprio quadro, nao a do conteudo.
+        //
+        // Medir com o quadro em zero desfaz isso: o documento volta ao tamanho
+        // que o conteudo pede. Nao ha piscada, porque o navegador nao pinta
+        // entre as duas atribuicoes - so recalcula o layout.
+        frame.style.height = '0px';
+
+        var conteudo = Math.max(
+            doc.documentElement ? doc.documentElement.scrollHeight : 0,
+            doc.body.scrollHeight
         );
 
-        frame.style.height = Math.max(altura + PADDING, MIN_HEIGHT) + 'px';
+        var nova = Math.max(conteudo + PADDING, MIN_HEIGHT);
+
+        frame.style.height = nova + 'px';
+
+        // Se nada mudou, nao ha por que o observador reagir de novo.
+        if (nova === atual) {
+            return;
+        }
+
+        Log.debug('format_ldg/player: quadro ajustado para ' + nova + 'px.');
     };
 
     /**
