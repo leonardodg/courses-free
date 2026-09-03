@@ -78,16 +78,24 @@
     display: none;
 }
 
+.ldg-portal__studenthead {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Os botoes descem para BAIXO da saudacao, e nao ao lado dela.
+ *
+ * Ao lado, numa coluna de 280px, "Indice de aulas" quebrava em tres linhas de
+ * uma palavra cada e o cartao virava um bloco alto e torto. Visto na captura. */
 .ldg-portal--can-hide .ldg-portal__asidetoggles {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.25rem;
 }
 
-.ldg-portal__studenthead {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.5rem;
+.ldg-portal__asidetoggle {
+    white-space: nowrap;
 }
 
 .ldg-portal--hide-nav .ldg-portal__nav,
@@ -259,6 +267,11 @@
             "student main"
             "nav main"
             "nav index";
+
+        /* A primeira linha tem a altura do CARTAO. Sem isto o navegador
+           distribui a altura do miolo entre as duas linhas e abre um vao de
+           centenas de pixels entre o cartao e o menu - visto na captura. */
+        grid-template-rows: auto auto 1fr;
         align-items: start;
     }
 
@@ -285,6 +298,7 @@
         grid-template-areas:
             "student main index"
             "nav main index";
+        grid-template-rows: auto 1fr;
     }
 
     .ldg-lessonlist {
