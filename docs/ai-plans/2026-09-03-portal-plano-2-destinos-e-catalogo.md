@@ -330,6 +330,14 @@ class catalog {
      * @return string
      */
     public static function classify(cm_info $cm): string {
+        // A ausencia de URL e o primeiro corte, e o unico que pega o ROTULO.
+        // NAO da para usar is_of_type_that_can_display() para isso: ele e
+        // plugin_supports(FEATURE_CAN_DISPLAY, true), com default TRUE, e o
+        // mod_label nunca declara a flag - entao rotulo passaria por aula.
+        if (empty($cm->url)) {
+            return self::NENHUM;
+        }
+
         if (!$cm->is_visible_on_course_page() || !$cm->is_of_type_that_can_display()) {
             return self::NENHUM;
         }
