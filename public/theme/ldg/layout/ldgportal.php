@@ -40,6 +40,38 @@ $primary = new core\navigation\output\primary($PAGE);
 $renderer = $PAGE->get_renderer('core');
 $primarymenu = $primary->export_for_template($renderer);
 
+// A navegacao secundaria do curso - Configuracoes, Participantes, Notas,
+// Relatorios - so aparece para quem tem a capacidade, porque e o proprio core
+// que monta a lista a partir das permissoes. Para o aluno ela vem vazia, e o
+// cabecalho do portal continua limpo.
+//
+// Sem isto, o professor tinha que LIGAR A EDICAO para chegar nas notas: o portal
+// nao tem navbar, e a navegacao do curso mora nela. Ninguem espera isso, e foi o
+// que o usuario notou ao abrir o portal como manager.
+//
+// E o mesmo caminho do layout de drawers deste tema, nao um menu paralelo: um
+// segundo lugar decidindo o que o professor pode ver seria uma segunda verdade
+// sobre permissao.
+$secondarynavigation = false;
+
+// SO PARA QUEM GERENCIA, e a trava e esta linha.
+//
+// A navegacao secundaria do core NAO e exclusiva de professor: o aluno tambem
+// tem uma - Curso, Notas, Competencias -, e sem esta condicao ela voltava para
+// ele. Seria reintroduzir no portal exatamente o chrome que o portal existe para
+// tirar. Conferido: com o aluno, o cabecalho vinha com a barra.
+$podegerenciar = has_capability('moodle/course:update', $PAGE->context);
+
+if ($podegerenciar && $PAGE->has_secondary_navigation()) {
+    $secondary = $PAGE->secondarynav;
+
+    if ($secondary->get_children_key_list()) {
+        $tablistnav = $PAGE->has_tablist_secondary_navigation();
+        $moremenu = new \core\navigation\output\more_menu($PAGE->secondarynav, 'nav-tabs', true, $tablistnav);
+        $secondarynavigation = $moremenu->export_for_template($OUTPUT);
+    }
+}
+
 $templatecontext = [
     'sitename' => format_string($SITE->shortname, true, [
         'context' => \core\context\course::instance(SITEID),
@@ -53,6 +85,7 @@ $templatecontext = [
     'bodyattributes' => $OUTPUT->body_attributes(['ldg-portal-page']),
     'usermenu' => $primarymenu['user'],
     'langmenu' => $primarymenu['lang'],
+    'secondarymoremenu' => $secondarynavigation,
     'coursename' => format_string($COURSE->fullname),
 
     // O botao de fechar devolve o aluno para a area dele, e nao para a home do

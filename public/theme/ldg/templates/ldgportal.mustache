@@ -110,6 +110,20 @@
         </div>
     </header>
 
+    {{!
+        A navegacao do curso, para quem pode gerenciar.
+
+        Quem decide o que entra aqui e o CORE, pelas permissoes - para o aluno a
+        lista vem vazia e nada e desenhado. Sem isto o professor precisava LIGAR
+        A EDICAO para chegar nas notas, porque a navegacao do curso mora na
+        navbar, e o portal nao tem navbar.
+    }}
+    {{#secondarymoremenu}}
+        <div class="ldg-portal__coursenav secondary-navigation d-print-none">
+            {{> core/moremenu}}
+        </div>
+    {{/secondarymoremenu}}
+
     <div id="region-main-box">
         <section id="region-main" aria-label="{{#str}}content{{/str}}">
             {{!

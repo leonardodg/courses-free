@@ -109,6 +109,25 @@ Feature: O portal do aluno
     Then ".ldg-portal__header" "css_element" should exist
     And "nav.navbar" "css_element" should not exist
 
+  # Sem isto o professor tinha que LIGAR A EDICAO para chegar nas notas: a
+  # navegacao do curso mora na navbar, e o portal nao tem navbar.
+  Scenario: Quem gerencia leva a navegacao do curso para dentro do portal
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "professor"
+    Then ".ldg-portal__coursenav" "css_element" should exist
+
+  # E o outro lado da mesma regra. A navegacao secundaria do core NAO e
+  # exclusiva de professor - o aluno tem uma, com Curso e Notas -, e sem a trava
+  # de capacidade ela voltava para ele: seria reintroduzir no portal justamente
+  # o chrome que o portal existe para tirar.
+  Scenario: O aluno nao ve a navegacao do curso
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-portal__header" "css_element" should exist
+    And ".ldg-portal__coursenav" "css_element" should not exist
+
   Scenario: Com a edicao ligada volta o chrome do Moodle
     Given the following config values are set as admin:
       | theme | ldg |

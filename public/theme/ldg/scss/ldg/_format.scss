@@ -165,6 +165,15 @@ body.format-ldg #page.drawers .main-inner {
         }
     }
 
+    // A navegacao do curso do gestor. Fica discreta de proposito: ela e
+    // ferramenta de quem administra, e nao a navegacao do aluno - que e o
+    // assunto da tela.
+    &__coursenav {
+        padding-inline: var(--ldg-gutter);
+        border-bottom: 1px solid var(--ldg-border);
+        background-color: var(--ldg-surface);
+    }
+
     // ---------------------------------------------------------------------
     // A navegacao, nas tres superficies.
     // ---------------------------------------------------------------------
