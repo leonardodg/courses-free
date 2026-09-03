@@ -119,9 +119,29 @@ class materiallist implements named_templatable, renderable {
      * @return stdClass
      */
     protected function export_material(cm_info $cm, string $secao): stdClass {
-        $abrefora = !empty($cm->onclick);
         $display = $cm->customdata['display'] ?? null;
-        $baixa = ($display !== null && (int) $display === RESOURCELIB_DISPLAY_DOWNLOAD);
+        $display = ($display === null) ? null : (int) $display;
+
+        // ARMADILHA DO CORE: para o mod_url, DISPLAY_DOWNLOAD nao quer dizer
+        // baixar. O url_get_final_display_type() poe 'text/html' na lista de
+        // download (mod/url/locallib.php:355), entao QUALQUER link para uma
+        // pagina web resolve para 4 - e ali aquilo significa "manda o navegador
+        // para a URL", nao "salva um arquivo".
+        //
+        // Sem esta distincao, "Leitura complementar" apontando para moodle.org
+        // aparecia como "(baixa o arquivo)" e ainda ganhava o atributo download,
+        // que faria o navegador tentar salvar a pagina.
+        $externo = ($cm->modname === 'url');
+
+        $baixa = (!$externo && $display === RESOURCELIB_DISPLAY_DOWNLOAD);
+
+        // Link externo sai do portal por decisao, e nao por limitacao: site de
+        // terceiro dentro de iframe quebra na maioria dos casos, por
+        // X-Frame-Options, e o quadro ficaria vazio sem explicacao.
+        $abrefora = !empty($cm->onclick)
+            || $externo
+            || $display === RESOURCELIB_DISPLAY_NEW
+            || $display === RESOURCELIB_DISPLAY_POPUP;
 
         return (object) [
             'cmid' => $cm->id,

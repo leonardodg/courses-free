@@ -125,6 +125,28 @@ final class materiallist_test extends \advanced_testcase {
     }
 
     /**
+     * Link externo NAO e download, mesmo o core dizendo que e.
+     *
+     * O url_get_final_display_type() poe 'text/html' na lista de download, entao
+     * qualquer link para pagina web resolve para DISPLAY_DOWNLOAD - e ali aquilo
+     * significa "manda o navegador para a URL". Sem esta distincao, um link para
+     * um site aparecia como "(baixa o arquivo)" e ganhava o atributo download,
+     * que faria o navegador tentar salvar a pagina.
+     *
+     * @return void
+     */
+    public function test_link_externo_nao_e_download(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $material = $this->primeiro_material('url', ['externalurl' => 'https://moodle.org/']);
+
+        $this->assertFalse($material->isdownload);
+        $this->assertTrue($material->opensnewwindow);
+        $this->assertFalse($material->inframe);
+    }
+
+    /**
      * Os materiais vem agrupados pelo modulo a que pertencem.
      *
      * @return void
