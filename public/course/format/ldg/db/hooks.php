@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Versao do format_ldg.
+ * Callbacks de hook do formato.
  *
  * @package    format_ldg
  * @author     LeoDG <callme@leodg.dev>
@@ -25,14 +25,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component    = 'format_ldg';
-$plugin->release      = '0.1.0';
-$plugin->version      = 2026090305;
-$plugin->requires     = 2026042000;
-$plugin->supported    = [502, 502];
-
-// BETA, e nao STABLE. A tela do portal esta completa, com 19 testes de unidade
-// e 6 cenarios de behat passando, mas nada disso foi visto num NAVEGADOR ainda,
-// e o celular nao foi testado no aparelho. STABLE se declara depois de alguem
-// usar, e nao depois de o teste passar.
-$plugin->maturity     = MATURITY_BETA;
+$callbacks = [
+    [
+        'hook' => \core\hook\output\before_http_headers::class,
+        'callback' => \format_ldg\hook_callbacks::class . '::before_http_headers',
+    ],
+];
