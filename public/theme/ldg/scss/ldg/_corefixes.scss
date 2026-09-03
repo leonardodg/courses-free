@@ -144,3 +144,29 @@
     background-color: var(--ldg-surface-raised);
     color: var(--ldg-text);
 }
+
+// O cabecalho das paginas de administracao encolhia ate o conteudo.
+//
+// Sintoma: em /admin/*, o titulo "Site administration" e a caixa de busca
+// apareciam ESPREMIDOS no meio da tela, um do lado do outro, em vez de o titulo
+// a esquerda e a busca a direita. Medido em 1440px: o <header> tinha 370px de
+// largura, com 365px de margem de cada lado.
+//
+// A causa nao e o max-width, que e onde se olha primeiro. E o `margin: 0 auto`
+// que o Boost poe em .header-maxwidth (moodle/layout.scss) combinado com o
+// `#page-wrapper #page { display: flex; flex-direction: column }`, tambem dele:
+// margem automatica no eixo CRUZADO de um flex nao centraliza dentro da largura
+// cheia - ela cancela o stretch e encolhe o item ate o conteudo.
+//
+// Perguntado ao navegador, e nao deduzido: CSS.getMatchedStylesForNode mostrou
+// que so aquela regra bate no elemento, e que o `.path-admin .header-maxwidth
+// { max-width: none }` do proprio Boost nao chega a casar.
+//
+// Zerar a margem devolve o stretch, e o cabecalho volta a ocupar a area de
+// conteudo - que e como o tema pai se comporta nas mesmas telas.
+.path-admin header.header-maxwidth,
+.format-site header.header-maxwidth {
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: 0;
+}
