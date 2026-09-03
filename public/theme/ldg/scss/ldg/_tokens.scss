@@ -88,6 +88,24 @@
     --ldg-accent-text: #0062cc;
     --ldg-field-bg: #ffffff;
 
+    // Os mesmos papeis do escuro, com os valores que passam sobre fundo claro.
+    // O verde do desenho (#30D158) sobre branco da 1,8:1 e seria ilegivel; o
+    // acento do portal (#4B8EFF) da 3,18:1 e tambem reprova. Cada modo tem o
+    // seu tom, e o papel e que e o mesmo.
+    --ldg-status-success: #1a7f37;
+
+    // #5c6a80, e nao o #6b7a90 que eu tinha escolhido de olho: aquele dava
+    // 4,36:1 sobre branco e 4,03:1 sobre o fundo, e REPROVAVA nos dois. Este da
+    // 5,49:1 e 5,07:1.
+    --ldg-text-label: #5c6a80;
+
+    // O PREENCHIMENTO do acento e separado do acento de superficie, e so por
+    // causa do contraste: branco sobre o #007AFF do tema da 4,02:1 e reprova
+    // para texto. Sobre este da 5,80:1. No escuro nao ha esse problema, e o
+    // preenchimento e o proprio acento.
+    --ldg-accent-fill: #0062cc;
+    --ldg-on-accent: #ffffff;
+
     // O cromo e navy nos DOIS modos. E o que da identidade ao modo claro sem
     // transformar o conteudo em texto branco sobre azul, que seria ilegivel
     // para leitura longa de curso.
@@ -109,11 +127,43 @@
 [data-bs-theme="dark"] {
     --ldg-bg: #121212;
     --ldg-surface: #1e1e1e;
-    --ldg-surface-raised: #2a2a2a;
+
+    // #252525 e o "Carvao Ativo" do design system: item de menu ativo, cabecalho
+    // de modulo aberto, hover. Era #2a2a2a - a diferenca e pequena de proposito,
+    // porque a hierarquia do desenho e feita de degraus CURTOS, e nao de sombra.
+    --ldg-surface-raised: #252525;
+
     --ldg-border: #3a3b3c;
     --ldg-text: #ffffff;
     --ldg-text-muted: #b0b3b8;
-    --ldg-accent-text: #3394ff;
+
+    // O acento do desenho, e nao o #007AFF que serve ao modo claro. Medido:
+    // 5,90:1 sobre #121212 e 5,25:1 sobre #1E1E1E - passa em AA para texto nos
+    // dois. O #007AFF dava 4,66:1, que passa raspando, e e por isso que existia
+    // um tom separado so para texto aqui.
+    //
+    // ALCANCE: isto vale para o site inteiro no escuro - botao, barra de
+    // progresso e link da landing -, e nao so para o portal. E o que foi pedido
+    // quando o escopo passou de "o portal" para "o tema tambem".
+    --ldg-accent: #4b8eff;
+    --ldg-accent-hover: #65a1ff;
+    --ldg-accent-text: #4b8eff;
+
+    // No escuro o preenchimento e o proprio acento: #00285c por cima dele da
+    // 4,54:1 e passa. E o par que o design system define.
+    --ldg-accent-fill: #4b8eff;
+
+    // Verde de conclusao do design system. 8,25:1 sobre a superficie, medido.
+    --ldg-status-success: #30d158;
+
+    // Cinza de ROTULO, que nao e o de texto. O desenho pede #6C7075, e ele
+    // REPROVA: 3,34:1 sobre #1E1E1E, para rotulo de 12px, que e exatamente onde
+    // o mockup o usa. Este da 5,11:1.
+    --ldg-text-label: #8a8f94;
+
+    // A cor que vai SOBRE o acento - aba ativa, botao primario. Fica em token
+    // porque hex solto no _format.scss e o tipo de cor que ninguem acha depois.
+    --ldg-on-accent: #00285c;
     // #1E1E1E, e nao #121212: o design system pede "Input Field: Background
     // #1E1E1E" - o campo e uma superficie elevada, nao o fundo da pagina. Com o
     // mesmo tom do fundo ele deixa de parecer um campo.
