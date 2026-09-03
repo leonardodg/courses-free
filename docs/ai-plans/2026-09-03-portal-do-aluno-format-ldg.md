@@ -251,10 +251,15 @@ modos. A barra de acessibilidade do tema não pode regredir.
 ### Behat
 
 Estendendo `tests/behat/format_ldg.feature`: aluno abre o curso e **não** vê a
-navbar; professor com edição vê o Moodle de sempre e arrasta atividade; destino
-sem conteúdo não aparece; trocar de destino preserva a aula; e
-`Then the page should meet accessibility standards` — o passo do axe-core existe
-no 5.2 (`lib/tests/behat/behat_accessibility.php:42`), nos dois modos de cor.
+navbar; professor **sem editar** também vê o portal (a regra é a edição, não o
+papel); com a edição ligada volta o Moodle de sempre; destino sem conteúdo não
+aparece; trocar de destino preserva a aula.
+
+Tudo isso **sem `@javascript`**, que é a regra do arquivo: este ambiente não tem
+navegador, e a troca de chrome é decidida no servidor. O passo do axe-core existe
+no 5.2 (`lib/tests/behat/behat_accessibility.php:42`) mas **exige** `@javascript`,
+então a acessibilidade é medida na conferência com o Chrome, abaixo — prometê-la
+no Behat seria prometer um teste que não roda aqui.
 
 ### Portões de qualidade
 
@@ -290,7 +295,8 @@ diferença que sobrar é do nosso código. Viewports: **1280 CSS** no desktop e
 
 Cada uma é `getComputedStyle`/`getBoundingClientRect`: número, não impressão. Em
 cima disso, screenshot lado a lado nos dois viewports e nos dois modos de cor,
-para tipografia, respiro e hierarquia.
+para tipografia, respiro e hierarquia — e o **axe-core**, que precisa de
+navegador e por isso mora aqui, e não no Behat.
 
 **Dados de teste:** estender `cli/make_testdata.php` para montar um curso
 parecido com o do mockup — aulas concluídas, uma em andamento, outras disponíveis
