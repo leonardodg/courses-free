@@ -49,3 +49,4 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-09-03 | [Portal do aluno no `format_ldg`](2026-09-03-portal-do-aluno-format-ldg.md) | desenho aprovado; implementação não começou |
 | 2026-09-03 | [Portal, plano 1: chrome e layout](2026-09-03-portal-plano-1-chrome-e-layout.md) | **executado** — 5 commits, testes verdes; planos 2 a 4 a escrever |
 | 2026-09-03 | [Portal, plano 2: destinos e catálogo](2026-09-03-portal-plano-2-destinos-e-catalogo.md) | **executado** — 5 commits; 52 testes e 12 cenários verdes |
+| 2026-09-03 | [Portal, plano 3: marca e tipografia](2026-09-03-portal-plano-3-marca-e-tipografia.md) | escrito; a executar |
