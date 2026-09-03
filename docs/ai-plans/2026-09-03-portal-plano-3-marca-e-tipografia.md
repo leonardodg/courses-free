@@ -360,7 +360,10 @@ portal sobreviver com outro tema.
     display: flex;
     align-items: center;
     padding: 0.65rem 0.85rem;
-    border-left: 4px solid transparent;
+    // Propriedade LOGICA, e nao border-left: em LTR e a mesma coisa, e num
+    // idioma que le da direita para a esquerda a barra troca de lado sozinha.
+    // Custa zero escrever assim desde o comeco.
+    border-inline-start: 4px solid transparent;
     border-radius: 8px;
     color: var(--ldg-text-muted);
     font-size: 0.8125rem;
@@ -373,7 +376,7 @@ portal sobreviver com outro tema.
     }
 
     &.is-active {
-        border-left-color: var(--ldg-accent);
+        border-inline-start-color: var(--ldg-accent);
         background-color: var(--ldg-surface-raised);
         color: var(--ldg-text);
         font-weight: 600;
@@ -472,7 +475,7 @@ cor cheia, que é aceitável.
 // O aviso de "baixa o arquivo" vai para a direita, longe do nome: e informacao
 // de consequencia, e nao parte do titulo.
 .ldg-materiallist__hint {
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 ```
 
@@ -487,7 +490,92 @@ e alternar claro/escuro pela barra de acessibilidade do tema.
 
 ---
 
-### Tarefa 4: provar, documentar e fechar
+### Tarefa 4: as três línguas, de verdade
+
+**Isto não é revisão de tradução — é o desenho aguentando o idioma.** O plugin já
+traz `en`, `pt_br` e `es`, mas **o site de trabalho só tem `en` instalado**
+(conferido: `get_list_of_translations()` devolve só `en`). Ou seja: as strings em
+português e espanhol nunca foram vistas em tela, e o seletor de idioma que o
+plano 1 pôs no cabeçalho do portal **renderiza vazio**, porque só há um pacote.
+
+Três consequências concretas, e é por isso que isto é tarefa e não nota:
+
+| Risco | Por que importa aqui |
+|---|---|
+| Acentos vindo da fonte errada | `ã ç õ é ñ` estão no subconjunto **latin-ext**. Se ele não carregar, o navegador cai no fallback e a linha fica com duas tipografias |
+| Rótulo estourando o menu | O maior é o espanhol, **"Foro de estudiantes"** (19 caracteres) — 3 a mais que o inglês. O menu tem 280px fixos |
+| Seletor de idioma invisível | Produto trilíngue com um pacote só instalado nunca mostra a troca |
+
+- [ ] **Passo 1: instalar os pacotes no ambiente de trabalho**
+
+Não há CLI pronto no 5.2 — o `tool_langimport` é tela. Mas a API existe:
+
+```bash
+docker exec -i -u 1000:33 courses-free-moodle-1 sh -c 'cat > /tmp/ldgprobe_langs.php' <<'PHP'
+<?php
+define('CLI_SCRIPT', true);
+require('/var/www/html/config.php');
+$c = new \tool_langimport\controller();
+$ok = $c->install_languagepacks(['pt_br', 'es']);
+echo $ok ? "instalados\n" : "falhou\n";
+print_r($c->info);
+print_r($c->errors);
+PHP
+docker exec -u 1000:33 courses-free-moodle-1 php /tmp/ldgprobe_langs.php
+docker exec courses-free-moodle-1 rm -f /tmp/ldgprobe_langs.php
+cf cli purge_caches.php
+```
+
+A sonda vive em `/tmp` **dentro do container**, nunca no `wwwroot`.
+
+- [ ] **Passo 2: ver o portal nos três idiomas**
+
+```bash
+for L in en pt_br es; do
+  curl -sk -b cookies.txt "https://localhost:8443/course/view.php?id=13&lang=$L" \
+    | grep -o 'ldg-portal__navitem[^>]*>[^<]*' | sed 's/.*>//' | paste -sd' | '
+done
+```
+
+Esperado: os rótulos de cada língua, e o seletor de idioma aparecendo no
+cabeçalho a partir de agora.
+
+- [ ] **Passo 3: medir o rótulo mais longo contra a coluna**
+
+No Chrome, em 1280px, medir a largura real do item de menu em espanhol
+(`getBoundingClientRect().width` de `.ldg-portal__navitem--forum`) e conferir que
+**não** há corte nem quebra dentro dos 280px, menos o padding. Se estourar, o
+conserto é do lado do desenho — não encurtar a tradução.
+
+- [ ] **Passo 4: provar que o acento vem da Inter**
+
+No Chrome, com a página em português:
+
+```js
+document.fonts.check('16px Inter');            // true
+document.fonts.check('16px "JetBrains Mono"'); // true
+```
+
+E medir a largura de um `ç` e de um `ã` num elemento com a família aplicada,
+comparando com o mesmo texto em `sans-serif`: larguras iguais significam que a
+Inter **não** carregou e o fallback está desenhando.
+
+- [ ] **Passo 5: Behat continua indiferente ao idioma**
+
+Os cenários dos planos 1 e 2 já miram **classes**, e não rótulos — foi o conserto
+de um erro meu, e agora é regra: teste de navegação não pode depender de idioma.
+Conferir que segue assim e acrescentar um cenário que troca o idioma do site para
+`pt_br` e confirma que a navegação continua de pé.
+
+- [ ] **Passo 6: commitar**
+
+```bash
+git commit -m "NOBUG: theme_ldg - o portal nas tres linguas, com a fonte certa nos acentos"
+```
+
+---
+
+### Tarefa 5: provar, documentar e fechar
 
 - [ ] **Passo 1: contraste medido no que está na tela**
 
@@ -528,6 +616,8 @@ docker exec -u 1000:33 courses-free-moodle-1 sh -c \
 3. `phpunit`, `behat` e `phpcs` verdes.
 4. Na tela: o portal com a cara do mockup no escuro, e coerente no claro.
 5. Com o tema `boost`, o curso continua abrindo — cinza, mas usável.
+6. Os três idiomas instalados, o portal conferido nos três, e o rótulo mais longo
+   (`Foro de estudiantes`) cabendo no menu sem corte.
 
 ## O que fica para o plano 4
 
