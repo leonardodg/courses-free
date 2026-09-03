@@ -65,6 +65,13 @@
     // Altura da navbar. E token porque o drawer, o course index e o sticky do
     // cabecalho de atividade dependem dela para nao se sobreporem.
     --ldg-navbar-height: 64px;
+
+    // As familias do desenho, empacotadas em theme/ldg/fonts e declaradas em
+    // _fonts.scss. Ficam em token porque o portal usa as DUAS, e a monoespacada
+    // nao e enfeite: rotulo, duracao e contador vao nela para alinharem em
+    // coluna e porque e ela que da o sotaque da marca.
+    --ldg-font-sans: "Inter", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, sans-serif;
+    --ldg-font-mono: "JetBrains Mono", sfmono-regular, menlo, monaco, consolas, monospace;
 }
 
 // ---------------------------------------------------------------------------
