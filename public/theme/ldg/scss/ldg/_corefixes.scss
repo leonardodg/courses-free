@@ -170,3 +170,35 @@
     margin-inline: 0;
     padding-inline: 0;
 }
+
+// A navegacao secundaria atravessa a area de conteudo, de ponta a ponta.
+//
+// Ela e uma FAIXA abaixo da navbar, e nao um cartao no meio da pagina - e como o
+// tema pai se comporta, e foi o que o usuario apontou comparando as duas telas.
+//
+// O recuo do #page.drawers e ASSIMETRICO, e isso nao se adivinha: medido no
+// navegador, sao 16px a esquerda e 48px a direita. A faixa cancela cada lado com
+// o valor dele e devolve o mesmo por dentro.
+//
+// Cancelar 48px dos dois lados - que foi a primeira tentativa - jogava a faixa
+// 32px POR BAIXO do trilho de icones, porque a esquerda so havia 16px para
+// cancelar. Media x=228 com o trilho terminando em 260.
+//
+// A faixa nao passa por baixo do trilho de proposito: ele e uma coluna fixa, e o
+// conteudo comeca depois dele. "Ponta a ponta" aqui e a area de conteudo, e nao
+// a janela - o tema pai nao tem trilho, e por isso a dele vai ate a borda.
+#page.drawers .secondary-navigation {
+    margin-left: -1rem;
+    margin-right: -3rem;
+    padding-left: 1rem;
+    padding-right: 3rem;
+    background-color: var(--ldg-chrome-bg);
+    border-bottom: 1px solid var(--ldg-chrome-border);
+}
+
+@include media-breakpoint-down(md) {
+    #page.drawers .secondary-navigation {
+        margin-right: -1rem;
+        padding-right: 1rem;
+    }
+}
