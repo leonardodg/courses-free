@@ -143,6 +143,13 @@
                 {{/ismaterials}}
 
                 {{^ismaterials}}
+                    {{! O atalho vem ANTES do quadro, e nao embaixo: ele e o que
+                        sobra quando as laterais estao escondidas, e precisa
+                        estar na tela sem rolar. }}
+                    {{#lessonnav}}
+                        {{> format_ldg/local/content/lessonnav }}
+                    {{/lessonnav}}
+
                     {{#lessonviewer}}
                         {{> format_ldg/local/content/lessonviewer }}
                     {{/lessonviewer}}

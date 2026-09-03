@@ -203,6 +203,67 @@ body.format-ldg #page.drawers .main-inner {
 }
 
 // ---------------------------------------------------------------------------
+// O atalho entre aulas.
+// ---------------------------------------------------------------------------
+.ldg-lessonnav {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--ldg-border);
+    border-radius: 12px;
+
+    // Grudado no topo, entao precisa de fundo OPACO - com fundo transparente o
+    // conteudo passaria por baixo da barra ao rolar.
+    background-color: var(--ldg-surface);
+    box-shadow: var(--ldg-shadow-card);
+
+    &__dir {
+        color: var(--ldg-text-label);
+        font-family: var(--ldg-font-mono);
+        font-size: 0.6875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    &__name {
+        color: var(--ldg-text);
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
+    &__side {
+        border-radius: 8px;
+        padding: 0.25rem 0.5rem;
+        text-decoration: none;
+
+        &:hover {
+            background-color: var(--ldg-surface-raised);
+        }
+    }
+
+    // A proxima aula e a acao principal da tela, e o desenho a destaca. A
+    // anterior fica discreta de proposito: sao pesos diferentes.
+    &__side--next:hover {
+        background-color: transparent;
+
+        .ldg-lessonnav__name {
+            color: var(--ldg-accent-text);
+        }
+    }
+
+    &__count {
+        color: var(--ldg-accent-text);
+        font-family: var(--ldg-font-mono);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    &__module {
+        color: var(--ldg-text-label);
+        font-family: var(--ldg-font-mono);
+        font-size: 0.6875rem;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // A lista de materiais.
 // ---------------------------------------------------------------------------
 .ldg-materiallist {

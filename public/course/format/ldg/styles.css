@@ -115,6 +115,59 @@
     padding-bottom: 5rem;
 }
 
+/* O atalho entre aulas.
+ *
+ * GRUDADO no topo do miolo, e isso e o requisito e nao enfeite: quando o aluno
+ * esconde as laterais, esta barra e a unica navegacao que sobra. Se ela rolasse
+ * para fora da tela, esconder a lateral deixaria o aluno sem saida.
+ *
+ * As pontas ocupam a mesma largura para o indicador do meio nao pular de lugar
+ * ao trocar de aula - na primeira nao ha "anterior", e o espaco fica vazio. */
+.ldg-lessonnav {
+    position: sticky;
+    z-index: 2;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.ldg-lessonnav__side {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 0;
+    flex-direction: column;
+}
+
+.ldg-lessonnav__side--next {
+    align-items: flex-end;
+    text-align: end;
+}
+
+.ldg-lessonnav__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ldg-lessonnav__position {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* No celular o nome das aulas vizinhas some: em 390px, tres textos lado a lado
+   viram tres colunas de uma palavra cada. Ficam a direcao e o indicador. */
+@media (max-width: 575.98px) {
+    .ldg-lessonnav__name {
+        display: none;
+    }
+}
+
 /* NAO ponha aspect-ratio aqui. A altura do quadro e escrita pelo player.js, que
    mede o conteudo depois do JavaScript rodar - e foi um ciclo de realimentacao
    nessa medida que fez o quadro crescer sem parar, de 420px para 12084px, em

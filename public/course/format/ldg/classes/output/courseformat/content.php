@@ -30,6 +30,7 @@ use core_completion\progress;
 use core_courseformat\output\local\content as content_base;
 use format_ldg\catalog;
 use format_ldg\output\courseformat\content\lessonlist;
+use format_ldg\output\courseformat\content\lessonnav;
 use format_ldg\output\courseformat\content\lessonviewer;
 use format_ldg\output\courseformat\content\materiallist;
 use format_ldg\portalnav;
@@ -124,6 +125,13 @@ class content extends content_base {
 
                 $visualizador = new lessonviewer($this->format, $foco);
                 $data->lessonviewer = $visualizador->export_for_template($output);
+
+                // A barra so faz sentido no destino Aulas: em Materiais, Forum e
+                // Certificado nao ha "proxima" - sao telas, e nao sequencia.
+                if ($data->islessons) {
+                    $barra = new lessonnav($this->format, $catalogo, $foco);
+                    $data->lessonnav = $barra->export_for_template($output);
+                }
             }
         }
 
