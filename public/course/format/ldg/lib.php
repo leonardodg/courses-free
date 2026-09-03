@@ -173,7 +173,12 @@ class format_ldg extends core_courseformat\base {
             foreach ($modinfo->sections[$section->sectionnum] ?? [] as $cmid) {
                 $cm = $modinfo->cms[$cmid];
 
-                if (!$cm->is_visible_on_course_page() || !$cm->is_of_type_that_can_display()) {
+                // So AULA. Material, forum e certificado tem destino proprio no
+                // portal, e sem este corte um link velho para a apostila abriria
+                // um PDF no lugar da aula. O catalogo e a unica regra sobre o
+                // que e cada coisa - antes ela vivia duplicada aqui e no
+                // lessonlist.
+                if (\format_ldg\catalog::classify($cm) !== \format_ldg\catalog::AULA) {
                     continue;
                 }
 
