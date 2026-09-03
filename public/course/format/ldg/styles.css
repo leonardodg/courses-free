@@ -1,0 +1,137 @@
+/* This file is part of Moodle - http://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ESTRUTURA do portal do aluno. Nao ha marca aqui: nada de cor, fonte, sombra
+ * ou raio - isso e do tema, em theme/ldg/scss/ldg/_format.scss.
+ *
+ * A divisao existe por um motivo concreto: outras empresas usam este formato com
+ * o tema DELAS. O Moodle carrega o styles.css do plugin para qualquer tema,
+ * entao a grade chega junto com o formato e o portal fica cinza mas usavel. Com
+ * o theme_ldg por cima, fica o desenho.
+ *
+ * GRID, e nao flex. As tres superficies de navegacao - menu, abas e barra de
+ * baixo - sao IRMAS do miolo e da lista, porque desenhar a mesma navegacao tres
+ * vezes em lugares diferentes do DOM daria tres fontes de verdade sobre onde o
+ * aluno esta. Sendo irmas, so o grid consegue por cada uma no seu lugar por
+ * largura, sem mover nada no HTML.
+ *
+ * @package    format_ldg
+ * @copyright  2026 LeoDG <callme@leodg.dev>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* Mobile primeiro: uma coluna. As abas em cima, o miolo, a lista embaixo e a
+   barra fixa no rodape - a ordem em que se usa no celular. */
+.ldg-portal__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+        "tabs"
+        "main"
+        "index";
+    gap: 1rem;
+}
+
+.ldg-portal__nav {
+    display: none;
+    grid-area: nav;
+}
+
+.ldg-portal__tabs {
+    display: flex;
+    grid-area: tabs;
+    overflow-x: auto;
+}
+
+.ldg-portal__main {
+    grid-area: main;
+    min-width: 0;
+}
+
+.ldg-lessonlist {
+    grid-area: index;
+}
+
+/* A barra de baixo sai do fluxo: fica colada no rodape da janela. */
+.ldg-portal__bottomnav {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 1030;
+    display: flex;
+    height: 60px;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.ldg-portal__bottomitem {
+    display: flex;
+    min-width: 44px;
+    min-height: 44px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* O rodape fixo cobriria o fim da pagina. O respiro tem que ser maior que a
+   barra, senao o ultimo item fica inalcancavel. */
+.ldg-portal {
+    padding-bottom: 5rem;
+}
+
+.ldg-portal__main .ldg-lesson__frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 0;
+}
+
+/* A partir de lg entra o menu lateral, e as abas e a barra saem. */
+@media (min-width: 992px) {
+    .ldg-portal__body {
+        grid-template-columns: 280px minmax(0, 1fr);
+        grid-template-areas:
+            "nav main"
+            "nav index";
+        align-items: start;
+    }
+
+    .ldg-portal__nav {
+        display: block;
+        position: sticky;
+        top: 56px;
+    }
+
+    .ldg-portal__tabs,
+    .ldg-portal__bottomnav {
+        display: none;
+    }
+
+    .ldg-portal {
+        padding-bottom: 0;
+    }
+}
+
+/* A partir de xl a lista de aulas vira a terceira coluna. */
+@media (min-width: 1200px) {
+    .ldg-portal__body {
+        grid-template-columns: 280px minmax(0, 1fr) 360px;
+        grid-template-areas: "nav main index";
+    }
+
+    .ldg-lessonlist {
+        position: sticky;
+        top: 56px;
+    }
+}

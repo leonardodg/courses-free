@@ -127,3 +127,37 @@ Feature: O portal do aluno
     Then ".ldg-lessonlist" "css_element" should exist
     And ".ldg-portal__header" "css_element" should not exist
     And "nav.navbar" "css_element" should exist
+    # A ESTRUTURA sobrevive sem o tema, e e por isso que ela mora no
+    # styles.css do formato: o Moodle o carrega para qualquer tema.
+    And ".ldg-portal__body" "css_element" should exist
+
+  # Os quatro destinos. Sem @javascript porque sao links de verdade: o destino
+  # viaja na URL e a pagina volta montada do servidor.
+  Scenario: O aluno troca de destino e a aula em foco nao se perde
+    Given the following config values are set as admin:
+      | theme | ldg |
+    And the following "activities" exist:
+      | activity | course   | section | name       |
+      | resource | ldgcurso | 1       | Apostila   |
+      | forum    | ldgcurso | 2       | Duvidas    |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-portal__nav" "css_element" should exist
+    # Pelas CLASSES, e nao pelo rotulo: o site do behat roda em ingles, e o
+    # teste nao pode depender do idioma para provar navegacao.
+    And ".ldg-portal__navitem--materials" "css_element" should exist
+    And ".ldg-portal__navitem--forum" "css_element" should exist
+    # Certificado nao existe neste curso, entao o destino nao aparece.
+    And ".ldg-portal__navitem--certificate" "css_element" should not exist
+
+  Scenario: O material aparece no destino dele, e nao na lista de aulas
+    Given the following config values are set as admin:
+      | theme | ldg |
+    And the following "activities" exist:
+      | activity | course   | section | name     |
+      | resource | ldgcurso | 1       | Apostila |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    # A apostila saiu da lista de aulas.
+    Then I should not see "Apostila" in the ".ldg-lessonlist" "css_element"
+    When I click on ".ldg-portal__navitem--materials" "css_element"
+    Then ".ldg-materiallist" "css_element" should exist
+    And I should see "Apostila"
