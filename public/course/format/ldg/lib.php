@@ -136,6 +136,12 @@ class format_ldg extends core_courseformat\base {
             $url->param('lesson', (int) $options['lesson']);
         }
 
+        // O destino do portal viaja na URL, como a aula. Assim o botao voltar, o
+        // favorito e o Ctrl+clique funcionam sem uma linha de JavaScript.
+        if (!empty($options['ldgview'])) {
+            $url->param('ldgview', (string) $options['ldgview']);
+        }
+
         return $url;
     }
 
