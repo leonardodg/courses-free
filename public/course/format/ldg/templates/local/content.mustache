@@ -121,11 +121,32 @@
     {{/hascourseprogress}}
 
     <div class="ldg-portal__body">
+        {{!
+            A navegacao entra UMA vez e desenha as tres superficies - menu, abas
+            e barra de baixo -, que sao IRMAS do miolo e da lista. E de proposito:
+            o styles.css usa grid e poe cada uma no seu lugar por largura. Incluir
+            o parcial duas vezes daria seis elementos de navegacao na mesma
+            pagina, e o leitor de tela leria todos.
+        }}
+        {{^isediting}}
+            {{#portalnav}}
+                {{> format_ldg/local/content/portalnav }}
+            {{/portalnav}}
+        {{/isediting}}
+
         <div class="ldg-portal__main">
             {{^isediting}}
-                {{#lessonviewer}}
-                    {{> format_ldg/local/content/lessonviewer }}
-                {{/lessonviewer}}
+                {{#ismaterials}}
+                    {{#materiallist}}
+                        {{> format_ldg/local/content/materiallist }}
+                    {{/materiallist}}
+                {{/ismaterials}}
+
+                {{^ismaterials}}
+                    {{#lessonviewer}}
+                        {{> format_ldg/local/content/lessonviewer }}
+                    {{/lessonviewer}}
+                {{/ismaterials}}
             {{/isediting}}
             {{#isediting}}
             <ul class="{{format}} section-list" data-for="course_sectionlist">

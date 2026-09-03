@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['courseprogress'] = '{$a}% del curso completado';
 $string['courseprogressbar'] = 'Progreso del curso';
+$string['downloadfile'] = '(descarga el archivo)';
 $string['durationfor'] = 'Duración de {$a}, en segundos';
 $string['durationseconds'] = 'segundos';
 $string['exitcourse'] = 'Cerrar lección';
@@ -40,6 +41,7 @@ $string['lessontodo'] = '(no completada)';
 $string['moduleprogress'] = '{$a->complete} de {$a->total}';
 $string['nolessons'] = 'Este curso todavía no tiene clases.';
 $string['nolessonselected'] = 'Todavía no hay ninguna clase disponible para vos en este curso.';
+$string['nomaterials'] = 'Este curso aún no tiene material de apoyo.';
 $string['openactivity'] = 'Abrir la actividad';
 $string['opensinnewwindow'] = '(se abre en una ventana nueva)';
 $string['plugin_description'] = 'El curso se muestra como un portal del estudiante: una clase por vez, con la lista completa al lado y el progreso a la vista.';

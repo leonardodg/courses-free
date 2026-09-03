@@ -28,8 +28,11 @@ namespace format_ldg\output\courseformat;
 use core\output\renderer_base;
 use core_completion\progress;
 use core_courseformat\output\local\content as content_base;
+use format_ldg\catalog;
 use format_ldg\output\courseformat\content\lessonlist;
 use format_ldg\output\courseformat\content\lessonviewer;
+use format_ldg\output\courseformat\content\materiallist;
+use format_ldg\portalnav;
 use stdClass;
 
 /**
@@ -86,8 +89,42 @@ class content extends content_base {
         $data->isediting = $this->format->show_editor();
 
         if (!$data->isediting) {
-            $visualizador = new lessonviewer($this->format, $selecionada);
-            $data->lessonviewer = $visualizador->export_for_template($output);
+            $catalogo = new catalog($this->format);
+
+            // O destino corrente vem da URL, como a aula. O portalnav valida: o
+            // que nao existe neste curso cai em aulas, sem erro.
+            $nav = new portalnav(
+                $this->format,
+                $catalogo,
+                optional_param('ldgview', '', PARAM_ALPHA),
+                $selecionada
+            );
+
+            $destino = $nav->current();
+
+            $data->portalnav = ['destinations' => $nav->destinations()];
+            $data->view = $destino;
+            $data->islessons = ($destino === catalog::AULA);
+            $data->ismaterials = ($destino === catalog::MATERIAL);
+
+            if ($data->ismaterials) {
+                $lista = new materiallist($this->format, $catalogo);
+                $data->materiallist = $lista->export_for_template($output);
+            } else {
+                // Forum e certificado nao tem classe propria de proposito: o
+                // quadro embutido ja sabe desenhar QUALQUER atividade, e e ele
+                // que faz a visita valer - log, conclusao e restricao de acesso.
+                // Uma classe por destino seria a mesma coisa tres vezes.
+                $foco = $selecionada;
+
+                if (!$data->islessons) {
+                    $dodestino = $catalogo->get($destino);
+                    $foco = $dodestino ? reset($dodestino) : null;
+                }
+
+                $visualizador = new lessonviewer($this->format, $foco);
+                $data->lessonviewer = $visualizador->export_for_template($output);
+            }
         }
 
         // O progresso do CURSO o core sabe calcular - nao ha o que replicar
