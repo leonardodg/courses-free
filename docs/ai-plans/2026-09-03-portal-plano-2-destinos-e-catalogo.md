@@ -1080,6 +1080,32 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
    inválido cai em Aulas sem erro; a apostila **não** aparece na lista de aulas.
 5. Em 1280px, três colunas; abaixo de 992px, coluna única com barra embaixo.
 
+## Executado em 03/09/2026
+
+As cinco tarefas entraram, em cinco commits (`d72eacb7938` a `e0853a8c4f7`).
+
+**Resultado medido:** `phpunit --filter format_ldg` → 52 testes;
+`behat format_ldg.feature` → 12 cenários, 113 passos; `phpcs` nos dois plugins →
+`EXIT=0`; na página, os quatro destinos respondem e `?ldgview=inventado` cai em
+Aulas sem erro.
+
+**O que o plano errou, e foi corrigido na execução:**
+
+1. **O `classify()` do plano deixaria rótulo virar aula.**
+   `is_of_type_that_can_display()` é `plugin_supports(FEATURE_CAN_DISPLAY, true)`
+   — com default **true** — e o `mod_label` nunca declara a flag. O corte certo é
+   a ausência de URL: o que não abre não pode ser destino.
+2. **Flex não dava conta.** Com as três superfícies de navegação como irmãs do
+   miolo, só `grid-template-areas` põe cada uma no lugar sem mexer no HTML.
+3. **Dois passos de Behat errados:** um inventado (`should not contain`) e um
+   dependente de idioma — o site do Behat roda em inglês, e os cenários usavam
+   rótulos em português. Passaram a mirar as classes dos destinos.
+4. **Strings appendadas quebram a ordem alfabética**, que o phpcs reprova. Os
+   três arquivos foram reordenados por inteiro, como manda o `CLAUDE.md`.
+
+**Mudança de comportamento a registrar:** rótulo, material, fórum e certificado
+**saíram da lista de aulas**. Antes, toda atividade exibível era aula.
+
 ## O que fica para o plano 3
 
 Cor, tipografia, fontes self-hosted e a marca — tudo contra o
