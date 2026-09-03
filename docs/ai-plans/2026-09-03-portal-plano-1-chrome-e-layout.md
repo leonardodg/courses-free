@@ -714,6 +714,46 @@ git commit -m "NOBUG: format_ldg - entra no moodle-plugin-ci, e o README conta a
 O item 6 é o que prova a decisão que motivou o desenho: outra empresa pode usar o
 formato com o tema dela.
 
+## Executado em 03/09/2026
+
+As cinco tarefas entraram, em cinco commits (`2959e3c4662` a `037052a9157`).
+
+**Resultado medido:** `phpunit --filter format_ldg` → 35 testes verdes;
+`behat format_ldg.feature` → 10 cenários, 90 passos, verdes;
+`phpcs --standard=moodle` nos dois plugins → `EXIT=0`; página do curso carregada
+como aluno matriculado → HTTP 200, cabeçalho do portal presente, zero navbar.
+
+**O que o plano não previu, e apareceu na execução:**
+
+1. **`usermenu` e `langmenu` são contextos, não HTML.** Interpolar com chaves
+   triplas derruba a página com `Array to string conversion`, apontando para o
+   mustache compilado em `moodledata/localcache` — um arquivo que não existe no
+   repositório. Corrigido no plano e no template.
+2. **O professor ficava preso na visão de aluno.** O interruptor de "Edit mode"
+   mora na navbar, que o portal não tem. Quem achou foi o Behat, ao não encontrar
+   o campo. O `output.edit_switch` foi para o cabeçalho do portal — ele já se
+   protege sozinho e devolve vazio para quem não pode editar.
+3. **Os dois primeiros cenários de Behat falharam por um bom motivo:** o site do
+   Behat nasce com o tema `boost`, que não declara o layout, então o hook
+   corretamente não trocou nada. Foi a prova acidental do guard. Cada cenário
+   passou a dizer de qual tema fala, e ganhou um irmão que fixa a regra ao
+   contrário — com o `boost`, o curso abre no chrome do `boost`.
+4. **O portão do CI achou defeito no primeiro uso.** O teste de privacidade do
+   core reprovava `format_ldg_lesson (usermodified)` — uma referência a `user`
+   numa tabela cujo plugin se declara `null_provider`. Anterior a este trabalho, e
+   invisível justamente porque o formato estava fora da lista. A coluna, que
+   nenhuma linha de PHP jamais leu, foi removida no upgrade `2026090306`.
+
+**O que ficou de fora, e por quê:** o `npx grunt` não rodou — não há
+`node_modules` no repositório nem no container, e instalar a toolchain inteira do
+Moodle seria caro para um trabalho que não mexeu em JS nem em CSS, que é o que
+ele lintaria. O template novo foi provado pelo renderer de verdade, em 10
+cenários de Behat e numa carga real da página.
+
+**Mudança no ambiente de trabalho, para você saber:** a senha do usuário de teste
+`alunoteste` foi trocada para `Portal.2026!` para a conferência no navegador, e o
+hash anterior não foi guardado.
+
 ## Os próximos planos
 
 Escritos quando este entrar, e não antes — plano especulativo envelhece entre a
