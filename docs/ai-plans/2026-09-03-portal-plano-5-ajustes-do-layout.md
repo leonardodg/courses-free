@@ -274,7 +274,85 @@ body.format-ldg .usertour {
 
 ---
 
-### Tarefa 5: conferir e documentar
+### Tarefa 5: as laterais escondem, e o atalho fica
+
+**Pedido em 03/09/2026:** "menu lateral podem ser escondidos mas precisa ter um
+botão como atalho rápido para a próxima e anterior atividade do curso".
+
+No mockup isso é o `DesktopQuickLessonNav`: prev com o **título** da aula
+anterior, o indicador em mono no meio e o next em azul. Ou seja, **é a barra da
+tarefa 1** — o que muda é que ela passa a ser o que sobra quando as laterais
+somem, e por isso fica **grudada** no topo do miolo.
+
+**Decisão do usuário sobre o como:** JavaScript de verdade, com **build
+versionado junto do plugin**. A toolchain foi instalada (`npm ci`) e o
+`npx grunt amd --root=public/course/format/ldg` compila.
+
+**Arquivos:**
+- Criar: `amd/src/aside.js` e o `amd/build/aside.min.js` **gerado**
+- Modificar: `lib.php` (callback de preferências), `templates/local/content.mustache`,
+  `styles.css`, `_format.scss`
+- Testar: `tests/behat/format_ldg.feature`
+
+- [ ] **Passo 1: declarar a preferência de usuário**
+
+Em `lib.php`, o callback que o core exige para aceitar a gravação por AJAX — sem
+ele o `core_user_update_user_preferences` **recusa** e o estado volta no próximo
+carregamento, com um 400 no console e nada na tela:
+
+```php
+function format_ldg_user_preferences(): array {
+    return [
+        'format_ldg_aside_hidden' => [
+            'type' => PARAM_BOOL,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => false,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+    ];
+}
+```
+
+- [ ] **Passo 2: o módulo AMD**
+
+`amd/src/aside.js`: alterna a classe no container, grava a preferência e move o
+foco. Sem dependência nova além de `core_user/repository` (ou
+`core/user_preference`), que já vem com o Moodle.
+
+O botão é `<button aria-expanded>` e a lateral tem `id` — é o par que o leitor de
+tela usa para saber o que abriu.
+
+- [ ] **Passo 3: o estado inicial vem do servidor**
+
+A preferência é lida no `content.php` e vira uma classe no HTML. Sem isso a
+lateral aparece e some depois que o JS roda — o "flash" clássico.
+
+- [ ] **Passo 4: a barra de atalho fica grudada**
+
+`position: sticky` no topo do miolo, com o `z-index` abaixo do cabeçalho. É o que
+garante o pedido: escondeu as laterais, o atalho continua na tela.
+
+- [ ] **Passo 5: sem JavaScript, nada quebra**
+
+O botão só aparece com JS ativo (a classe é posta pelo próprio módulo); sem JS a
+lateral fica visível, que é o estado útil. A barra de atalho é feita de âncoras e
+funciona igual.
+
+- [ ] **Passo 6: build, e ele vai versionado**
+
+```bash
+npx grunt amd --root=public/course/format/ldg
+git add public/course/format/ldg/amd/src public/course/format/ldg/amd/build
+```
+
+- [ ] **Passo 7: Behat** — esconder e mostrar, e o atalho continuar visível.
+  Este cenário **precisa** de `@javascript`, e por isso pode não rodar neste
+  ambiente; se não rodar, fica registrado no commit em vez de silenciosamente
+  pulado.
+
+---
+
+### Tarefa 6: conferir e documentar
 
 - [ ] **Passo 1:** sonda visual nos dois viewports e dois modos — as medidas do
   plano 4 continuam válidas, mais a barra nova.
@@ -286,9 +364,12 @@ body.format-ldg .usertour {
 
 ## Como saber que o plano 5 acabou
 
-1. Barra anterior/próxima no miolo, sem botão que leve a lugar nenhum nas pontas.
+1. Barra anterior/próxima no miolo, **grudada no topo**, sem botão que leve a
+   lugar nenhum nas pontas — e ela continua na tela com as laterais escondidas.
 2. Progresso dentro do cartão, na coluna esquerda — e no celular, acima do miolo.
 3. Requisitos de conclusão e navegação da atividade com a cara do portal.
 4. `#resetpagetour` fora da tela; painel de mensagens intacto.
 5. Medidas, axe-core e testes verdes.
-6. Capturas entregues.
+6. As laterais escondem e mostram, e a escolha **sobrevive à troca de aula**.
+7. `amd/build` gerado pelo grunt e versionado junto do `amd/src`.
+8. Capturas entregues.
