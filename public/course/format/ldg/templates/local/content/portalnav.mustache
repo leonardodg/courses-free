@@ -44,7 +44,7 @@
         ]
     }
 }}
-<nav class="ldg-portal__nav" aria-label="{{#str}}portalnav, format_ldg{{/str}}">
+<nav id="ldg-portal-nav" class="ldg-portal__nav" aria-label="{{#str}}portalnav, format_ldg{{/str}}">
     {{#destinations}}
         <a class="ldg-portal__navitem ldg-portal__navitem--{{key}}{{#active}} is-active{{/active}}"
            href="{{{url}}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>

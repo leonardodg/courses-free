@@ -69,6 +69,28 @@ body.format-ldg #page.drawers .main-inner {
         font-weight: 600;
     }
 
+    // Os botoes de esconder lateral sao discretos de proposito: sao ajuste de
+    // tela, e nao navegacao. Quem manda na hierarquia aqui e a saudacao.
+    &__asidetoggle {
+        padding: 0.125rem 0.5rem;
+        border: 1px solid var(--ldg-border);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--ldg-text-label);
+        font-family: var(--ldg-font-mono);
+        font-size: 0.6875rem;
+
+        &:hover {
+            background-color: var(--ldg-surface-raised);
+            color: var(--ldg-text);
+        }
+
+        &[aria-expanded="false"] {
+            border-color: var(--ldg-accent);
+            color: var(--ldg-accent-text);
+        }
+    }
+
     &__progress {
         margin-bottom: 0;
     }

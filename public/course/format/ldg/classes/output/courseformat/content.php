@@ -155,6 +155,15 @@ class content extends content_base {
         // e um selo inventado seria mentir para ele.
         $data->studentgreeting = get_string('studentgreeting', 'format_ldg', $USER->firstname);
 
+        // O estado das laterais vem do SERVIDOR, ja como classe no HTML. Se
+        // fosse o JavaScript a aplicar, a lateral apareceria e sumiria depois -
+        // o "flash" classico, e ele e pior no celular, onde a pagina reflui
+        // inteira.
+        $escondidas = explode('-', (string) get_user_preferences('format_ldg_aside_hidden', ''));
+
+        $data->hidenav = in_array('nav', $escondidas, true);
+        $data->hideindex = in_array('index', $escondidas, true);
+
         return $data;
     }
 }

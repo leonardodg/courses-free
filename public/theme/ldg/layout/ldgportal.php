@@ -46,7 +46,11 @@ $templatecontext = [
         'escape' => false,
     ]),
     'output' => $OUTPUT,
-    'bodyattributes' => $OUTPUT->body_attributes(['ldg-portal']),
+    // A classe e 'ldg-portal-page', e NAO 'ldg-portal': o formato usa .ldg-portal na div
+    // raiz dele, e as duas classes iguais casavam com a mesma regra: o recuo
+    // lateral era aplicado duas vezes, 24px no body mais 24px na div, contra os
+    // 24px do desenho. Medido no Chrome.
+    'bodyattributes' => $OUTPUT->body_attributes(['ldg-portal-page']),
     'usermenu' => $primarymenu['user'],
     'langmenu' => $primarymenu['lang'],
     'coursename' => format_string($COURSE->fullname),

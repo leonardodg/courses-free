@@ -105,7 +105,7 @@
         }
     }
 }}
-<div id="course-format-{{uniqid}}" class="ldg-portal">
+<div id="course-format-{{uniqid}}" class="ldg-portal{{#hidenav}} ldg-portal--hide-nav{{/hidenav}}{{#hideindex}} ldg-portal--hide-index{{/hideindex}}">
     <h2 class="accesshide">{{{title}}}</h2>
     {{{completionhelp}}}
 
@@ -121,7 +121,23 @@
         }}
         {{^isediting}}
             <div class="ldg-portal__student">
-                <p class="ldg-portal__greeting">{{studentgreeting}}</p>
+                <div class="ldg-portal__studenthead">
+                    <p class="ldg-portal__greeting">{{studentgreeting}}</p>
+
+                    {{!
+                        Os dois botoes vivem aqui, e nao dentro das laterais: uma
+                        lateral escondida nao pode guardar o proprio botao de
+                        voltar. O cartao do aluno esta sempre visivel.
+                    }}
+                    <span class="ldg-portal__asidetoggles">
+                        <button type="button" class="ldg-portal__asidetoggle"
+                                data-ldg-aside="nav" aria-expanded="{{^hidenav}}true{{/hidenav}}{{#hidenav}}false{{/hidenav}}"
+                                aria-controls="ldg-portal-nav">{{#str}}togglenav, format_ldg{{/str}}</button>
+                        <button type="button" class="ldg-portal__asidetoggle"
+                                data-ldg-aside="index" aria-expanded="{{^hideindex}}true{{/hideindex}}{{#hideindex}}false{{/hideindex}}"
+                                aria-controls="ldg-portal-index">{{#str}}toggleindex, format_ldg{{/str}}</button>
+                    </span>
+                </div>
 
                 {{#hascourseprogress}}
                     <div class="ldg-portal__progress">
@@ -134,6 +150,12 @@
                     </div>
                 {{/hascourseprogress}}
             </div>
+
+            {{#js}}
+            require(['format_ldg/aside'], function(aside) {
+                aside.init('#course-format-{{uniqid}}');
+            });
+            {{/js}}
         {{/isediting}}
 
         {{!

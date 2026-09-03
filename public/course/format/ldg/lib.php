@@ -294,3 +294,27 @@ class format_ldg extends core_courseformat\base {
         return parent::is_section_visible($section);
     }
 }
+
+/**
+ * Preferencias de usuario que este formato pode gravar por AJAX.
+ *
+ * Sem esta funcao o core_user_update_user_preferences RECUSA a gravacao vinda do
+ * navegador: a lateral fecha na tela e reabre no proximo carregamento, sem erro
+ * visivel - so um 400 no console. E o mesmo mecanismo que o theme_ldg usa para
+ * as preferencias dele.
+ *
+ * @return array
+ */
+function format_ldg_user_preferences(): array {
+    return [
+        // Guarda QUAIS laterais estao escondidas, e nao um booleano: sao duas
+        // colunas independentes - a navegacao e o indice - e o aluno pode
+        // querer esconder so uma.
+        'format_ldg_aside_hidden' => [
+            'type' => PARAM_ALPHAEXT,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => '',
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+    ];
+}

@@ -66,6 +66,70 @@
     grid-area: student;
 }
 
+/* Esconder as laterais.
+ *
+ * Os botoes so aparecem quando o modulo AMD carregou - e ele que poe a classe
+ * ldg-portal--can-hide. Sem JavaScript nao ha botao, e as laterais ficam
+ * visiveis, que e o estado util.
+ *
+ * O que garante que ninguem fica sem saida com tudo escondido e o atalho entre
+ * aulas, que e grudado no topo do miolo e nao depende de lateral nenhuma. */
+.ldg-portal__asidetoggles {
+    display: none;
+}
+
+.ldg-portal--can-hide .ldg-portal__asidetoggles {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.ldg-portal__studenthead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.ldg-portal--hide-nav .ldg-portal__nav,
+.ldg-portal--hide-index .ldg-lessonlist {
+    display: none;
+}
+
+/* Escondida uma lateral, a coluna dela some da grade - senao fica uma faixa
+   vazia de 280px no meio da tela. */
+@media (min-width: 992px) {
+    .ldg-portal--hide-nav .ldg-portal__body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "student"
+            "main"
+            "index";
+    }
+}
+
+@media (min-width: 1200px) {
+    .ldg-portal--hide-nav .ldg-portal__body {
+        grid-template-columns: minmax(0, 1fr) 360px;
+        grid-template-areas:
+            "student index"
+            "main index";
+    }
+
+    .ldg-portal--hide-index .ldg-portal__body {
+        grid-template-columns: 280px minmax(0, 1fr);
+        grid-template-areas:
+            "student main"
+            "nav main";
+    }
+
+    .ldg-portal--hide-nav.ldg-portal--hide-index .ldg-portal__body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "student"
+            "main";
+    }
+}
+
 /* O item ocupa a LINHA inteira, e nao a largura do texto.
  *
  * Ancora e inline por padrao, entao sem isto o item media a largura do proprio
