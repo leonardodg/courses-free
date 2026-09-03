@@ -68,10 +68,32 @@ body.format-ldg #page.drawers .main-inner {
     // ---------------------------------------------------------------------
     // O chrome do portal, servido pelo layout ldgportal.
     // ---------------------------------------------------------------------
+    // O cabecalho e do TEMA - quem o desenha e o layout ldgportal -, entao a
+    // estrutura dele mora aqui mesmo. A regra "estrutura no formato" vale para o
+    // MIOLO, que e o que o formato entrega; o chrome e outra coisa.
+    //
+    // Sem estas quatro linhas o cabecalho media 122px em vez dos 56 do desenho:
+    // sem display:flex os filhos empilham. Medido no Chrome, nao suposto.
     &__header {
+        align-items: center;
         background-color: var(--ldg-surface);
         border-bottom: 1px solid var(--ldg-border);
+        display: flex;
         gap: var(--ldg-gutter);
+        height: 56px;
+        justify-content: space-between;
+        padding: 0 var(--ldg-gutter);
+    }
+
+    // Marca e acoes nao encolhem; quem cede espaco e o nome do curso, no meio.
+    // Sem isto o "Fechar aula" quebrava para BAIXO do cabecalho de 56px e ficava
+    // solto sobre o conteudo - a medida dizia 56px e a tela dizia outra coisa.
+    &__brand,
+    &__actions {
+        align-items: center;
+        display: flex;
+        flex: 0 0 auto;
+        gap: var(--ldg-space);
     }
 
     &__brand-name {

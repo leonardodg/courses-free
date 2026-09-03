@@ -32,6 +32,15 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/* O respiro lateral da pagina.
+ *
+ * O layout do portal nao tem container do Moodle em volta - foi isso que tirou a
+ * navbar e os drawers -, entao sem isto o conteudo encosta na borda da janela.
+ * Visivel na primeira captura em 1280px: o menu comecava no pixel zero. */
+.ldg-portal {
+    padding-inline: 1.5rem;
+}
+
 /* Mobile primeiro: uma coluna. As abas em cima, o miolo, a lista embaixo e a
    barra fixa no rodape - a ordem em que se usa no celular. */
 .ldg-portal__body {
