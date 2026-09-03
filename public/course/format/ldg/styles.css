@@ -91,9 +91,14 @@
     padding-bottom: 5rem;
 }
 
+/* NAO ponha aspect-ratio aqui. A altura do quadro e escrita pelo player.js, que
+   mede o conteudo depois do JavaScript rodar - e foi um ciclo de realimentacao
+   nessa medida que fez o quadro crescer sem parar, de 420px para 12084px, em
+   02/09/2026. Proporcao fixa brigaria com aquela medida e ainda cortaria um
+   quiz, que nao tem cara de video. Os 16/9 do desenho chegam com o mod_video,
+   quando houver video de verdade para caber neles. */
 .ldg-portal__main .ldg-lesson__frame {
     width: 100%;
-    aspect-ratio: 16 / 9;
     border: 0;
 }
 

@@ -15,15 +15,21 @@
 
 // O formato de curso LDG - portal do aluno.
 //
-// O ESTILO DO FORMATO MORA AQUI, no tema, e nao no plugin. O formato entrega
-// marcacao semantica e quem pinta e o tema; assim o formato continua legivel
-// para quem usar outro tema, e a marca fica num lugar so. O preco esta escrito
-// no README do format_ldg: instalado com outro tema, ele aparece sem estilo.
+// A MARCA mora aqui; a ESTRUTURA mora no formato, em course/format/ldg/
+// styles.css. A divisao mudou em 03/09/2026 e o motivo e concreto: outras
+// empresas usam o format_ldg com o tema delas, e o Moodle carrega o styles.css
+// do plugin para QUALQUER tema. Assim a grade chega junto com o formato - o
+// portal fica cinza mas usavel - e este arquivo poe cor, fonte, raio e sombra
+// por cima.
 //
-// MOBILE PRIMEIRO. A referencia de desenho e desktop e nao cabe no celular:
-// lista ao lado do video vira lista embaixo. O padrao aqui e a coluna unica, e
-// e o media-breakpoint-up(lg) que traz as duas colunas. O contrario sempre
-// deixa residuo de largura fixa que so aparece no aparelho.
+// NAO ESCREVA GRADE AQUI. O CSS do tema entra DEPOIS do styles.css do plugin no
+// arquivo servido - conferido: o do plugin em ~207k e o do tema em ~1,19M -,
+// entao qualquer regra de layout daqui vence a de la em silencio. Foi
+// exatamente o que aconteceu: este arquivo tinha um grid de duas colunas de
+// antes dos destinos, e ele sobrescrevia a grade de tres do formato sem que
+// nada quebrasse na tela.
+//
+// Se precisar mexer em coluna, breakpoint ou sticky, o arquivo e o outro.
 
 // O curso no formato portal ocupa a largura toda.
 //
@@ -57,40 +63,173 @@ body.format-ldg #page.drawers .main-inner {
         margin-bottom: calc(var(--ldg-space) * 0.5);
     }
 
-    &__body {
-        display: flex;
-        flex-direction: column;
+    // A grade saiu daqui: ela e do styles.css do formato. O que sobra e cor.
+
+    // ---------------------------------------------------------------------
+    // O chrome do portal, servido pelo layout ldgportal.
+    // ---------------------------------------------------------------------
+    &__header {
+        background-color: var(--ldg-surface);
+        border-bottom: 1px solid var(--ldg-border);
         gap: var(--ldg-gutter);
     }
 
-    // A aula vem ANTES da lista no HTML, e continua antes no celular. Quem abre
-    // o curso quer a aula; rolar um indice inteiro para chegar ao video e o
-    // erro classico deste tipo de tela.
-    &__main {
-        min-width: 0;
+    &__brand-name {
+        color: var(--ldg-text);
+        font-weight: 700;
+        text-decoration: none;
     }
 
-    &__aside {
-        min-width: 0;
+    // O nome do curso nao pode empurrar o menu de usuario para fora da tela num
+    // titulo longo - por isso ele encolhe e corta, e nao o contrario.
+    &__course {
+        color: var(--ldg-text-muted);
+        font-family: var(--ldg-font-mono);
+        font-size: 0.8125rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    @include media-breakpoint-up(lg) {
-        &__body {
-            display: grid;
-            // A lista tem largura fixa e o conteudo fica com o resto. O minmax
-            // com 0 e obrigatorio: sem ele, um iframe largo estoura a grade e
-            // a pagina inteira ganha rolagem horizontal.
-            grid-template-columns: minmax(0, 1fr) 340px;
-            align-items: start;
+    &__exit {
+        border: 1px solid var(--ldg-border);
+        border-radius: 8px;
+        color: var(--ldg-text-muted);
+        font-size: 0.8125rem;
+        padding: 0.375rem 0.75rem;
+        text-decoration: none;
+
+        &:hover {
+            background-color: var(--ldg-surface-raised);
+            color: var(--ldg-text);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // A navegacao, nas tres superficies.
+    // ---------------------------------------------------------------------
+    // O marcador de estado e a barra de 4px no acento, e ela se repete no item
+    // de aula. Nao e so cor: quem nao distingue as cores continua vendo a barra.
+    //
+    // border-inline-start, e nao border-left: em portugues, ingles e espanhol da
+    // no mesmo, e num idioma que le da direita para a esquerda a barra troca de
+    // lado sozinha. Custa zero escrever assim.
+    &__navitem {
+        border-inline-start: 4px solid transparent;
+        border-radius: 8px;
+        color: var(--ldg-text-muted);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        padding: 0.65rem 0.85rem;
+        text-decoration: none;
+
+        &:hover {
+            background-color: var(--ldg-surface-raised);
+            color: var(--ldg-text);
         }
 
-        &__aside {
-            position: sticky;
-            // Abaixo da navbar fixa, senao a lista some atras dela ao rolar.
-            top: calc(var(--ldg-navbar-height) + var(--ldg-gutter));
-            max-height: calc(100vh - var(--ldg-navbar-height) - var(--ldg-gutter) * 2);
-            overflow-y: auto;
+        &.is-active {
+            background-color: var(--ldg-surface-raised);
+            border-inline-start-color: var(--ldg-accent);
+            color: var(--ldg-text);
+            font-weight: 600;
         }
+    }
+
+    &__tabs {
+        background-color: var(--ldg-surface);
+        border: 1px solid var(--ldg-border);
+        border-radius: 12px;
+        gap: 0.25rem;
+        padding: 0.375rem;
+    }
+
+    // Aba ativa e PILULA preenchida, e nao sublinhado - e o que o desenho pede.
+    &__tab {
+        border-radius: 8px;
+        color: var(--ldg-text-muted);
+        font-size: 0.8125rem;
+        padding: 0.5rem 0.85rem;
+        text-decoration: none;
+        white-space: nowrap;
+
+        &.is-active {
+            background-color: var(--ldg-accent-fill);
+            color: var(--ldg-on-accent);
+            font-weight: 600;
+        }
+    }
+
+    &__bottomnav {
+        backdrop-filter: blur(10px);
+        background-color: color-mix(in srgb, var(--ldg-surface) 96%, transparent);
+        border-top: 1px solid var(--ldg-border);
+        padding: 0 var(--ldg-space);
+    }
+
+    &__bottomitem {
+        color: var(--ldg-text-label);
+        font-size: 0.65rem;
+        gap: 3px;
+        text-decoration: none;
+
+        &.is-active {
+            color: var(--ldg-accent);
+            font-weight: 600;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// A lista de materiais.
+// ---------------------------------------------------------------------------
+.ldg-materiallist {
+    &__items {
+        display: flex;
+        flex-direction: column;
+        gap: var(--ldg-space);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    &__link {
+        align-items: center;
+        background-color: var(--ldg-surface);
+        border: 1px solid var(--ldg-border);
+        border-radius: 12px;
+        color: var(--ldg-text);
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        text-decoration: none;
+
+        &:hover {
+            background-color: var(--ldg-surface-raised);
+            border-color: var(--ldg-accent);
+        }
+    }
+
+    &__icon {
+        height: 24px;
+        width: 24px;
+    }
+
+    &__section,
+    &__hint {
+        color: var(--ldg-text-label);
+        font-family: var(--ldg-font-mono);
+        font-size: 0.75rem;
+    }
+
+    // O aviso de "baixa o arquivo" vai para a ponta, longe do nome: e
+    // informacao de consequencia, e nao parte do titulo.
+    &__hint {
+        margin-inline-start: auto;
+    }
+
+    &__empty {
+        color: var(--ldg-text-muted);
     }
 }
 
@@ -120,10 +259,15 @@ body.format-ldg #page.drawers .main-inner {
         margin-bottom: var(--ldg-gutter);
     }
 
+    // A moldura do desenho: raio de 14px, o preto mais fundo da pilha e a
+    // sombra que separa o quadro do resto. E so isso que a moldura e por
+    // enquanto - a proporcao 16/9 chega com o mod_video, porque hoje o que esta
+    // dentro do quadro e uma atividade qualquer, e quiz nao tem cara de video.
     &__frame-wrap {
-        background-color: var(--ldg-surface);
+        background-color: #0e0e0e;
         border: 1px solid var(--ldg-border);
-        border-radius: 0.5rem;
+        border-radius: 14px;
+        box-shadow: var(--ldg-shadow-raised);
         overflow: hidden;
     }
 
