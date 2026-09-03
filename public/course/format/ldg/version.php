@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->component    = 'format_ldg';
 $plugin->release      = '0.1.0';
-$plugin->version      = 2026090308;
+$plugin->version      = 2026090309;
 $plugin->requires     = 2026042000;
 $plugin->supported    = [502, 502];
 

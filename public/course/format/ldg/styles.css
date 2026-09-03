@@ -49,6 +49,21 @@
     grid-area: nav;
 }
 
+/* O item ocupa a LINHA inteira, e nao a largura do texto.
+ *
+ * Ancora e inline por padrao, entao sem isto o item media a largura do proprio
+ * rotulo - de 96px a 142px, conforme a lingua - e o fundo do estado ativo
+ * cobriria so as letras, no meio de uma coluna de 280px. Medido no Chrome.
+ *
+ * Aqui e estrutura, e nao marca: o que o tema pinta e a cor do fundo; qual e a
+ * area pintada e o layout que decide. */
+.ldg-portal__nav .ldg-portal__navitem {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .ldg-portal__tabs {
     display: flex;
     grid-area: tabs;
