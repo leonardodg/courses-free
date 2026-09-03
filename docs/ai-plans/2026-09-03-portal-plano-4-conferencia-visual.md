@@ -272,6 +272,49 @@ um recebeu `aria-label` no plano 2.
   `docs/README.md`, com o roteiro da conferência visual para você repetir sem mim.
 - [ ] **Passo 5: versões dos dois plugins, e o registro dos planos.**
 
+## Executado em 03/09/2026
+
+Commits `8aea1e507e7` a `4e75d11fc5f`, mais a documentação.
+
+**Medido:**
+
+| Medida | Alvo | Resultado |
+|---|---|---|
+| Cabeçalho | 56px | **56** nos quatro cenários |
+| Menu / índice | 280 / 360 | **280 / 360** no desktop |
+| Abas e barra | só < 992 | corretas; barra **60px** |
+| Quadro da aula | estável | **444/444** |
+| Rolagem horizontal | nunca | **nenhuma** |
+| Fontes | Inter + JetBrains | **carregadas** |
+| axe-core (`wcag2a`+`wcag2aa`) | zero graves | **zero violações**, de qualquer impacto, nos 4 destinos × 2 modos |
+| PHPUnit / Behat / phpcs | verdes | 53 testes / 12 cenários, 113 passos / `EXIT=0` |
+
+**Três defeitos que só a medição achou:**
+
+1. **Cabeçalho com 122px** em vez de 56. Ao separar estrutura de marca no plano 3
+   eu tirei `display:flex` e `height` do `&__header` e não os recoloquei. Voltaram
+   para o **tema**: o cabeçalho é desenhado pelo layout `ldgportal`, então a
+   estrutura dele é de lá. A regra "estrutura no formato" vale para o **miolo**.
+2. **"Fechar aula" caindo para fora do cabeçalho**, sobre o conteúdo — o
+   container de ações não tinha `flex`. A medida dizia 56px e a tela dizia outra
+   coisa; por isso a captura vem **depois** do número, e não no lugar dele.
+3. **Conteúdo encostando na borda** da janela: o portal não tem container do
+   Moodle em volta, e foi isso que tirou a navbar.
+
+**E um bug de lógica que montar os dados expôs:** `url_get_final_display_type()`
+põe `text/html` na lista de download, então **todo `mod_url` para uma página web
+resolve para `DISPLAY_DOWNLOAD`** — ali aquilo significa "manda o navegador para
+a URL". "Leitura complementar" aparecia como "(baixa o arquivo)" e ganhava o
+atributo `download`, que faria o navegador tentar salvar a página.
+
+**Refinei a própria sonda:** ela lia o quadro duas vezes e acusava crescimento
+onde havia estabilização — a primeira leitura pega o `min-height` inicial, antes
+de o `player.js` medir. Agora são três, e o que vale é a segunda ser igual à
+terceira.
+
+**Ambiente:** o curso de demonstração foi recriado (agora id 15), com fórum,
+pasta e PDF.
+
 ## Como saber que o plano 4 acabou
 
 1. Os quatro destinos existem no curso de demonstração.

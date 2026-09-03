@@ -76,6 +76,49 @@ Não é só estética: o índice do Moodle é renderizado **no cliente**, a part
 state reativo, com um template fixo do core. Trocar o conteúdo dele exigiria um
 módulo AMD próprio — custo que não se paga.
 
+## Os quatro destinos
+
+O portal tem quatro telas, e **o professor não configura nenhuma**: o papel sai do
+**tipo** da atividade, em `classes/catalog.php`.
+
+| Destino | O que cai nele |
+|---|---|
+| Aulas | tudo que não for os outros três — `page`, `quiz`, `assign`, `lesson`… |
+| Material de apoio | `resource`, `folder`, `url` |
+| Fórum de alunos | `forum` |
+| Certificado | `customcert` |
+
+**Destino sem conteúdo não aparece.** É o que desarma o risco de classificar por
+tipo: curso sem fórum não mostra aba de fórum vazia.
+
+O destino corrente viaja na URL — `?ldgview=lessons|materials|forum|certificate`,
+ao lado do `?lesson=<cmid>` — então botão voltar, favorito e Ctrl+clique
+funcionam sem JavaScript. Valor desconhecido, ou de destino que o curso não tem,
+cai em Aulas sem erro.
+
+Rótulo, material, fórum e certificado **não aparecem na lista de aulas**: cada um
+tem destino próprio. O corte que exclui o rótulo é a **ausência de URL** — não dá
+para usar `is_of_type_that_can_display()`, que é
+`plugin_supports(FEATURE_CAN_DISPLAY, true)` com default **true**, e o `mod_label`
+nunca declara a flag.
+
+### Onde cada material abre
+
+| Sinal no `cm_info` | O que o portal faz |
+|---|---|
+| `mod_resource` com `display` = `RESOURCELIB_DISPLAY_DOWNLOAD` | link de download |
+| `mod_url` | abre em aba nova |
+| `onclick` preenchido, ou `display` `NEW`/`POPUP` | abre em aba nova |
+| resto | abre no quadro embutido |
+
+Duas armadilhas moram aqui. A primeira: **arquivo com download forçado não pode
+abrir no quadro** — dentro de um iframe o download dispara e o quadro fica em
+branco. A segunda é do core: `url_get_final_display_type()` põe `text/html` na
+lista de download (`mod/url/locallib.php:355`), então **qualquer link para uma
+página web resolve para `DISPLAY_DOWNLOAD`** — e ali aquilo significa "manda o
+navegador para a URL", não "salva um arquivo". Por isso a regra separa
+`mod_resource` de `mod_url` em vez de olhar só o número.
+
 ## Armadilhas
 
 **Com a edição ligada, a tela muda.** A coluna principal volta a ser a pilha de

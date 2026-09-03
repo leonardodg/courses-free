@@ -8,6 +8,7 @@
 | [`guia-desenvolvedor.md`](guia-desenvolvedor.md) | plugins, configuração, testes, domínio por vendedor |
 | [`fluxo-de-contribuicao.md`](fluxo-de-contribuicao.md) | da worktree ao deploy: PR, CI, merge em `dev` |
 | [`behat.md`](behat.md) | inicializar e rodar behat, e o que ele encontra que o phpunit não pega |
+| [`portal-conferencia-visual.md`](portal-conferencia-visual.md) | medir o portal no Chrome contra o design system, e o que nem behat nem phpunit pegam |
 
 Manual do sistema: `man cf` — instalação em [`cf.md`](cf.md#manual-do-sistema).
 

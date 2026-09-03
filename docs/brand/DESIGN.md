@@ -29,6 +29,35 @@ Este documento é o **contrato visual** do `theme_ldg` e do `format_ldg`. Quando
 tela e o documento discordarem, um dos dois está errado — e é isso que a
 conferência no Chrome mede.
 
+## O que a implementação provou diferente
+
+Implementado e conferido no Chrome em 03/09/2026. Três pontos do desenho **não**
+sobreviveram ao contato com a tela, e aqui o código venceu:
+
+**O cinza de rótulo `#6C7075` reprova em acessibilidade.** Dá 3,34:1 sobre
+`#1E1E1E` e 3,76:1 sobre `#121212` — abaixo de AA para texto pequeno, e é
+exatamente onde o desenho o usa, em rótulo de 12px. No tema ele é `#8A8F94`
+(5,11:1). No modo claro, `#5C6A80`.
+
+**O azul precisou de um segundo papel.** Branco sobre `#4B8EFF` no modo claro dá
+4,02:1 e reprova, então existe `--ldg-accent-fill` — o **preenchimento** de
+superfície com texto por cima —, separado do acento: `#4B8EFF` no escuro (com
+`#00285C` por cima, 4,54:1) e `#0062CC` no claro (com branco, 5,80:1).
+
+**A proporção 16/9 do quadro ficou para depois.** Enquanto o miolo for o iframe
+de uma atividade qualquer, proporção fixa briga com o `player.js` — que mede a
+altura do conteúdo — e ainda corta um quiz, que não tem cara de vídeo. A moldura
+implementada é o raio de 14px, o preto de poço e a sombra; os 16/9 chegam com o
+`mod_video`.
+
+**Os ícones não entraram**, e não por esquecimento: a navegação é texto e a lista
+de materiais usa o ícone que o Moodle já dá para cada atividade. Não houve `bi-*`
+para traduzir.
+
+Medidas conferidas no navegador, nos dois viewports e nos dois modos: cabeçalho
+56px, menu 280px, índice 360px, barra inferior 60px, viradas em `lg` e `xl`,
+quadro estável e zero rolagem horizontal.
+
 ## 1. Visual Theme & Atmosphere
 
 Escuro de estúdio, não escuro de moda. O fundo é um grafite quase neutro
