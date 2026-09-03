@@ -107,6 +107,11 @@ o nome do stack e as portas — offset 0 é o principal (`courses-free`,
 8080/8443/3307/9004), offset 1 soma 10 a cada uma.
 Guia completo em `docs/dev/guia-worktrees.md`.
 
+**O código vem do `--from`, mas o banco vem do offset 0.** Se ele estiver numa
+branch à frente da base, o banco nasce com plugin mais novo que o código e o
+upgrade recusa (`cannotdowngrade`). O `cf new` confere e para antes de criar
+qualquer coisa: veja no `cf ls` qual branch o offset 0 serve e passe no `--from`.
+
 Não edite `.env` nem portas à mão: o `cf` gera esses arquivos e o `cf doctor`
 reclama quando divergem do registro.
 

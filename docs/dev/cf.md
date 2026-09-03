@@ -128,7 +128,7 @@ cf new <nome|prefixo/nome> [--branch <b>] [--from <b>] [--new-stack]
 | Opção | Padrão | O que faz |
 |---|---|---|
 | `--branch <b>` | `feature/<nome>` | nome da branch, quando difere do da pasta |
-| `--from <b>` | `origin/dev` | de onde a branch nova sai |
+| `--from <b>` | `origin/dev` | de onde a branch nova sai — precisa conter a branch do offset 0 |
 | `--new-stack` | desligado | ambiente próprio em vez de reaproveitar o atual |
 | `--seed <modo>` | `clone` | de onde vêm os dados (só com `--new-stack`) |
 | `--no-code` | desligado | **não** abre o VS Code ao final |
@@ -165,17 +165,55 @@ fluxo normal, onde não há PR `dev`→`main`. O `cf new` confere que a base tem
 `.devcontainer/devcontainer.json` e para com a mensagem do que fazer. Uma
 worktree meio provisionada é pior que nenhuma, porque parece pronta.
 
+**A base precisa conter o que o stack de origem serve.** O `cf new` resolve duas
+origens diferentes: o **código** vem do `--from`, o **banco** vem da worktree
+offset 0 — a branch que estiver lá, possivelmente à frente da `dev`. Se estiver,
+o banco chega com plugin mais novo que o código e o Moodle recusa:
+
+```
+Cannot downgrade format_ldg from 2026090304 to 2026090301
+```
+
+O `cf` compara os `version.php` que mudaram entre as duas refs e recusa **antes
+de criar qualquer coisa**, listando os plugins e as duas saídas: `--from` da
+branch que a origem serve, ou `--seed fresh`. Veja em qual branch está o offset 0
+com `cf ls`.
+
+> A comparação lê o `HEAD` da origem. Um bump de versão ainda não commitado lá já
+> está no banco e não aparece — nesse caso o `cf` avisa, mas segue.
+
 ### `--seed`
 
 Só tem efeito com `--new-stack`; sem ele o banco é o do stack atual, e o `cf`
 avisa se você passar à toa.
 
+```bash
+# clone (padrão): cópia do banco e do moodledata do principal
+cf new fix/tls-porta --new-stack --from <branch do offset 0>
+
+# fresh: Moodle instalado do zero, login admin/admin
+cf new fix/tls-porta --new-stack --seed fresh
+
+# share: usa os dados do principal (com ele parado)
+cf new fix/tls-porta --new-stack --seed share --from <branch do offset 0>
+```
+
 - **`clone`** (padrão) — `mariadb-dump` do stack principal mais cópia do
-  `moodledata`. A feature nasce com os dados de teste. ~30–60 s.
-- **`fresh`** — `install_database.php` do zero. Mais lento e sem dados, mas
-  exercita a migração do plugin em base virgem, que é o que a VPS vai ver.
-- **`share`** — aponta para os dados do principal. **Os dois stacks disputam o
-  mesmo schema**: um `upgrade.php` num afeta o outro. Só para inspeção rápida.
+  `moodledata`. A feature nasce com os dados de teste. ~30–60 s. Exige o stack de
+  origem **no ar** — o dump roda dentro do container dele. Cache, sessões e
+  `temp` não vão junto: são do outro `wwwroot` e do outro domínio.
+- **`fresh`** — `install_database.php` do zero, admin/admin. Mais lento e sem
+  dados, mas exercita a migração do plugin em base virgem, que é o que a VPS vai
+  ver. É o único modo que dispensa o `--from`: banco vazio nunca fica à frente do
+  código, então a checagem nem roda.
+- **`share`** — reescreve o `.env` apontando `MOODLE_HOST_DATA` e `DB_HOST_DATA`
+  para os caminhos do principal. **Os dois stacks disputam o mesmo schema**: um
+  `upgrade.php` num afeta o outro, e dois MariaDB no mesmo diretório de dados não
+  convivem — na prática, só com o principal parado (`cf down`). Só para inspeção
+  rápida.
+
+> Remover a worktree depois é seguro nos três: o `cf rm` só apaga dados sob
+> `cf-data/`, então um `--seed share` não leva o banco principal junto.
 
 ### `--no-code`
 
@@ -186,13 +224,17 @@ teste por linha de comando. Dá para abrir depois com `cf code <worktree>`.
 ### O que ele faz, em ordem
 
 1. confere que a base tem `.devcontainer/`
-2. `git worktree add ../<nome> -b <branch> <base>`
-3. copia os cinco conjuntos de arquivos gitignored
-4. **gera** o `.env` (não copia com `sed`) apontando o código para a worktree nova
-5. ajusta `MOODLE_URL` e os caminhos no `dev.env` copiado
-6. coloca no ar — reaproveitando o stack, ou subindo um próprio com `--new-stack`
-7. roda `upgrade.php` e `purge_caches.php`
-8. abre o VS Code dentro do container
+2. confere que a base não está atrás do banco que vai ser semeado
+3. `git worktree add ../<nome> -b <branch> <base>`
+4. copia os cinco conjuntos de arquivos gitignored
+5. **gera** o `.env` (não copia com `sed`) apontando o código para a worktree nova
+6. ajusta `MOODLE_URL` e os caminhos no `dev.env` copiado
+7. coloca no ar — reaproveitando o stack, ou subindo um próprio com `--new-stack`
+8. roda `upgrade.php` e `purge_caches.php`
+9. abre o VS Code dentro do container
+
+Os dois primeiros passos são checagens, e é de propósito que venham antes de tudo:
+uma worktree meio provisionada é pior que nenhuma, porque parece pronta.
 
 ---
 
@@ -415,6 +457,20 @@ resolver com o container no ar:
 ```bash
 docker exec -u root <container> chown -R www-data:www-data /var/www/moodledata
 ```
+
+**`Cannot downgrade <plugin> from X to Y`** — o banco está à frente do código. Ou
+a worktree foi criada de uma base atrás da branch que o stack de origem serve, ou
+você trocou de branch depois. O `cf new` recusa isso desde 03/09/2026; se já
+aconteceu, o conserto é trazer o código para a altura do banco:
+
+```bash
+git -C <worktree> merge --ff-only <branch que o banco conhece>
+cf cli upgrade.php --non-interactive && cf cli purge_caches.php
+```
+
+Se o fast-forward não for possível, ou você não quiser aquele trabalho na branch,
+recrie o ambiente com `--seed fresh` — perde os dados de teste, mas nasce
+coerente.
 
 **`Could not open input file: …/admin/cli/…`** — nesta base o `admin/` fica na
 **raiz** do repositório, não em `public/`. O `cf cli` procura nos dois lugares;

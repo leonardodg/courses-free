@@ -50,13 +50,14 @@ cf new paygw-pix
 Isso faz, em ordem:
 
 1. confere que a branch base (`origin/dev`) tem `.devcontainer/` — ver §8;
-2. `git worktree add ../paygw-pix -b feature/paygw-pix origin/dev`;
-3. copia os cinco conjuntos de arquivos gitignored;
-4. **gera** o `.env` apontando o código para a worktree nova;
-5. ajusta `MOODLE_URL` e os caminhos no `dev.env` copiado;
-6. faz o stack que já roda passar a servir esse código;
-7. roda `upgrade.php` e `purge_caches.php`;
-8. abre o VS Code **dentro** do container.
+2. confere que a base não está atrás do banco que a worktree vai usar — ver §8;
+3. `git worktree add ../paygw-pix -b feature/paygw-pix origin/dev`;
+4. copia os cinco conjuntos de arquivos gitignored;
+5. **gera** o `.env` apontando o código para a worktree nova;
+6. ajusta `MOODLE_URL` e os caminhos no `dev.env` copiado;
+7. faz o stack que já roda passar a servir esse código;
+8. roda `upgrade.php` e `purge_caches.php`;
+9. abre o VS Code **dentro** do container.
 
 Ao final o site responde em `https://localhost:8443` — a URL de sempre, o mesmo
 banco de sempre — agora servindo o código da feature nova. Nenhum container novo
@@ -169,7 +170,7 @@ o stack que agora serve outra coisa.
 | Opção | Padrão | O que faz |
 |---|---|---|
 | `--branch <branch>` | `feature/<nome>` | nome da branch, quando difere do da pasta |
-| `--from <branch>` | `origin/dev` | de onde a branch nova sai |
+| `--from <branch>` | `origin/dev` | de onde a branch nova sai — precisa conter a branch do offset 0 (§8) |
 | `--new-stack` | desligado | ambiente próprio em vez de reaproveitar o atual |
 | `--seed <modo>` | `clone` | de onde vêm os dados (só com `--new-stack`) |
 | `--no-code` | desligado | **não** abre o VS Code ao final |
@@ -203,17 +204,55 @@ dá para abrir depois com `cf code <worktree>`.
 
 #### `--seed <modo>`
 
-De onde vêm os dados do banco:
+De onde vêm os dados do banco. Só tem efeito com `--new-stack`; sem ele o banco é
+o do stack atual, e o `cf` avisa se você passar `--seed` à toa.
 
-- `clone` (padrão) — `mariadb-dump` do stack principal mais cópia do
-  `moodledata`. A feature nasce com os dados de teste. ~30–60 s.
-- `fresh` — `install_database.php` do zero. Mais lento e sem dados, mas exercita
-  a migração do plugin em base virgem, que é o que a VPS vai ver.
-- `share` — aponta para os dados do principal. **Os dois stacks disputam o mesmo
-  schema**: um `upgrade.php` num afeta o outro. Só para inspeção rápida.
+**`clone` (padrão) — cópia do banco e do `moodledata` do principal**
 
-Só tem efeito com `--new-stack`; sem ele o banco é o do stack atual, e o `cf`
-avisa se você passar `--seed` à toa.
+```bash
+cf new fix/tls-porta --new-stack --from <branch do offset 0>
+```
+
+`mariadb-dump` do stack de origem mais cópia do `moodledata`: a feature nasce com
+os cursos, usuários e matrículas de teste. ~30–60 s. Exige o stack de origem **no
+ar** (o dump roda no container dele); se estiver parado, `cf up <origem>` antes.
+Cache, sessões e `temp` não vão junto — são do outro domínio, e sessão copiada faz
+o site novo tentar validar um login que não é dele.
+
+O `--from` é o que mantém código e banco alinhados; veja a seção 8.
+
+**`fresh` — Moodle instalado do zero**
+
+```bash
+cf new fix/tls-porta --new-stack --seed fresh
+```
+
+`install_database.php`, login **admin / admin**. Site limpo, sem curso e sem tema
+aplicado: serve para provar instalação de plugin em base virgem, que é o que a
+VPS vai ver, ou para reproduzir bug de site novo. É o mais lento na primeira
+subida, e o único modo que dispensa o `--from`.
+
+**`share` — usa os dados do principal**
+
+```bash
+cf new fix/tls-porta --new-stack --seed share --from <branch do offset 0>
+```
+
+Reescreve o `.env` apontando `MOODLE_HOST_DATA` e `DB_HOST_DATA` para os caminhos
+do principal, e avisa em amarelo. **Os dois stacks disputam o mesmo schema** — um
+`upgrade.php` num afeta o outro — e dois MariaDB no mesmo diretório de dados não
+convivem: na prática, só com o principal parado (`cf down`). Só para inspeção
+rápida.
+
+| Quero… | Modo |
+|---|---|
+| trabalhar com os cursos de teste que já existem | `clone` |
+| site limpo, ou fugir do `--from` da origem | `fresh` |
+| mexer nos dados do principal com outro código | `share`, com o principal parado |
+
+Desfazer é igual nos três: `cf rm fix-tls-porta` — worktree, branch, dados e
+stack. Note a pasta com hífen, mesmo tendo criado com barra. E o `cf rm` só apaga
+dados sob `cf-data/`, então um `--seed share` não leva o banco principal junto.
 
 ---
 
@@ -501,6 +540,42 @@ O `cf new` confere que a base tem `.devcontainer/devcontainer.json` **antes de
 criar qualquer coisa** e para com a mensagem do que fazer. Uma worktree meio
 provisionada é pior que nenhuma, porque parece pronta.
 
+### A base tem que combinar com o banco
+
+O `cf new` resolve **duas origens diferentes**, e elas não são a mesma coisa:
+
+| | vem de |
+|---|---|
+| **código** | o `--from` — por padrão `origin/dev` |
+| **banco** | a worktree **offset 0**, seja `--seed clone` (cópia) ou o modo padrão sem `--new-stack` (o próprio banco dela) |
+
+Se o offset 0 estiver servindo uma branch **à frente** da base — o caso comum
+quando você está no meio de uma feature e abre outra —, o banco chega com plugin
+mais novo que o código, e o Moodle recusa:
+
+```
+Cannot downgrade format_ldg from 2026090304 to 2026090301
+```
+
+Então: **olhe o `cf ls`, veja em qual branch está o offset 0, e passe essa branch
+no `--from`.**
+
+```bash
+cf ls                                          # offset 0 → fix/format-ldg-navegador
+cf new fix/tls-porta --from fix/format-ldg-navegador
+```
+
+Esquecer não custa nada: o `cf` compara os `version.php` que mudaram entre as duas
+refs e recusa antes de criar qualquer coisa, listando os plugins e dizendo qual
+`--from` usar. É só repetir o comando. A outra saída é `--new-stack --seed fresh`,
+que nasce com banco vazio e por isso nem é checado.
+
+Quando a `origin/dev` já estiver em dia com o principal — depois que a feature da
+vez for merjeada —, o `--from` volta a ser dispensável.
+
+> A comparação lê o `HEAD` do offset 0. Um bump de versão ainda não commitado lá
+> já está no banco e não aparece; nesse caso o `cf` avisa, mas segue.
+
 ---
 
 ## 9. O que nunca pode vazar para a VPS
@@ -632,6 +707,21 @@ shell que chamou e o comando seguinte do script morre. Já quebrou um deploy.
 
 **Espaço em disco.** Cada feature custa ~900 MB (worktree ~600, `dbdata` ~250).
 O `cf new` recusa abaixo de 5 GB livres, e `cf doctor` avisa antes.
+
+**Banco à frente do código.** `Cannot downgrade <plugin> from X to Y` quer dizer
+que o banco conhece uma versão de plugin que o código não tem — worktree criada de
+uma base atrás da branch que o banco veio, ou troca de branch depois. O `cf new`
+recusa isso desde 03/09/2026 (seção 8); se já aconteceu, traga o código para a
+altura do banco:
+
+```bash
+git -C <worktree> merge --ff-only <branch que o banco conhece>
+cf cli upgrade.php --non-interactive && cf cli purge_caches.php
+```
+
+Aconteceu criando a `fix/theme-ldg` de `origin/dev` enquanto o principal servia
+`fix/format-ldg-navegador`, um commit à frente: `format_ldg` e `theme_ldg` já
+bumpados no banco, e o ambiente subiu inteiro só para morrer no último passo.
 
 ---
 
