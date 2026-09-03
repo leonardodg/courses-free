@@ -155,6 +155,11 @@ o FA já tem equivalente.
 *Recusado:* abandonar o modo claro. Perderia a escolha do usuário e mexeria na
 barra de acessibilidade que o tema já tem.
 
+Os valores exatos, com o papel de cada cor, a escala tipográfica e os componentes,
+estão em [`docs/brand/DESIGN.md`](../brand/DESIGN.md) — extraído do bloco `@theme`
+do mockup React, que é a fonte autoritativa. **Aquele documento é o contrato; esta
+tabela é só o resumo.**
+
 | Token | Portal (escuro) | Tema hoje |
 |---|---|---|
 | fundo | `#121212` | `--ldg-bg: #f4f6fa` (claro) / navy (escuro) |
@@ -280,7 +285,8 @@ diferença que sobrar é do nosso código. Viewports: **1280 CSS** no desktop e
 | Quadro da aula | 16/9, estável entre ciclos do `ResizeObserver` |
 | Virada das colunas | `lg` (992) à esquerda, `xl` (1200) à direita |
 | Barra de baixo | presente abaixo de `lg`, ausente acima |
-| Fundo, superfície e primário | tokens resolvidos batendo com a paleta |
+| Fundo, superfície e primário | tokens resolvidos batendo com `docs/brand/DESIGN.md` |
+| Contraste dos pares de texto | AA, conferido nos dois modos (o cinza de rótulo do mockup **reprova** e sobe para `#8A8F94`) |
 
 Cada uma é `getComputedStyle`/`getBoundingClientRect`: número, não impressão. Em
 cima disso, screenshot lado a lado nos dois viewports e nos dois modos de cor,
