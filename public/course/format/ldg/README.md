@@ -21,12 +21,14 @@ de decidir comprar.
 | Moodle 5.2 (`2026042000`) | usa `core\output\choicelist` e o `courseformat` reativo |
 | **`theme_ldg`** *(opcional)* | **o estilo e o chrome do portal vivem no tema**, não aqui |
 
-**Leia isto antes de instalar com outro tema.** O SCSS está em
-`theme/ldg/scss/ldg/_format.scss`, e não no plugin. O formato entrega marcação
-semântica; quem pinta é o tema. Com outro tema, ele **funciona e aparece sem
-estilo nenhum** — lista sem colunas, sem cores, sem barra desenhada. Isso é
-decisão de projeto, não esquecimento: assim o formato continua legível para quem
-quiser aplicar o próprio tema.
+**Leia isto antes de instalar com outro tema.** A divisão é: **estrutura no
+plugin, marca no tema**. A grade das colunas, os breakpoints e as posições estão
+em `styles.css`, que o Moodle carrega para qualquer tema; a cor, a fonte, o raio
+e a sombra estão em `theme/ldg/scss/ldg/_format.scss`.
+
+Com outro tema o portal fica **cinza mas usável** — colunas no lugar, navegação
+funcionando, sem a marca. Com o `theme_ldg`, fica o desenho completo. Isso é
+decisão de projeto: outras empresas usam este formato com o tema delas.
 
 ### O chrome do portal, e como ele se desliga sozinho
 
@@ -160,18 +162,61 @@ tem nada a ver.
 
 ```
 classes/
+  catalog.php                   separa o curso por papel da atividade
+  portalnav.php                 os quatro destinos e o corrente
+  hook_callbacks.php            decide e troca o layout da página
   lesson.php                    duração por cmid (persistent)
   section_progress.php          a contagem que o core não expõe
   external/set_duration.php     grava a duração, via AJAX
   output/courseformat/
     content.php                 estende o content do core
     content/lessonlist.php      a lista de aulas
+    content/lessonnav.php       o atalho anterior/próxima
     content/lessonviewer.php    a aula embutida
-templates/local/               content, lessonlist, lessonviewer
-amd/src/                       player (altura do quadro), duration (edição)
+    content/materiallist.php    o material de apoio
+templates/local/               content, lessonlist, lessonnav, lessonviewer,
+                               materiallist, portalnav
+styles.css                     a ESTRUTURA do portal, para qualquer tema
+amd/src/                       player (altura do quadro), duration (edição),
+                               aside (esconder as laterais)
+db/hooks.php                   registra o listener do before_http_headers
 backup/moodle2/                leva e traz a duração
 cli/make_testdata.php          monta um curso de demonstração
 ```
+
+**`styles.css` é estrutura; o tema é marca.** Grade, colunas, breakpoints e
+posições moram aqui, porque o Moodle carrega o `styles.css` do plugin para
+qualquer tema — é o que faz o portal ficar cinza mas usável fora do `theme_ldg`.
+Cor, fonte, raio e sombra ficam no tema.
+
+Cuidado ao mexer: o CSS do tema entra **depois** do `styles.css` do plugin no
+arquivo servido, então grade escrita no tema vence a daqui **em silêncio**.
+
+## O atalho entre aulas
+
+A barra `anterior · onde estou · próxima` fica **grudada no topo do miolo**, e
+isso é requisito: as laterais podem ser escondidas, e quando são, ela é a única
+navegação que resta.
+
+Duas regras, ambas em teste: na ponta o botão **não aparece** — botão que não leva
+a lugar nenhum é pior que a ausência dele —, e a sequência é só de **aula**, senão
+o curso com material mostraria "aula 3 de 9" tendo cinco aulas.
+
+## Esconder as laterais
+
+Navegação e índice somem de forma independente, e a escolha **sobrevive à troca de
+aula**: fica em `format_ldg_aside_hidden`, declarada em
+`format_ldg_user_preferences()`. Sem essa declaração o core **recusa** a gravação
+vinda do navegador — a lateral fecha na tela e reabre na carga seguinte, com um
+400 no console e nada visível.
+
+O estado inicial vem do **servidor**, já como classe no HTML; se fosse o JS a
+aplicar, a lateral apareceria e sumiria depois. E os botões vivem no cartão do
+aluno, não dentro das laterais: uma lateral escondida não pode guardar o próprio
+botão de voltar.
+
+Sem JavaScript não há botão — a classe que os revela é posta pelo próprio módulo —
+e as laterais ficam visíveis, que é o estado útil.
 
 ## Testes
 

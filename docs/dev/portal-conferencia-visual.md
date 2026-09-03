@@ -74,6 +74,25 @@ revisão que a página carrega, ou `-1`.
 ficou parada antes e depois do purge; o que fez o CSS novo aparecer foi o **bump
 de `version.php`**. Editou `styles.css` de plugin? Suba a versão.
 
+## A sonda não troca o modo de cor pelo DOM
+
+Forçar `data-bs-theme` no `body` muda **só a página de fora**. O quadro da aula é
+outro documento e segue a **preferência do usuário** — a captura sai com o portal
+escuro e a aula branca, e "conferido nos dois modos" vira meia verdade.
+
+Quem troca o modo é quem chama a sonda, gravando a preferência antes de cada
+rodada. Foi assim que as capturas passaram a bater: fundo `#121212` no escuro e
+`#f4f6fa` no claro, com as mesmas medidas.
+
+> Cuidado: sondar mexendo no DOM **alterou a preferência de cor** do usuário de
+> teste numa das rodadas. Se for medir, confira a preferência no fim.
+
+## Quando o CSS parece não ter mudado
+
+`purge_caches` **não** invalida CSS de plugin. Se editou `styles.css`, suba a
+versão do plugin — e lembre que cada `upgrade.php` bloqueia o site inteiro com
+"Site is being upgraded" enquanto roda. Agrupe os bumps.
+
 ## O que a medição não decide
 
 Tipografia, respiro e hierarquia. Número resolve 56px; "chegar próximo" do

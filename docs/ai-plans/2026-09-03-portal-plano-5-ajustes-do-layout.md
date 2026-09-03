@@ -362,6 +362,44 @@ git add public/course/format/ldg/amd/src public/course/format/ldg/amd/build
 - [ ] **Passo 5:** README do formato (a barra de navegação e o cartão),
   `DESIGN.md` (o selo PREMIUM que **não** existe, e por quê), e o registro.
 
+## Executado em 03/09/2026
+
+Commits `6101b53dba7` a `eaacf090b27`. As seis tarefas entraram, mais duas que
+nasceram durante a execução.
+
+**O que a medição achou, e nenhuma leitura acharia:**
+
+1. **Colisão de nome invisível.** O layout do tema punha `ldg-portal` como classe
+   do `<body>`, e o formato usa `.ldg-portal` na div raiz — o recuo lateral era
+   aplicado **duas vezes**, 48px contra os 24 do desenho. O body virou
+   `ldg-portal-page`.
+2. **O grid esticava.** Sem `grid-template-rows`, o navegador distribuía a altura
+   do miolo entre as duas linhas e abria um vão de centenas de pixels entre o
+   cartão e o menu.
+3. **A sonda mentia sobre o modo de cor.** Ela trocava `data-bs-theme` no body, o
+   que muda só a página de fora: o quadro da aula é outro documento e segue a
+   **preferência** do usuário. A captura saía com portal escuro e aula branca, e
+   "conferido nos dois modos" era meia verdade. Agora o modo vem da preferência.
+4. **Os "builds" do AMD eram o fonte copiado.** Instalar a toolchain para compilar
+   o `aside.js` revelou que `player.min.js` e `duration.min.js` eram cópias do
+   `src`, sem minificar — 6481 → 2108 bytes depois do grunt real.
+5. **Link externo não é download.** Montar os dados de teste expôs que
+   `url_get_final_display_type()` põe `text/html` na lista de download: todo
+   `mod_url` para uma página web resolvia para `DISPLAY_DOWNLOAD`, e a lista
+   mostrava "(baixa o arquivo)" com o atributo `download` num link de site.
+
+**Duas tarefas que nasceram na execução**, das suas observações:
+
+- **O portal para quem gerencia.** Como manager, a navegação do curso sumia — era
+  preciso *ligar a edição* para chegar em Notas. O cabeçalho passou a carregar a
+  navegação secundária do core, com trava de capacidade.
+- **O tema nas páginas de administração.** Cabeçalho encolhido a 370px e a barra
+  fora de posição. Ver o README do tema.
+
+**Medido no fim:** cabeçalho 56px, menu 280, índice 360, barra do gestor de 260 a
+1425, zero rolagem horizontal, axe-core sem violação, 58 testes de unidade e 14
+cenários de Behat.
+
 ## Como saber que o plano 5 acabou
 
 1. Barra anterior/próxima no miolo, **grudada no topo**, sem botão que leve a

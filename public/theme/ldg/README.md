@@ -91,6 +91,44 @@ perfil, notificações e **sair**, deixando o aluno preso no curso. Pelo mesmo
 motivo o `output.edit_switch` está no cabeçalho — sem ele o professor não tem
 como ligar a edição, e foi o Behat que descobriu.
 
+## O portal para quem gerencia
+
+O layout `ldgportal` não tem navbar — e a navegação do curso mora nela. Sem
+tratamento, o professor tinha que **ligar a edição** para chegar em Notas ou
+Participantes, o que ninguém espera.
+
+O layout carrega a navegação secundária **do próprio core**, e só para quem tem
+`moodle/course:update`. A trava de capacidade não é detalhe: a navegação
+secundária do core **não é exclusiva de professor** — o aluno tem uma, com Curso
+e Notas —, e sem a condição ela volta para ele, reintroduzindo no portal
+exatamente o chrome que o portal existe para tirar. Dois cenários de Behat fixam
+os dois lados, porque só o primeiro passaria com a trava errada.
+
+> A classe do `<body>` no portal é **`ldg-portal-page`**, e não `ldg-portal`. O
+> formato usa `.ldg-portal` na div raiz dele, e as duas iguais casavam com a mesma
+> regra — o recuo lateral era aplicado duas vezes, 48px contra os 24 do desenho.
+
+## Dois consertos de layout do core, e por que eles existem
+
+Ambos em `_corefixes.scss`, medidos no navegador e não deduzidos do SCSS.
+
+**O cabeçalho das páginas de administração encolhia até o conteúdo.** Em
+`/admin/*`, título e busca apareciam espremidos no meio da tela: o
+`<header class="header-maxwidth">` tinha **370px** de largura com 365px de margem
+de cada lado. A causa não é o `max-width`, que é onde se olha primeiro — é o
+`margin: 0 auto` que o Boost põe em `.header-maxwidth`, combinado com o
+`#page-wrapper #page { display: flex; flex-direction: column }`, também dele:
+margem automática no **eixo cruzado** de um flex cancela o `stretch` e encolhe o
+item. Quem respondeu isso foi o `CSS.getMatchedStylesForNode` do Chrome, que
+mostrou ser a única regra a casar.
+
+**A navegação secundária vira faixa, antes do título.** É a ordem do tema pai. O
+recuo do `#page.drawers` é **assimétrico** — 16px à esquerda, 48px à direita —,
+e cancelar 48 dos dois lados joga a faixa **por baixo do trilho de ícones**. Ela
+não passa por baixo dele de propósito: o trilho é coluna fixa, e "ponta a ponta"
+aqui é a área de conteúdo. O tema pai não tem trilho, e é por isso que a barra
+dele vai até a borda da janela.
+
 ## Fontes empacotadas
 
 `fonts/` traz **Inter** e **JetBrains Mono**, em subconjuntos variáveis (peso 400
