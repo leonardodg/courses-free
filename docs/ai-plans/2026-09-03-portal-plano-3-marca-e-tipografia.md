@@ -619,6 +619,51 @@ docker exec -u 1000:33 courses-free-moodle-1 sh -c \
 6. Os três idiomas instalados, o portal conferido nos três, e o rótulo mais longo
    (`Foro de estudiantes`) cabendo no menu sem corte.
 
+## Executado em 03/09/2026
+
+Quatro tarefas, quatro commits (`76c8bab13c0` a `c9b9ddffb2e`). A tarefa 5
+(documentação e fechamento) fica com o plano 4, junto da conferência visual.
+
+**Medido, e não estimado:**
+
+- CSS servido: quatro URLs `font.php` do próprio site, arquivos respondendo 200
+  com `font/woff2`, **zero** referência a `fonts.googleapis`/`fonts.gstatic`.
+- Contraste: onze pares nos dois modos, **todos passam** em AA.
+- Chrome, 1280px, nos três idiomas: `document.fonts` confirma Inter e JetBrains
+  Mono; texto acentuado mede 185px com Inter contra 151px com o fallback — se a
+  fonte não tivesse carregado, as larguras seriam iguais.
+- Menu: 280px, itens ocupando a linha inteira, e `Foro de estudiantes` (o pior
+  rótulo do produto) em 124px de 249px úteis.
+- `phpunit --filter format_ldg`: 52 testes. `phpcs`: `EXIT=0`.
+
+**O que o plano não previu:**
+
+1. **O tema ainda tinha a grade.** O `_format.scss` mantinha um grid de duas
+   colunas de antes dos destinos, e o CSS do tema entra **depois** do
+   `styles.css` do plugin no arquivo servido (plugin em ~207k, tema em ~1,19M).
+   A grade de três colunas do plano 2 **nunca chegou a valer na tela**, e nada
+   quebrou para denunciar. Ficou um aviso no topo do arquivo.
+2. **Três pares do modo claro reprovaram na medição.** O cinza de rótulo que
+   escolhi de olho dava 4,36:1, e branco sobre o acento dava 4,02:1 — este
+   último exigiu um token novo, `--ldg-accent-fill`, separando o preenchimento
+   do acento de superfície.
+3. **Os itens do menu tinham largura de conteúdo**, não da coluna: âncora é
+   inline por padrão, então o fundo do estado ativo cobriria só as letras.
+4. **`aspect-ratio: 16/9` no quadro era erro meu do plano 2.** A altura é escrita
+   pelo `player.js`, e proporção fixa brigaria com aquela medida — a mesma que
+   fez o quadro crescer até 12084px em 02/09. A moldura é raio, borda e sombra;
+   os 16/9 chegam com o `mod_video`.
+
+**Duas armadilhas de cache, que custaram várias medições:**
+
+- `styles.php/ldg/1/all` devolve **cache**. Para ver compilação recente, use a
+  revisão que a página carrega, ou `-1`.
+- **`purge_caches` não invalidou o CSS de plugin.** A revisão do tema ficou
+  parada em `1788468183` antes e depois; o que fez o CSS novo aparecer foi o
+  bump de `version.php`.
+
+**Mudança no ambiente:** os pacotes `pt_br` e `es` foram instalados.
+
 ## O que fica para o plano 4
 
 A conferência visual no Chrome contra a referência, com as medidas do
