@@ -79,6 +79,17 @@
 
         <div class="ldg-portal__actions">
             {{!
+                O interruptor de edicao mora na navbar, e a navbar nao existe
+                aqui - sem esta linha o professor entra no portal e NAO TEM
+                COMO ligar a edicao, ficando preso na visao de aluno. Foi o
+                behat que mostrou, ao nao achar o campo "Edit mode".
+
+                O edit_switch do core ja se protege sozinho: para quem nao pode
+                editar, ele devolve vazio.
+            }}
+            {{{ output.edit_switch }}}
+
+            {{!
                 usermenu e langmenu sao CONTEXTOS, nao HTML pronto: quem
                 desenha e o parcial do core, entrando na secao. Interpolar
                 direto derruba a pagina com "Array to string conversion" no

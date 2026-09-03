@@ -78,3 +78,52 @@ Feature: O portal do aluno
     # NAO se checa "Debug info" aqui: esse texto existe no JSON de strings de
     # idioma que o Moodle embute para o JavaScript, e a assercao falharia sempre.
     # Pagina com excecao ja reprova sozinha, pelo behat_hooks.
+
+  # O chrome do portal. Continua sem @javascript porque a troca de layout e
+  # decidida no SERVIDOR, pelo hook: o que se verifica aqui e qual layout o
+  # Moodle escolheu, e isso chega no HTML. A conferencia de acessibilidade com
+  # axe-core exige navegador e por isso nao esta aqui.
+  #
+  # O TEMA PRECISA SER O LDG, e isso nao e detalhe de arranjo: o portal so
+  # existe se o tema ativo declarar o layout 'ldgportal'. O site do behat nasce
+  # com o boost, e sem esta linha os cenarios falham - o que, na primeira vez,
+  # foi a prova de que o guard do hook funciona.
+  Scenario: O aluno ve o portal, sem o chrome do Moodle
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-portal__header" "css_element" should exist
+    And ".ldg-portal__exit" "css_element" should exist
+    # O menu de usuario nao pode sumir junto com a navbar, senao o aluno fica
+    # preso no curso, sem perfil e sem sair.
+    And "[data-region='usermenu']" "css_element" should exist
+    And "nav.navbar" "css_element" should not exist
+
+  # Este cenario e o que separa "professor" de "editando". Sem ele, o seguinte
+  # passaria por acidente mesmo que a regra fosse pelo PAPEL - e a regra e pela
+  # edicao.
+  Scenario: O professor sem editar tambem ve o portal
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "professor"
+    Then ".ldg-portal__header" "css_element" should exist
+    And "nav.navbar" "css_element" should not exist
+
+  Scenario: Com a edicao ligada volta o chrome do Moodle
+    Given the following config values are set as admin:
+      | theme | ldg |
+    And I am on the "ldgcurso" "Course" page logged in as "professor"
+    When I turn editing mode on
+    Then "nav.navbar" "css_element" should exist
+    And ".ldg-portal__header" "css_element" should not exist
+
+  # O formato tem que ser instalavel com QUALQUER tema: e o motivo de o hook
+  # conferir se o layout existe antes de trocar. Com o boost, o curso abre no
+  # chrome do proprio boost, sem portal e sem erro.
+  Scenario: Com outro tema o curso abre no chrome daquele tema
+    Given the following config values are set as admin:
+      | theme | boost |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-lessonlist" "css_element" should exist
+    And ".ldg-portal__header" "css_element" should not exist
+    And "nav.navbar" "css_element" should exist
