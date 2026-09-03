@@ -81,4 +81,21 @@ $THEME->layouts = [
         'defaultregion' => 'side-pre',
         'options' => ['nonavbar' => true],
     ],
+
+    // O portal do aluno, pedido pelo format_ldg. Sem navbar e sem drawers: o
+    // chrome inteiro e do portal, e e esse o ponto - a pagina do curso deixa de
+    // parecer uma pagina do Moodle.
+    //
+    // Quem TROCA para este layout e o \format_ldg\hook_callbacks, no
+    // before_http_headers, e ele so troca se encontrar esta chave aqui. Ou
+    // seja: o nome 'ldgportal' e o contrato entre os dois plugins, e renomear
+    // aqui desliga o portal em silencio.
+    //
+    // Sem regioes de bloco de proposito. Bloco no portal seria o chrome do
+    // Moodle voltando pela janela.
+    'ldgportal' => [
+        'file' => 'ldgportal.php',
+        'regions' => [],
+        'options' => ['nonavbar' => true, 'nocourseheaderfooter' => true],
+    ],
 ];

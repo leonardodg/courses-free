@@ -517,8 +517,16 @@ padrão da casa (com o aviso de não escrever chaves duplas dentro dele) e o cor
         <div class="ldg-portal__course" title="{{ coursename }}">{{ coursename }}</div>
 
         <div class="ldg-portal__actions">
-            {{{ langmenu }}}
-            {{{ usermenu }}}
+            {{#langmenu}}
+                {{> theme_boost/language_menu }}
+            {{/langmenu}}
+
+            <div class="d-flex align-items-stretch usermenu-container" data-region="usermenu">
+                {{#usermenu}}
+                    {{> core/user_menu }}
+                {{/usermenu}}
+            </div>
+
             <a class="ldg-portal__exit" href="{{{ exiturl }}}">{{ exitlabel }}</a>
         </div>
     </header>
@@ -540,6 +548,12 @@ padrão da casa (com o aviso de não escrever chaves duplas dentro dele) e o cor
 
 `{{{ output.main_content }}}` é **obrigatório**: sem ele o `header()` do core
 lança `page layout file ... does not contain the main content placeholder`.
+
+**`usermenu` e `langmenu` são contextos, não HTML.** Interpolar com chaves triplas
+derruba a página com `Array to string conversion`, e o erro aponta para o
+mustache **compilado** em `moodledata/localcache`, não para o template — custa
+tempo até se entender que o arquivo citado não é o que se edita. Quem desenha é o
+parcial do core, entrando na seção, como o `navbar.mustache` deste tema já faz.
 
 - [ ] **Passo 4: string do botão, nos três idiomas**
 

@@ -30,6 +30,7 @@ $string['courseprogress'] = '{$a}% of the course complete';
 $string['courseprogressbar'] = 'Course progress';
 $string['durationfor'] = 'Duration of {$a}, in seconds';
 $string['durationseconds'] = 'seconds';
+$string['exitcourse'] = 'Close lesson';
 $string['hidefromothers'] = 'Hide module';
 $string['invalidduration'] = 'The duration cannot be negative.';
 $string['lessondone'] = '(completed)';
