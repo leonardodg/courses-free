@@ -23,6 +23,16 @@ public/local/partners
 # tema com $THEME->parents = ['moove','boost'] apontando para o nada.
 public/theme/ldg
 
+# Formato de curso do portal do aluno. Estava fora desta lista ate 03/09/2026,
+# ou seja, sem passar pelo portao que bloqueia o deploy.
+#
+# Depende do theme_ldg apenas para a MARCA, e a dependencia e verificada em
+# tempo de execucao: o portal so substitui o chrome se o tema ativo declarar o
+# layout 'ldgportal'. Por isso ele roda no CI SOZINHO, sem o tema no
+# --extra-plugins, e os testes continuam valendo - a decisao recebe os layouts
+# por parametro justamente para nao depender de tema instalado.
+public/course/format/ldg
+
 # --- Plugins de terceiros -----------------------------------------------------
 # INSTALADOS em 2026-08-24, da release oficial 5.2 do marketplace, com MD5
 # conferido. NAO passam pelo moodle-plugin-ci: sao codigo de upstream, e um

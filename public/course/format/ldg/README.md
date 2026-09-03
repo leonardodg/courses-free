@@ -19,7 +19,7 @@ de decidir comprar.
 | Dependência | Por quê |
 |---|---|
 | Moodle 5.2 (`2026042000`) | usa `core\output\choicelist` e o `courseformat` reativo |
-| **`theme_ldg`** | **o estilo do formato vive no tema**, não aqui |
+| **`theme_ldg`** *(opcional)* | **o estilo e o chrome do portal vivem no tema**, não aqui |
 
 **Leia isto antes de instalar com outro tema.** O SCSS está em
 `theme/ldg/scss/ldg/_format.scss`, e não no plugin. O formato entrega marcação
@@ -27,6 +27,28 @@ semântica; quem pinta é o tema. Com outro tema, ele **funciona e aparece sem
 estilo nenhum** — lista sem colunas, sem cores, sem barra desenhada. Isso é
 decisão de projeto, não esquecimento: assim o formato continua legível para quem
 quiser aplicar o próprio tema.
+
+### O chrome do portal, e como ele se desliga sozinho
+
+Para o aluno, a página do curso é servida por um layout **sem navbar e sem
+drawers** — o chrome inteiro é do portal. Quem pede a troca é
+`\format_ldg\hook_callbacks`, no hook `before_http_headers`; quem desenha é o
+tema, no layout `ldgportal`.
+
+A troca só acontece se **todas** estas forem verdade:
+
+- a página é a do curso (`pagelayout` = `course`), num curso neste formato;
+- o usuário **não** está com a edição ligada — professor editando volta para o
+  chrome do Moodle, porque arrastar atividade e o menu de ações vivem nos ganchos
+  que o core põe na pilha de seções;
+- **o tema ativo declara o layout `ldgportal`**.
+
+A última é o que torna a dependência opcional de verdade: com outro tema, o
+formato não troca nada e o curso abre no chrome daquele tema — sem erro e sem
+`debugging()` no log. Há um cenário de Behat fixando exatamente isso.
+
+> `ldgportal` é o **contrato** entre os dois plugins. Renomear o layout no tema
+> desliga o portal em silêncio.
 
 O `availability_marketplace` **não** é dependência. O formato nunca pergunta ao
 marketplace quem comprou o quê: ele lê `cm_info->uservisible`, que já chega

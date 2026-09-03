@@ -60,5 +60,35 @@ function xmldb_format_ldg_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026090300, 'format', 'ldg');
     }
 
+    if ($oldversion < 2026090306) {
+        // O usermodified saiu, e nao por economia de coluna.
+        //
+        // Ele e uma referencia a user, e o teste de privacidade do core cobra
+        // metadata de toda tabela que tenha uma: "the following tables with
+        // user fields must be covered with metadata providers". O plugin se
+        // declara null_provider - "nao guardo dado pessoal" - e as duas coisas
+        // nao podem ser verdade ao mesmo tempo.
+        //
+        // Entre declarar a metadata e remover a coluna, remover e o que casa
+        // com o que a tabela E: ela guarda a duracao do VIDEO, por cmid, e nao
+        // o tempo de ninguem. Nenhuma linha de PHP jamais leu ou escreveu este
+        // campo - ele nasceu junto com o esqueleto da tabela.
+        //
+        // A chave estrangeira sai ANTES do campo: dropar o campo com a chave de
+        // pe deixa a chave apontando para o nada, e o MariaDB recusa.
+        $table = new xmldb_table('format_ldg_lesson');
+
+        $key = new xmldb_key('usermodified', XMLDB_KEY_FOREIGN, ['usermodified'], 'user', ['id']);
+        $dbman->drop_key($table, $key);
+
+        $field = new xmldb_field('usermodified');
+
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026090306, 'format', 'ldg');
+    }
+
     return true;
 }
