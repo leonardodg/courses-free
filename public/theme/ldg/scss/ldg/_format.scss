@@ -53,8 +53,24 @@ body.format-ldg #page.drawers .main-inner {
 
 // A pagina do curso.
 .ldg-portal {
+    // O cartao do aluno: saudacao e progresso, no alto da coluna esquerda.
+    // Nao ha selo de plano - ver o comentario no content.php.
+    &__student {
+        padding: var(--ldg-gutter);
+        border: 1px solid var(--ldg-border);
+        border-radius: 12px;
+        background-color: var(--ldg-surface);
+    }
+
+    &__greeting {
+        margin: 0 0 var(--ldg-space);
+        color: var(--ldg-text);
+        font-size: 0.9375rem;
+        font-weight: 600;
+    }
+
     &__progress {
-        margin-bottom: var(--ldg-gutter);
+        margin-bottom: 0;
     }
 
     &__progress-label {
@@ -551,7 +567,45 @@ body.format-ldg #page.drawers .main-inner {
 //
 // So esconde o chrome. Nada aqui muda permissao ou revela conteudo - o que a
 // pessoa nao pode ver, ela continua nao vendo.
+// O link do User Tours nao pertence ao portal.
+//
+// E um <a id="resetpagetour"> dentro de .usertour, que o tool_usertours poe pelo
+// standard_after_main_region_html. Nao da para tirar o bloco inteiro do layout:
+// e o mesmo que traz o painel de mensagens, que FICA - o aluno chega nas
+// mensagens pelo menu de usuario. Entao esconde-se o elemento.
+//
+// So no portal: nas outras paginas do site o tour continua com o link dele.
+body.format-ldg .usertour {
+    display: none;
+}
+
 body.ldg-embedded {
+    // Os requisitos de conclusao e a navegacao da atividade FICAM: e por eles
+    // que o aluno sabe o que falta e para onde ir. O que muda e a cara - eles
+    // chegam com o desenho do Boost, dentro de uma tela que nao e o Boost.
+    //
+    // Sao classes do CORE, e nao nossas: activity-header, completion-info,
+    // automatic-completion-conditions e activity-navigation. Por isso o seletor
+    // e escopado em .ldg-embedded, e nada disso vaza para o resto do site.
+    .activity-header {
+        margin-bottom: var(--ldg-gutter);
+    }
+
+    .completion-info,
+    .automatic-completion-conditions {
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--ldg-border);
+        border-radius: 12px;
+        background-color: var(--ldg-surface);
+        font-size: 0.8125rem;
+    }
+
+    .activity-navigation {
+        margin-top: var(--ldg-gutter);
+        padding-top: var(--ldg-gutter);
+        border-top: 1px solid var(--ldg-border);
+    }
+
     #page-header,
     .navbar,
     .secondary-navigation,

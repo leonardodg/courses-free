@@ -109,18 +109,33 @@
     <h2 class="accesshide">{{{title}}}</h2>
     {{{completionhelp}}}
 
-    {{#hascourseprogress}}
-        <div class="ldg-portal__progress">
-            <div class="ldg-portal__progress-label">{{courseprogresslabel}}</div>
-            <div class="progress" role="progressbar"
-                 aria-label="{{#str}}courseprogressbar, format_ldg{{/str}}"
-                 aria-valuenow="{{courseprogress}}" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: {{courseprogress}}%"></div>
-            </div>
-        </div>
-    {{/hascourseprogress}}
-
     <div class="ldg-portal__body">
+        {{!
+            O cartao do aluno e a PRIMEIRA regiao da grade, e nao um bloco solto
+            no topo da pagina. A barra de progresso vivia atravessando a tela
+            inteira; aqui ela fica onde o desenho a poe, junto de quem ela
+            descreve.
+
+            Nao ha selo de plano: nao existe no Moodle nada que diga o plano do
+            aluno nesta tela, e inventar um seria mentir para ele.
+        }}
+        {{^isediting}}
+            <div class="ldg-portal__student">
+                <p class="ldg-portal__greeting">{{studentgreeting}}</p>
+
+                {{#hascourseprogress}}
+                    <div class="ldg-portal__progress">
+                        <div class="ldg-portal__progress-label">{{courseprogresslabel}}</div>
+                        <div class="progress" role="progressbar"
+                             aria-label="{{#str}}courseprogressbar, format_ldg{{/str}}"
+                             aria-valuenow="{{courseprogress}}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: {{courseprogress}}%"></div>
+                        </div>
+                    </div>
+                {{/hascourseprogress}}
+            </div>
+        {{/isediting}}
+
         {{!
             A navegacao entra UMA vez e desenha as tres superficies - menu, abas
             e barra de baixo -, que sao IRMAS do miolo e da lista. E de proposito:

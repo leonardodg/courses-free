@@ -55,6 +55,7 @@ $string['privacy:metadata'] = 'El formato de curso LDG no almacena ningún dato 
 $string['section0name'] = 'Apertura del curso';
 $string['sectionname'] = 'Módulo';
 $string['showfromothers'] = 'Mostrar módulo';
+$string['studentgreeting'] = '¡Hola, {$a}! Bienvenido de vuelta.';
 $string['viewcertificate'] = 'Certificado';
 $string['viewforum'] = 'Foro de estudiantes';
 $string['viewlessons'] = 'Ver clases';

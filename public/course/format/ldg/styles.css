@@ -47,6 +47,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
+        "student"
         "tabs"
         "main"
         "index";
@@ -56,6 +57,13 @@
 .ldg-portal__nav {
     display: none;
     grid-area: nav;
+}
+
+/* O cartao do aluno e a primeira coisa da coluna esquerda no desktop, e a
+   primeira da pagina no celular - onde ele funciona como cabecalho de contexto,
+   ja que ali nao ha coluna. */
+.ldg-portal__student {
+    grid-area: student;
 }
 
 /* O item ocupa a LINHA inteira, e nao a largura do texto.
@@ -184,6 +192,7 @@
     .ldg-portal__body {
         grid-template-columns: 280px minmax(0, 1fr);
         grid-template-areas:
+            "student main"
             "nav main"
             "nav index";
         align-items: start;
@@ -209,7 +218,9 @@
 @media (min-width: 1200px) {
     .ldg-portal__body {
         grid-template-columns: 280px minmax(0, 1fr) 360px;
-        grid-template-areas: "nav main index";
+        grid-template-areas:
+            "student main index"
+            "nav main index";
     }
 
     .ldg-lessonlist {

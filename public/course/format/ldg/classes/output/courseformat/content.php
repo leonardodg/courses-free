@@ -146,6 +146,15 @@ class content extends content_base {
             $data->courseprogresslabel = get_string('courseprogress', 'format_ldg', (int) round($percentual));
         }
 
+        // A saudacao usa o PRIMEIRO nome, e nao o nome completo: e um cartao de
+        // 280px, e "Bem-vindo de volta, Maria Aparecida da Silva Santos" quebra
+        // em quatro linhas.
+        //
+        // NAO ha selo de plano aqui. O desenho tinha um "PREMIUM", e ele nao
+        // entra: nao existe no Moodle nada que diga o plano do aluno nesta tela,
+        // e um selo inventado seria mentir para ele.
+        $data->studentgreeting = get_string('studentgreeting', 'format_ldg', $USER->firstname);
+
         return $data;
     }
 }

@@ -55,6 +55,7 @@ $string['privacy:metadata'] = 'The LDG course format plugin does not store any p
 $string['section0name'] = 'Course introduction';
 $string['sectionname'] = 'Module';
 $string['showfromothers'] = 'Show module';
+$string['studentgreeting'] = 'Hi, {$a}! Welcome back.';
 $string['viewcertificate'] = 'Certificate';
 $string['viewforum'] = 'Student forum';
 $string['viewlessons'] = 'Watch lessons';
