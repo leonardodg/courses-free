@@ -72,7 +72,8 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-08-24 | [Plataforma, marketplace e Mercado Pago](2026-08-24-plataforma-marketplace-e-mercadopago.md) | `executado` | plano fundador; `paygw_mercadopago` nos PRs #27 a #48 |
 | 2026-08-24 | [Tema filho do Moove (LeoDG Academy)](2026-08-24-leodg-academy-tema-filho-do-moove.md) | `descartado` | 46 passos, nenhum executado; o `theme_ldg` deixou de depender do Moove no PR #64 |
 | 2026-08-24 | [Spec do tema filho do Moove](2026-08-24-leodg-academy-tema-spec.md) | `descartado` | a spec do plano acima; a paleta dela não é a que valeu |
-| 2026-08-26 | [`cf`, fluxo de worktrees](2026-08-26-cf-fluxo-de-worktrees.md) | `executado` | entregue — PRs #50, #51, #52 |
+| 2026-08-26 | [Plano original: `cf` e as worktrees](2026-08-26-plano-original-cf-worktrees.md) | `executado` | o plano; entregue nos PRs #50, #51, #52 |
+| 2026-08-26 | [`cf`, fluxo de worktrees](2026-08-26-cf-fluxo-de-worktrees.md) | `executado` | o registro do ciclo, com o que se aprendeu depois |
 | 2026-08-27 | [Plano original: Asaas e Pagar.me](2026-08-27-plano-original-asaas-e-pagarme.md) | **`inacabado`** | Fases 0 e 1 entregues; **Fase 2 `paygw_pagarme` travada no CNPJ**, e dois itens do `paygw_mercadopago` em aberto |
 | 2026-08-27 | [Gateways além do Mercado Pago](2026-08-27-gateways-asaas-e-pagarme.md) | `executado` | registro do ciclo: Asaas entregue e **split provado** |
 | 2026-08-31 | [`theme_ldg`, `local_partners` e planos no banco](2026-08-31-theme-ldg-local-partners-e-planos.md) | `executado` | sete fases no PR #61; a última ponta da Fase 0 fechou no #68. **Recuperado da transcrição** — o arquivo tinha sido sobrescrito |
@@ -85,3 +86,4 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-09-03 | [Portal, plano 3: marca e tipografia](2026-09-03-portal-plano-3-marca-e-tipografia.md) | `executado` | 4 commits; contraste e fontes medidos no Chrome |
 | 2026-09-03 | [Portal, plano 4: conferência visual](2026-09-03-portal-plano-4-conferencia-visual.md) | `executado` | medidas no alvo, axe-core limpo |
 | 2026-09-03 | [Portal, plano 5: ajustes do layout](2026-09-03-portal-plano-5-ajustes-do-layout.md) | `executado` | inclui o portal para gestor e o tema nas páginas de admin |
+| 2026-09-04 | [Planos no projeto e limpeza de worktrees](2026-09-04-planos-no-projeto-e-limpeza-de-worktrees.md) | `executado` | PR #68 — trouxe os planos para o git e apontou o `plansDirectory` |
