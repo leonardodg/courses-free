@@ -50,7 +50,7 @@ Comparar tela cheia com tela quase vazia não prova nada. O curso precisa exerce
 **os quatro destinos** e os **estados** que o desenho mostra: aula concluída, aula
 em andamento, aula disponível e módulo trancado.
 
-- [ ] **Passo 1: acrescentar o fórum**
+- [x] **Passo 1: acrescentar o fórum**
 
 Depois do bloco do quiz, antes do certificado:
 
@@ -67,7 +67,7 @@ $forum = $generator->get_plugin_generator('mod_forum')->create_instance([
 ]);
 ```
 
-- [ ] **Passo 2: acrescentar material de verdade**
+- [x] **Passo 2: acrescentar material de verdade**
 
 O `mod_url` já existe e conta como material, mas o desenho mostra **arquivo para
 baixar** — que é o caso que não pode abrir no quadro. Um `mod_folder` e um
@@ -93,7 +93,7 @@ $generator->get_plugin_generator('mod_resource')->create_instance([
 
 Com `require_once($CFG->libdir . '/resourcelib.php')` no topo do arquivo.
 
-- [ ] **Passo 3: rodar e conferir os quatro destinos**
+- [x] **Passo 3: rodar e conferir os quatro destinos**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -102,7 +102,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 
 Depois, na página, conferir que os quatro `ldg-portal__navitem--*` aparecem.
 
-- [ ] **Passo 4: commitar**
+- [x] **Passo 4: commitar**
 
 ---
 
@@ -114,7 +114,7 @@ Depois, na página, conferir que os quatro `ldg-portal__navitem--*` aparecem.
 Mede o que o `DESIGN.md` define, nos **dois viewports** e nos **dois modos**.
 Cada linha vira número e veredito.
 
-- [ ] **Passo 1: escrever a sonda**
+- [x] **Passo 1: escrever a sonda**
 
 ```js
 // Sonda visual do portal. Mede DEPOIS do JS e das fontes, que e o unico jeito
@@ -182,7 +182,7 @@ async function medir(url, sess, viewport, modo) {
 Com um `main` que percorre `[desktop, celular] x [dark, light]` e imprime a
 tabela.
 
-- [ ] **Passo 2: rodar e comparar com o `DESIGN.md`**
+- [x] **Passo 2: rodar e comparar com o `DESIGN.md`**
 
 | Medida | Alvo | Onde vale |
 |---|---|---|
@@ -199,24 +199,24 @@ tabela.
 Qualquer divergência é defeito **do código**, não da medida — corrigir e medir de
 novo.
 
-- [ ] **Passo 3: commitar o que a medição corrigir**
+- [x] **Passo 3: commitar o que a medição corrigir**
 
 ---
 
 ### Tarefa 3: o lado a lado com a sua referência
 
-- [ ] **Passo 1: renderizar o mockup no mesmo Chrome**
+- [x] **Passo 1: renderizar o mockup no mesmo Chrome**
 
 O `portal-aluno-version-bootstrip-responsive.html` é aberto no **mesmo** Chrome,
 **mesmo** viewport e **mesma** escala. Comparar com o PNG seria comparar com
 outro motor de renderização.
 
-- [ ] **Passo 2: quatro capturas**
+- [x] **Passo 2: quatro capturas**
 
 `Page.captureScreenshot` com `captureBeyondViewport`, em 1280 e 390, do portal e
 da referência. Arquivos no scratchpad.
 
-- [ ] **Passo 3: entregar as capturas**
+- [x] **Passo 3: entregar as capturas**
 
 As quatro imagens vão para você comparar — é aqui que "chegar próximo" deixa de
 ser número e vira julgamento seu, que é o certo para tipografia, respiro e
@@ -226,7 +226,7 @@ hierarquia.
 
 ### Tarefa 4: acessibilidade com axe-core
 
-- [ ] **Passo 1: injetar o axe do disco**
+- [x] **Passo 1: injetar o axe do disco**
 
 ```js
 const axe = require('fs').readFileSync(
@@ -244,7 +244,7 @@ const {result} = await Runtime.evaluate({
 });
 ```
 
-- [ ] **Passo 2: rodar nos dois modos e nos quatro destinos**
+- [x] **Passo 2: rodar nos dois modos e nos quatro destinos**
 
 Critério: **zero** violações de impacto `critical` ou `serious`. O que sobrar de
 `moderate`/`minor` entra no commit, com decisão explícita — consertar ou aceitar
@@ -253,24 +253,24 @@ com motivo.
 Os três `<nav>` da mesma página são o candidato natural a reprovar: por isso cada
 um recebeu `aria-label` no plano 2.
 
-- [ ] **Passo 3: consertar e commitar**
+- [x] **Passo 3: consertar e commitar**
 
 ---
 
 ### Tarefa 5: documentação e fechamento
 
-- [ ] **Passo 1: `format_ldg/README.md`** — os quatro destinos, a regra de
+- [x] **Passo 1: `format_ldg/README.md`** — os quatro destinos, a regra de
   classificação, a regra do material que baixa, e o `styles.css` estrutural.
-- [ ] **Passo 2: `theme_ldg/README.md`** — o layout `ldgportal`, as fontes
+- [x] **Passo 2: `theme_ldg/README.md`** — o layout `ldgportal`, as fontes
   empacotadas com a licença, os tokens novos com o contraste medido, e o aviso
   de que grade não se escreve no `_format.scss`.
-- [ ] **Passo 3: `docs/brand/DESIGN.md`** — marcar o implementado e **corrigir o
+- [x] **Passo 3: `docs/brand/DESIGN.md`** — marcar o implementado e **corrigir o
   que o código provou diferente**: o cinza de rótulo que reprovou, o
   `--ldg-accent-fill` que precisou existir, e os 16/9 que ficaram para o
   `mod_video`.
-- [ ] **Passo 4: `docs/dev/`** — o documento do portal, ligado pelo
+- [x] **Passo 4: `docs/dev/`** — o documento do portal, ligado pelo
   `docs/README.md`, com o roteiro da conferência visual para você repetir sem mim.
-- [ ] **Passo 5: versões dos dois plugins, e o registro dos planos.**
+- [x] **Passo 5: versões dos dois plugins, e o registro dos planos.**
 
 ## Executado em 03/09/2026
 

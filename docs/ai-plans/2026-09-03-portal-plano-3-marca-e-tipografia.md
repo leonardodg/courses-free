@@ -84,7 +84,7 @@ na VPS é uma requisição a terceiro em cada carga. O Moodle já resolve isso:
 `theme_config` (`lib/classes/output/theme_config.php:1602`) para a URL servida
 pelo próprio site. O `theme_moove`, que é o pai, já faz isso com o OpenDyslexic.
 
-- [ ] **Passo 1: baixar as fontes variáveis, só os subconjuntos que usamos**
+- [x] **Passo 1: baixar as fontes variáveis, só os subconjuntos que usamos**
 
 O Google serve **variável**: um arquivo cobre 400–700. Precisamos de `latin` e
 `latin-ext` (pt, es, en) — nada de cirílico, grego ou vietnamita.
@@ -108,13 +108,13 @@ jetbrains-mono-latin.woff2
 jetbrains-mono-latin-ext.woff2
 ```
 
-- [ ] **Passo 2: a licença, junto**
+- [x] **Passo 2: a licença, junto**
 
 Ambas são **SIL Open Font License 1.1**, que permite empacotar e exige manter o
 aviso. Gravar `public/theme/ldg/fonts/OFL.txt` com o texto da licença e as duas
 atribuições. Sem isso, empacotar fonte é problema jurídico, não detalhe.
 
-- [ ] **Passo 3: o `_fonts.scss`**
+- [x] **Passo 3: o `_fonts.scss`**
 
 ```scss
 // As fontes do desenho, servidas pelo PROPRIO site.
@@ -177,7 +177,7 @@ O `font-display: swap` é deliberado: a página aparece na fonte do sistema e tr
 quando a nossa chega. O contrário — texto invisível esperando a fonte — é pior em
 conexão ruim, que é a do aluno no celular.
 
-- [ ] **Passo 4: os tokens de família, e aplicar**
+- [x] **Passo 4: os tokens de família, e aplicar**
 
 Em `_tokens.scss`, no bloco que não muda entre modos:
 
@@ -197,7 +197,7 @@ body {
 }
 ```
 
-- [ ] **Passo 5: importar o parcial e recompilar**
+- [x] **Passo 5: importar o parcial e recompilar**
 
 Acrescentar `@import 'ldg/fonts';` junto dos outros imports do tema, subir
 `version.php` do tema e rodar:
@@ -206,7 +206,7 @@ Acrescentar `@import 'ldg/fonts';` junto dos outros imports do tema, subir
 cf cli purge_caches.php
 ```
 
-- [ ] **Passo 6: provar que a fonte é servida pelo site**
+- [x] **Passo 6: provar que a fonte é servida pelo site**
 
 ```bash
 curl -sk "https://localhost:8443/theme/styles.php/ldg/1/all" | grep -o "font.php[^)\"']*" | sort -u
@@ -217,7 +217,7 @@ Esperado: URLs `/theme/font.php/...` e HTTP 200 com tamanho de dezenas de KB.
 **Zero** ocorrências de `fonts.googleapis` ou `fonts.gstatic` no CSS servido — é o
 que prova que a dependência externa não entrou.
 
-- [ ] **Passo 7: commitar**
+- [x] **Passo 7: commitar**
 
 ```bash
 git add public/theme/ldg/fonts public/theme/ldg/scss public/theme/ldg/version.php
@@ -231,7 +231,7 @@ git commit -m "NOBUG: theme_ldg - Inter e JetBrains Mono servidas pelo proprio s
 **Arquivos:**
 - Modificar: `public/theme/ldg/scss/ldg/_tokens.scss`
 
-- [ ] **Passo 1: o acento do modo escuro passa a ser o do desenho**
+- [x] **Passo 1: o acento do modo escuro passa a ser o do desenho**
 
 No bloco `[data-bs-theme="dark"]`:
 
@@ -249,7 +249,7 @@ No bloco `[data-bs-theme="dark"]`:
 barra de progresso e link da landing incluídos. É o que foi pedido: o tema adota
 a linguagem do portal. O modo claro **não muda**.
 
-- [ ] **Passo 2: superfície ativa, sucesso e cinza de rótulo**
+- [x] **Passo 2: superfície ativa, sucesso e cinza de rótulo**
 
 Ainda no bloco escuro:
 
@@ -281,12 +281,12 @@ E os equivalentes no bloco claro:
     --ldg-on-accent: #ffffff;
 ```
 
-- [ ] **Passo 3: medir tudo que entrou**
+- [x] **Passo 3: medir tudo que entrou**
 
 Rodar o cálculo de contraste para cada par novo, nos dois modos, e **colar o
 resultado no commit**. Par que reprovar não entra: escurece ou aumenta o texto.
 
-- [ ] **Passo 4: commitar**
+- [x] **Passo 4: commitar**
 
 ```bash
 git commit -m "NOBUG: theme_ldg - o acento, o sucesso e o cinza de rotulo do desenho"
@@ -303,7 +303,7 @@ Todo o CSS aqui é **marca**: cor, tipografia, raio, sombra, densidade. Estrutur
 nenhuma — ela está no `styles.css` do formato desde o plano 2, e é o que faz o
 portal sobreviver com outro tema.
 
-- [ ] **Passo 1: o chrome**
+- [x] **Passo 1: o chrome**
 
 ```scss
 .ldg-portal__header {
@@ -350,7 +350,7 @@ portal sobreviver com outro tema.
 }
 ```
 
-- [ ] **Passo 2: a navegação, nas três superfícies**
+- [x] **Passo 2: a navegação, nas três superfícies**
 
 ```scss
 // O marcador de estado do sistema: barra de 4px no acento. Ele se repete no
@@ -430,7 +430,7 @@ portal sobreviver com outro tema.
 `color-mix` tem suporte em todos os navegadores atuais; o fallback natural é a
 cor cheia, que é aceitável.
 
-- [ ] **Passo 3: a moldura da aula e os materiais**
+- [x] **Passo 3: a moldura da aula e os materiais**
 
 ```scss
 .ldg-lesson__frame {
@@ -479,7 +479,7 @@ cor cheia, que é aceitável.
 }
 ```
 
-- [ ] **Passo 4: recompilar, olhar e commitar**
+- [x] **Passo 4: recompilar, olhar e commitar**
 
 ```bash
 cf cli purge_caches.php
@@ -506,7 +506,7 @@ Três consequências concretas, e é por isso que isto é tarefa e não nota:
 | Rótulo estourando o menu | O maior é o espanhol, **"Foro de estudiantes"** (19 caracteres) — 3 a mais que o inglês. O menu tem 280px fixos |
 | Seletor de idioma invisível | Produto trilíngue com um pacote só instalado nunca mostra a troca |
 
-- [ ] **Passo 1: instalar os pacotes no ambiente de trabalho**
+- [x] **Passo 1: instalar os pacotes no ambiente de trabalho**
 
 Não há CLI pronto no 5.2 — o `tool_langimport` é tela. Mas a API existe:
 
@@ -528,7 +528,7 @@ cf cli purge_caches.php
 
 A sonda vive em `/tmp` **dentro do container**, nunca no `wwwroot`.
 
-- [ ] **Passo 2: ver o portal nos três idiomas**
+- [x] **Passo 2: ver o portal nos três idiomas**
 
 ```bash
 for L in en pt_br es; do
@@ -540,14 +540,14 @@ done
 Esperado: os rótulos de cada língua, e o seletor de idioma aparecendo no
 cabeçalho a partir de agora.
 
-- [ ] **Passo 3: medir o rótulo mais longo contra a coluna**
+- [x] **Passo 3: medir o rótulo mais longo contra a coluna**
 
 No Chrome, em 1280px, medir a largura real do item de menu em espanhol
 (`getBoundingClientRect().width` de `.ldg-portal__navitem--forum`) e conferir que
 **não** há corte nem quebra dentro dos 280px, menos o padding. Se estourar, o
 conserto é do lado do desenho — não encurtar a tradução.
 
-- [ ] **Passo 4: provar que o acento vem da Inter**
+- [x] **Passo 4: provar que o acento vem da Inter**
 
 No Chrome, com a página em português:
 
@@ -560,14 +560,14 @@ E medir a largura de um `ç` e de um `ã` num elemento com a família aplicada,
 comparando com o mesmo texto em `sans-serif`: larguras iguais significam que a
 Inter **não** carregou e o fallback está desenhando.
 
-- [ ] **Passo 5: Behat continua indiferente ao idioma**
+- [x] **Passo 5: Behat continua indiferente ao idioma**
 
 Os cenários dos planos 1 e 2 já miram **classes**, e não rótulos — foi o conserto
 de um erro meu, e agora é regra: teste de navegação não pode depender de idioma.
 Conferir que segue assim e acrescentar um cenário que troca o idioma do site para
 `pt_br` e confirma que a navegação continua de pé.
 
-- [ ] **Passo 6: commitar**
+- [x] **Passo 6: commitar**
 
 ```bash
 git commit -m "NOBUG: theme_ldg - o portal nas tres linguas, com a fonte certa nos acentos"
@@ -577,14 +577,14 @@ git commit -m "NOBUG: theme_ldg - o portal nas tres linguas, com a fonte certa n
 
 ### Tarefa 5: provar, documentar e fechar
 
-- [ ] **Passo 1: contraste medido no que está na tela**
+- [x] **Passo 1: contraste medido no que está na tela**
 
 Script no scratchpad que lê os tokens resolvidos do CSS servido e calcula os
 pares que importam: texto sobre fundo, texto sobre superfície, rótulo sobre
 superfície, acento sobre superfície, aba ativa (texto sobre acento). **Nos dois
 modos.** Nenhum abaixo de 4,5:1 para texto.
 
-- [ ] **Passo 2: a bateria toda**
+- [x] **Passo 2: a bateria toda**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -597,7 +597,7 @@ docker exec -u 1000:33 courses-free-moodle-1 sh -c \
    /var/www/html/public/theme/ldg /var/www/html/public/course/format/ldg; echo "EXIT=$?"'
 ```
 
-- [ ] **Passo 3: documentação**
+- [x] **Passo 3: documentação**
 
 - `theme_ldg/README.md`: as fontes empacotadas e por quê, os tokens novos com o
   contraste medido, e o layout `ldgportal`.
@@ -606,7 +606,7 @@ docker exec -u 1000:33 courses-free-moodle-1 sh -c \
   é pior que nenhum.
 - `version.php` do tema.
 
-- [ ] **Passo 4: commitar**
+- [x] **Passo 4: commitar**
 
 ## Como saber que o plano 3 acabou
 

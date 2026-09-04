@@ -77,7 +77,7 @@ vem de `$hook->renderer->get_page()`, que existe em
   `hook_callbacks::should_use_portal(\moodle_page $page, array $layouts): bool`.
   A tarefa 2 chama as duas.
 
-- [ ] **Passo 1: escrever o teste que falha**
+- [x] **Passo 1: escrever o teste que falha**
 
 Criar `public/course/format/ldg/tests/hook_callbacks_test.php`:
 
@@ -219,7 +219,7 @@ final class hook_callbacks_test extends \advanced_testcase {
 }
 ```
 
-- [ ] **Passo 2: rodar e ver falhar**
+- [x] **Passo 2: rodar e ver falhar**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -228,7 +228,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 
 Esperado: **erro fatal** `Class "format_ldg\hook_callbacks" not found`.
 
-- [ ] **Passo 3: escrever a implementação mínima**
+- [x] **Passo 3: escrever a implementação mínima**
 
 Criar `public/course/format/ldg/classes/hook_callbacks.php`:
 
@@ -335,7 +335,7 @@ class hook_callbacks {
 }
 ```
 
-- [ ] **Passo 4: rodar e ver passar**
+- [x] **Passo 4: rodar e ver passar**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -344,7 +344,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 
 Esperado: **OK (5 tests)**.
 
-- [ ] **Passo 5: phpcs limpo**
+- [x] **Passo 5: phpcs limpo**
 
 ```bash
 docker exec -u 1000:33 courses-free-moodle-1 sh -c \
@@ -355,7 +355,7 @@ docker exec -u 1000:33 courses-free-moodle-1 sh -c \
 Esperado: nenhuma violação. **Leia a linha do total** — cortar a saída já
 escondeu 16 erros aqui uma vez.
 
-- [ ] **Passo 6: commitar**
+- [x] **Passo 6: commitar**
 
 ```bash
 git add public/course/format/ldg/classes/hook_callbacks.php \
@@ -375,7 +375,7 @@ git commit -m "NOBUG: format_ldg - a decisao de usar o layout do portal"
 - Consome: `\format_ldg\hook_callbacks::before_http_headers` da tarefa 1.
 - Produz: o hook passa a rodar de verdade; a tarefa 3 vê o efeito na tela.
 
-- [ ] **Passo 1: criar o registro**
+- [x] **Passo 1: criar o registro**
 
 `public/course/format/ldg/db/hooks.php` (mesmo cabeçalho GPL das outras):
 
@@ -390,7 +390,7 @@ $callbacks = [
 ];
 ```
 
-- [ ] **Passo 2: subir a versão do plugin**
+- [x] **Passo 2: subir a versão do plugin**
 
 Em `public/course/format/ldg/version.php`, trocar
 `$plugin->version = 2026090304;` por `$plugin->version = 2026090305;`.
@@ -398,13 +398,13 @@ Em `public/course/format/ldg/version.php`, trocar
 O `db/hooks.php` só é lido depois de um upgrade — sem o bump, o listener não
 existe para o Moodle e a tarefa 3 falha por um motivo que não é o dela.
 
-- [ ] **Passo 3: rodar o upgrade e limpar cache**
+- [x] **Passo 3: rodar o upgrade e limpar cache**
 
 ```bash
 cf cli upgrade.php --non-interactive && cf cli purge_caches.php
 ```
 
-- [ ] **Passo 4: conferir que o hook foi registrado**
+- [x] **Passo 4: conferir que o hook foi registrado**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -419,7 +419,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 Esperado: **1** ou mais. Zero significa que o upgrade não rodou ou o arquivo tem
 erro de sintaxe.
 
-- [ ] **Passo 5: commitar**
+- [x] **Passo 5: commitar**
 
 ```bash
 git add public/course/format/ldg/db/hooks.php public/course/format/ldg/version.php
@@ -442,7 +442,7 @@ git commit -m "NOBUG: format_ldg - registra o listener do before_http_headers"
 - Produz: a página do curso servida sem navbar e sem drawers, com o menu de
   usuário no cabeçalho.
 
-- [ ] **Passo 1: declarar o layout**
+- [x] **Passo 1: declarar o layout**
 
 Em `public/theme/ldg/config.php`, dentro de `$THEME->layouts`, acrescentar depois
 do `frontpage`:
@@ -458,7 +458,7 @@ do `frontpage`:
     ],
 ```
 
-- [ ] **Passo 2: escrever o layout**
+- [x] **Passo 2: escrever o layout**
 
 `public/theme/ldg/layout/ldgportal.php` (com cabeçalho GPL e docblock
 `@package theme_ldg`):
@@ -493,7 +493,7 @@ $templatecontext = [
 echo $OUTPUT->render_from_template('theme_ldg/ldgportal', $templatecontext);
 ```
 
-- [ ] **Passo 3: escrever o template**
+- [x] **Passo 3: escrever o template**
 
 `public/theme/ldg/templates/ldgportal.mustache`. O comentário do topo segue o
 padrão da casa (com o aviso de não escrever chaves duplas dentro dele) e o corpo
@@ -555,7 +555,7 @@ mustache **compilado** em `moodledata/localcache`, não para o template — cust
 tempo até se entender que o arquivo citado não é o que se edita. Quem desenha é o
 parcial do core, entrando na seção, como o `navbar.mustache` deste tema já faz.
 
-- [ ] **Passo 4: string do botão, nos três idiomas**
+- [x] **Passo 4: string do botão, nos três idiomas**
 
 Em `public/course/format/ldg/lang/en/format_ldg.php`, na posição alfabética:
 
@@ -566,7 +566,7 @@ $string['exitcourse'] = 'Close lesson';
 `pt_br`: `'Fechar aula'`. `es`: `'Cerrar lección'`. **Reordene o arquivo inteiro
 depois de inserir** — âncora fora de ordem quebra o phpcs.
 
-- [ ] **Passo 5: subir a versão do tema e recompilar**
+- [x] **Passo 5: subir a versão do tema e recompilar**
 
 `public/theme/ldg/version.php`: `2026090221` → `2026090222`.
 
@@ -574,13 +574,13 @@ depois de inserir** — âncora fora de ordem quebra o phpcs.
 cf cli upgrade.php --non-interactive && cf cli purge_caches.php
 ```
 
-- [ ] **Passo 6: ver na tela**
+- [x] **Passo 6: ver na tela**
 
 Abrir `https://localhost:8443/course/view.php?id=<curso ldg>` como aluno.
 Esperado: sem navbar, sem drawers, cabeçalho do portal com avatar. Com a edição
 ligada, o Moodle de sempre.
 
-- [ ] **Passo 7: commitar**
+- [x] **Passo 7: commitar**
 
 ```bash
 git add public/theme/ldg/config.php public/theme/ldg/layout/ldgportal.php \
@@ -606,7 +606,7 @@ que não roda.
 Os nomes seguem o `Background` que já existe: curso `ldgcurso`, usuários `aluno`
 e `professor`.
 
-- [ ] **Passo 1: escrever os cenários**
+- [x] **Passo 1: escrever os cenários**
 
 ```gherkin
   Scenario: O aluno ve o portal, sem o chrome do Moodle
@@ -628,7 +628,7 @@ e `professor`.
 O segundo cenário é o que separa "professor" de "editando" — a regra é a edição,
 não o papel, e sem ele o terceiro passaria por acidente.
 
-- [ ] **Passo 2: habilitar a feature e rodar**
+- [x] **Passo 2: habilitar a feature e rodar**
 
 ```bash
 docker exec -u 1000:33 courses-free-moodle-1 \
@@ -644,7 +644,7 @@ Esperado: todos os cenários verdes. Feature nova ou renomeada **não é coletad
 sem o `util.php --enable` — sem ele o behat responde `No scenarios` e parece
 erro de sintaxe.
 
-- [ ] **Passo 3: commitar**
+- [x] **Passo 3: commitar**
 
 ```bash
 git add public/course/format/ldg/tests/behat/format_ldg.feature
@@ -659,7 +659,7 @@ git commit -m "NOBUG: format_ldg - behat do chrome do portal"
 - Modificar: `.github/moodle-plugins.txt`
 - Modificar: `public/course/format/ldg/README.md`
 
-- [ ] **Passo 1: acrescentar o formato à lista**
+- [x] **Passo 1: acrescentar o formato à lista**
 
 Depois do bloco do `theme/ldg`:
 
@@ -670,7 +670,7 @@ Depois do bloco do `theme/ldg`:
 public/course/format/ldg
 ```
 
-- [ ] **Passo 2: rodar o mesmo portão do CI, local**
+- [x] **Passo 2: rodar o mesmo portão do CI, local**
 
 ```bash
 docker exec -u 1000:33 courses-free-moodle-1 sh -c \
@@ -684,14 +684,14 @@ npx grunt
 
 Esperado: phpcs sem violações, phpunit verde, grunt sem erro de eslint/stylelint.
 
-- [ ] **Passo 3: atualizar o README do formato**
+- [x] **Passo 3: atualizar o README do formato**
 
 Trocar a promessa antiga ("instalado com outro tema, ele aparece sem estilo") por
 o que passa a ser verdade: com outro tema o formato usa o chrome daquele tema, e
 o layout do portal só entra quando o tema declara `ldgportal`. Citar o nome do
 layout — é o contrato entre os dois plugins.
 
-- [ ] **Passo 4: commitar**
+- [x] **Passo 4: commitar**
 
 ```bash
 git add .github/moodle-plugins.txt public/course/format/ldg/README.md

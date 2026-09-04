@@ -93,7 +93,7 @@ material, fórum e certificado saem da lista. Isso muda o comportamento atual e
   `get(string $tipo): array` (de `cm_info`, na ordem do curso) e
   `has(string $tipo): bool`. As tarefas 2, 3 e 4 usam esses três.
 
-- [ ] **Passo 1: escrever o teste que falha**
+- [x] **Passo 1: escrever o teste que falha**
 
 Criar `public/course/format/ldg/tests/catalog_test.php` (cabeçalho GPL e docblock
 como nos outros testes do plugin):
@@ -234,7 +234,7 @@ final class catalog_test extends \advanced_testcase {
 }
 ```
 
-- [ ] **Passo 2: rodar e ver falhar**
+- [x] **Passo 2: rodar e ver falhar**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -243,7 +243,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 
 Esperado: `Class "format_ldg\catalog" not found`, cinco vezes.
 
-- [ ] **Passo 3: escrever a implementação**
+- [x] **Passo 3: escrever a implementação**
 
 Criar `public/course/format/ldg/classes/catalog.php`:
 
@@ -381,7 +381,7 @@ class catalog {
 }
 ```
 
-- [ ] **Passo 4: rodar e ver passar**
+- [x] **Passo 4: rodar e ver passar**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -390,7 +390,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 
 Esperado: `OK (5 tests)`.
 
-- [ ] **Passo 5: phpcs e commit**
+- [x] **Passo 5: phpcs e commit**
 
 ```bash
 docker exec -u 1000:33 courses-free-moodle-1 sh -c \
@@ -420,7 +420,7 @@ git commit -m "NOBUG: format_ldg - o catalogo do curso por papel da atividade"
 que devolver o aluno à **mesma** aula, não à primeira do curso. Por isso o
 `portalnav` recebe a `cm_info` em foco e a repete no `lesson` de cada URL.
 
-- [ ] **Passo 1: `get_view_url` passa a carregar o destino**
+- [x] **Passo 1: `get_view_url` passa a carregar o destino**
 
 Em `lib.php`, dentro de `get_view_url()`, depois do bloco do `lesson`:
 
@@ -432,7 +432,7 @@ Em `lib.php`, dentro de `get_view_url()`, depois do bloco do `lesson`:
         }
 ```
 
-- [ ] **Passo 2: escrever o teste que falha**
+- [x] **Passo 2: escrever o teste que falha**
 
 `public/course/format/ldg/tests/portalnav_test.php`:
 
@@ -566,7 +566,7 @@ final class portalnav_test extends \advanced_testcase {
 }
 ```
 
-- [ ] **Passo 3: rodar e ver falhar**
+- [x] **Passo 3: rodar e ver falhar**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -575,7 +575,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 
 Esperado: `Class "format_ldg\portalnav" not found`.
 
-- [ ] **Passo 4: escrever a implementação**
+- [x] **Passo 4: escrever a implementação**
 
 `public/course/format/ldg/classes/portalnav.php`:
 
@@ -683,7 +683,7 @@ class portalnav {
 }
 ```
 
-- [ ] **Passo 5: as strings dos destinos, nos três idiomas**
+- [x] **Passo 5: as strings dos destinos, nos três idiomas**
 
 Em ordem alfabética, nos três arquivos. `en`:
 
@@ -701,7 +701,7 @@ $string['viewmaterials'] = 'Support material';
 Suba `version.php` (string nova exige bump para o cache de idioma), rode
 `cf cli upgrade.php --non-interactive` e `cf cli purge_caches.php`.
 
-- [ ] **Passo 6: rodar, phpcs e commit**
+- [x] **Passo 6: rodar, phpcs e commit**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -733,7 +733,7 @@ git commit -m "NOBUG: format_ldg - os quatro destinos do portal, navegados por U
 mudança, a apostila aparece na lista de aulas **e** em Materiais, e abrir o curso
 pode cair num PDF.
 
-- [ ] **Passo 1: o teste que fixa a regra**
+- [x] **Passo 1: o teste que fixa a regra**
 
 ```php
 namespace format_ldg;
@@ -769,11 +769,11 @@ final class lessonlist_selection_test extends \advanced_testcase {
 }
 ```
 
-- [ ] **Passo 2: rodar e ver falhar**
+- [x] **Passo 2: rodar e ver falhar**
 
 Esperado: falha com `Apostila`, provando que hoje o material é aceito como aula.
 
-- [ ] **Passo 3: filtrar nos dois lugares**
+- [x] **Passo 3: filtrar nos dois lugares**
 
 Em `lib.php`, dentro do laço de `get_selected_cm()`, logo depois de pegar `$cm`:
 
@@ -790,7 +790,7 @@ E o mesmo filtro em `lessonlist::export_lessons()`, trocando o par de testes de
 visibilidade que já está lá pela chamada única a `catalog::classify()` — a regra
 passa a existir num lugar só.
 
-- [ ] **Passo 4: rodar a suíte inteira do formato**
+- [x] **Passo 4: rodar a suíte inteira do formato**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -801,7 +801,7 @@ Esperado: verde. **Se algum teste antigo de `lessonlist` reprovar**, leia-o ante
 de mexer: ele pode estar fixando o comportamento antigo de propósito, e aí a
 conversa é sobre o teste, não sobre o código.
 
-- [ ] **Passo 5: phpcs e commit**
+- [x] **Passo 5: phpcs e commit**
 
 ```bash
 git add public/course/format/ldg/lib.php \
@@ -827,7 +827,7 @@ git commit -m "NOBUG: format_ldg - material e forum saem da lista de aulas"
 - Produz: contexto do template com `portalnav`, `lessonlist`, `materiallist`,
   `lessonviewer` e a chave `view` (o destino corrente).
 
-- [ ] **Passo 1: o teste da regra do material**
+- [x] **Passo 1: o teste da regra do material**
 
 ```php
 namespace format_ldg\output\courseformat\content;
@@ -896,7 +896,7 @@ final class materiallist_test extends \advanced_testcase {
 }
 ```
 
-- [ ] **Passo 2: rodar e ver falhar**, depois escrever o `materiallist`
+- [x] **Passo 2: rodar e ver falhar**, depois escrever o `materiallist`
 
 O coração da classe é a regra da tabela de descobertas:
 
@@ -922,7 +922,7 @@ O coração da classe é a regra da tabela de descobertas:
 `require_once($CFG->libdir . '/resourcelib.php')` no topo, porque a constante
 vive lá e o formato não a herda de lugar nenhum.
 
-- [ ] **Passo 3: o `content.php` passa a perguntar**
+- [x] **Passo 3: o `content.php` passa a perguntar**
 
 ```php
         $catalogo = new catalog($this->format);
@@ -941,7 +941,7 @@ Para Fórum e Certificado o miolo é o mesmo `lessonviewer`, recebendo o primeir
 `cm_info` do balde — o quadro embutido já sabe desenhar qualquer atividade, e é
 por isso que não há classe nova para eles.
 
-- [ ] **Passo 4: os templates**
+- [x] **Passo 4: os templates**
 
 `portalnav.mustache` desenha a **mesma** lista três vezes, e quem some é o CSS.
 Item é `<a>` com `href`, nunca `<button>`: é navegação de verdade, e o
@@ -996,7 +996,7 @@ Em `content.mustache`, o corpo passa a ter três regiões nomeadas:
 miolo escolhe entre `lessonviewer` e `materiallist` pelas chaves `islessons` e
 `ismaterials`.
 
-- [ ] **Passo 5: rodar, ver na tela e commitar**
+- [x] **Passo 5: rodar, ver na tela e commitar**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
@@ -1020,7 +1020,7 @@ destinos, inclusive `?ldgview=materials`.
 - Consome: as classes de região da tarefa 4.
 - Produz: o layout de três colunas sem depender do tema.
 
-- [ ] **Passo 1: a estrutura, no formato**
+- [x] **Passo 1: a estrutura, no formato**
 
 `styles.css` — só o que é **estrutura**, nunca marca. Sem cor, sem fonte, sem
 sombra. As medidas saem do `docs/brand/DESIGN.md`:
@@ -1048,7 +1048,7 @@ sombra. As medidas saem do `docs/brand/DESIGN.md`:
 O `styles.css` do plugin é carregado pelo Moodle para **qualquer** tema — é isso
 que faz o portal ficar cinza mas usável fora do `theme_ldg`.
 
-- [ ] **Passo 2: o Behat da degradação**
+- [x] **Passo 2: o Behat da degradação**
 
 Acrescentar ao cenário do tema `boost`, que já existe:
 
@@ -1058,7 +1058,7 @@ Acrescentar ao cenário do tema `boost`, que já existe:
 
 Prova que a estrutura sobrevive sem o tema — que é a razão de ela morar aqui.
 
-- [ ] **Passo 3: rodar tudo e commitar**
+- [x] **Passo 3: rodar tudo e commitar**
 
 ```bash
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \

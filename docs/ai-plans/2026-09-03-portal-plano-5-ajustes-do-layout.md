@@ -67,7 +67,7 @@ se implementa. Se na tela ficar redundante, esconder a do quadro é uma linha em
 O desenho pede três coisas na barra: **aula anterior**, **onde estou** ("Aula 2 de
 5 · Módulo 2") e **próxima aula**.
 
-- [ ] **Passo 1: o teste que falha**
+- [x] **Passo 1: o teste que falha**
 
 ```php
 namespace format_ldg\output\courseformat\content;
@@ -168,16 +168,16 @@ final class lessonnav_test extends \advanced_testcase {
 }
 ```
 
-- [ ] **Passo 2: rodar e ver falhar** (classe inexistente).
+- [x] **Passo 2: rodar e ver falhar** (classe inexistente).
 
-- [ ] **Passo 3: implementar o `lessonnav`**
+- [x] **Passo 3: implementar o `lessonnav`**
 
 A sequência sai do `catalog::AULA`, que já vem na ordem do curso e já respeita
 visibilidade — não se refaz a varredura. A posição é o índice dentro dessa lista;
 o módulo é o nome da seção da aula em foco. As URLs saem de
 `get_view_url(null, ['lesson' => $cm->id])`, para o destino continuar em Aulas.
 
-- [ ] **Passo 4: template, estrutura e marca**
+- [x] **Passo 4: template, estrutura e marca**
 
 `lessonnav.mustache` com três âncoras — anterior, posição (texto, não link) e
 próxima. No `content.mustache` entra **entre** o quadro e o resto, só no destino
@@ -185,11 +185,11 @@ Aulas. Estrutura (`display:flex`, `justify-content:space-between`, empilhar
 abaixo de `sm`) no `styles.css`; cor, raio e a pílula do "próxima" no
 `_format.scss`, com `--ldg-accent-fill` e `--ldg-on-accent`.
 
-- [ ] **Passo 5: strings nos três idiomas**, reordenando os arquivos:
+- [x] **Passo 5: strings nos três idiomas**, reordenando os arquivos:
   `lessonprev` ("Aula anterior"), `lessonnext` ("Próxima aula"),
   `lessonposition` ("Aula {$a->index} de {$a->total}").
 
-- [ ] **Passo 6: rodar tudo, subir versão, commitar.**
+- [x] **Passo 6: rodar tudo, subir versão, commitar.**
 
 ---
 
@@ -201,19 +201,19 @@ abaixo de `sm`) no `styles.css`; cor, raio e a pílula do "próxima" no
 Hoje a barra de progresso fica solta no topo, atravessando a página. No desenho
 ela vive num cartão na coluna esquerda, acima da navegação.
 
-- [ ] **Passo 1: mover o bloco de progresso** para dentro da região `nav`, no
+- [x] **Passo 1: mover o bloco de progresso** para dentro da região `nav`, no
   `content.mustache`, envolvido por um cartão `.ldg-portal__student`.
 
-- [ ] **Passo 2: o cartão** ganha saudação com o primeiro nome do aluno e o
+- [x] **Passo 2: o cartão** ganha saudação com o primeiro nome do aluno e o
   percentual. **Sem selo PREMIUM** — não há de onde tirar essa informação, e
   inventar um selo de plano numa tela de curso seria mentir para o aluno.
 
-- [ ] **Passo 3: no celular** o cartão vai para cima do miolo (a coluna `nav` não
+- [x] **Passo 3: no celular** o cartão vai para cima do miolo (a coluna `nav` não
   existe abaixo de `lg`) — uma linha a mais no `grid-template-areas`.
 
-- [ ] **Passo 4: string** `studentgreeting` ("Olá, {$a}!") nos três idiomas.
+- [x] **Passo 4: string** `studentgreeting` ("Olá, {$a}!") nos três idiomas.
 
-- [ ] **Passo 5: medir com a sonda** — a barra não pode voltar a atravessar a
+- [x] **Passo 5: medir com a sonda** — a barra não pode voltar a atravessar a
   página, e o cartão não pode empurrar a coluna além dos 280px.
 
 ---
@@ -245,10 +245,10 @@ body.ldg-embedded {
 }
 ```
 
-- [ ] **Passo 1: escrever o estilo** usando os tokens, sem hex solto.
-- [ ] **Passo 2: conferir com a captura**, e medir o contraste de qualquer par
+- [x] **Passo 1: escrever o estilo** usando os tokens, sem hex solto.
+- [x] **Passo 2: conferir com a captura**, e medir o contraste de qualquer par
   novo.
-- [ ] **Passo 3: subir versão e commitar.**
+- [x] **Passo 3: subir versão e commitar.**
 
 ---
 
@@ -267,9 +267,9 @@ body.format-ldg .usertour {
 }
 ```
 
-- [ ] **Passo 1: escrever, e explicar no comentário** que o alvo é o link do
+- [x] **Passo 1: escrever, e explicar no comentário** que o alvo é o link do
   tour, não o `standard_after_main_region_html` inteiro.
-- [ ] **Passo 2: conferir no DOM** que `#resetpagetour` não é mais visível e que
+- [x] **Passo 2: conferir no DOM** que `#resetpagetour` não é mais visível e que
   o painel de mensagens continua presente.
 
 ---
@@ -294,7 +294,7 @@ versionado junto do plugin**. A toolchain foi instalada (`npm ci`) e o
   `styles.css`, `_format.scss`
 - Testar: `tests/behat/format_ldg.feature`
 
-- [ ] **Passo 1: declarar a preferência de usuário**
+- [x] **Passo 1: declarar a preferência de usuário**
 
 Em `lib.php`, o callback que o core exige para aceitar a gravação por AJAX — sem
 ele o `core_user_update_user_preferences` **recusa** e o estado volta no próximo
@@ -313,7 +313,7 @@ function format_ldg_user_preferences(): array {
 }
 ```
 
-- [ ] **Passo 2: o módulo AMD**
+- [x] **Passo 2: o módulo AMD**
 
 `amd/src/aside.js`: alterna a classe no container, grava a preferência e move o
 foco. Sem dependência nova além de `core_user/repository` (ou
@@ -322,30 +322,30 @@ foco. Sem dependência nova além de `core_user/repository` (ou
 O botão é `<button aria-expanded>` e a lateral tem `id` — é o par que o leitor de
 tela usa para saber o que abriu.
 
-- [ ] **Passo 3: o estado inicial vem do servidor**
+- [x] **Passo 3: o estado inicial vem do servidor**
 
 A preferência é lida no `content.php` e vira uma classe no HTML. Sem isso a
 lateral aparece e some depois que o JS roda — o "flash" clássico.
 
-- [ ] **Passo 4: a barra de atalho fica grudada**
+- [x] **Passo 4: a barra de atalho fica grudada**
 
 `position: sticky` no topo do miolo, com o `z-index` abaixo do cabeçalho. É o que
 garante o pedido: escondeu as laterais, o atalho continua na tela.
 
-- [ ] **Passo 5: sem JavaScript, nada quebra**
+- [x] **Passo 5: sem JavaScript, nada quebra**
 
 O botão só aparece com JS ativo (a classe é posta pelo próprio módulo); sem JS a
 lateral fica visível, que é o estado útil. A barra de atalho é feita de âncoras e
 funciona igual.
 
-- [ ] **Passo 6: build, e ele vai versionado**
+- [x] **Passo 6: build, e ele vai versionado**
 
 ```bash
 npx grunt amd --root=public/course/format/ldg
 git add public/course/format/ldg/amd/src public/course/format/ldg/amd/build
 ```
 
-- [ ] **Passo 7: Behat** — esconder e mostrar, e o atalho continuar visível.
+- [x] **Passo 7: Behat** — esconder e mostrar, e o atalho continuar visível.
   Este cenário **precisa** de `@javascript`, e por isso pode não rodar neste
   ambiente; se não rodar, fica registrado no commit em vez de silenciosamente
   pulado.
@@ -354,12 +354,12 @@ git add public/course/format/ldg/amd/src public/course/format/ldg/amd/build
 
 ### Tarefa 6: conferir e documentar
 
-- [ ] **Passo 1:** sonda visual nos dois viewports e dois modos — as medidas do
+- [x] **Passo 1:** sonda visual nos dois viewports e dois modos — as medidas do
   plano 4 continuam válidas, mais a barra nova.
-- [ ] **Passo 2:** axe-core nos quatro destinos e dois modos: zero graves.
-- [ ] **Passo 3:** `phpunit`, `behat`, `phpcs`.
-- [ ] **Passo 4:** capturas novas para o usuário comparar.
-- [ ] **Passo 5:** README do formato (a barra de navegação e o cartão),
+- [x] **Passo 2:** axe-core nos quatro destinos e dois modos: zero graves.
+- [x] **Passo 3:** `phpunit`, `behat`, `phpcs`.
+- [x] **Passo 4:** capturas novas para o usuário comparar.
+- [x] **Passo 5:** README do formato (a barra de navegação e o cartão),
   `DESIGN.md` (o selo PREMIUM que **não** existe, e por quê), e o registro.
 
 ## Executado em 03/09/2026
