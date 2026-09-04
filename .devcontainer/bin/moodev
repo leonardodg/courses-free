@@ -1222,6 +1222,61 @@ cmd_rm() {
             && warn "$unpushed commit(s) de '$branch_prevista' fora do remoto"
     fi
 
+    # ARQUIVO IGNORADO PELO GIT E O QUE MAIS SE PERDE AQUI.
+    #
+    # "git status --porcelain" NAO lista ignorado. O aviso acima, portanto,
+    # nunca enxergou o docs/private/ - que existe justamente para guardar o que
+    # nao pode ser versionado, e por isso so existe no disco de UMA worktree.
+    #
+    # Em 04/09/2026 um "moodev rm" apagou docs/private/ inteiro: ~19 KB de
+    # planos comerciais, precificacao e margem, sem copia em lugar nenhum. O
+    # git nao ajuda a recuperar o que nunca versionou.
+    #
+    # A guarda so vale se for PRECISA. Recusar em qualquer ignorado tornaria o
+    # --force obrigatorio sempre - config.php, .env e secrets aparecem em toda
+    # worktree - e um aviso que aparece sempre nao e lido. Por isso a lista
+    # abaixo: o que o proprio moodev recria ou copia. Tudo fora dela e tratado
+    # como insubstituivel ate prova em contrario.
+    if [ -d "$wt_path" ] && [ "$force" -eq 0 ]; then
+        local descartaveis=(
+            ".env"
+            "config.php"
+            ".devcontainer/secrets/"
+            ".devcontainer/certs/"
+            ".devcontainer/env/"
+            ".devcontainer/compose/.env"
+            # Nao aparecem hoje - vivem dentro do container - mas aparecem na
+            # hora em que alguem rodar npm ou composer no host, e ai a guarda
+            # passaria a gritar por dependencia que se reinstala.
+            "phpu_moodledata/"
+            "node_modules/"
+            "vendor/"
+        )
+
+        local insubstituiveis=() entrada d conhecido
+        while IFS= read -r entrada; do
+            [ -z "$entrada" ] && continue
+            conhecido=0
+            for d in "${descartaveis[@]}"; do
+                case "$entrada" in "$d"*) conhecido=1; break ;; esac
+            done
+            [ "$conhecido" -eq 0 ] && insubstituiveis+=("$entrada")
+        done < <(git -C "$wt_path" status --porcelain --ignored 2>/dev/null \
+                 | sed -n 's/^!! //p')
+
+        if [ "${#insubstituiveis[@]}" -gt 0 ]; then
+            echo
+            warn "esta worktree tem arquivo IGNORADO pelo git que so existe aqui:"
+            for entrada in "${insubstituiveis[@]}"; do
+                printf '     %s\n' "$entrada"
+            done
+            echo
+            die "removendo, isso some e nao ha de onde recuperar - o git nunca versionou.
+  Copie para outro lugar, ou repita com --force se for mesmo descartavel:
+      moodev rm $name --force"
+        fi
+    fi
+
     # Os dados so sao desta worktree se estiverem sob MOODEV_DATA_ROOT, que e onde
     # o --new-stack cria banco proprio.
     #
