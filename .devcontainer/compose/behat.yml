@@ -5,7 +5,7 @@
 # servico o behat roda so o driver sem JS, e tudo que depende de clique, menu
 # que abre ou preferencia gravada por AJAX fica de fora.
 #
-# NAO SOBE JUNTO COM O STACK, de proposito. O "cf up" inicia apenas moodle e db;
+# NAO SOBE JUNTO COM O STACK, de proposito. O "moodev up" inicia apenas moodle e db;
 # o Chrome ocupa memoria e a maioria das rodadas nao precisa dele. Suba sob
 # demanda:
 #

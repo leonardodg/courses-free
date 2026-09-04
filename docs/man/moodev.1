@@ -1,15 +1,15 @@
 '\" t
 .\" A linha acima e obrigatoria: manda o man rodar o preprocessador tbl, sem o
 .\" qual a tabela da secao OFFSET nao e renderizada.
-.\" Manual do cf - ambientes de desenvolvimento por worktree do courses-free
-.\" Instalar:  sudo install -m 644 docs/man/cf.1 /usr/local/share/man/man1/cf.1 && sudo mandb -q
-.TH CF 1 "2026-08-27" "courses-free" "Comandos do usuario"
+.\" Manual do moodev - ambiente de desenvolvimento Moodle: worktrees, devcontainer e devtools
+.\" Instalar:  sudo install -m 644 docs/man/moodev.1 /usr/local/share/man/man1/moodev.1 && sudo mandb -q
+.TH MOODEV 1 "2026-09-04" "moodev" "Comandos do usuario"
 .
 .SH NOME
-cf \- cria, serve e remove os ambientes Docker das worktrees do courses\-free
+moodev \- ambiente de desenvolvimento Moodle: worktrees, devcontainer e devtools
 .
 .SH SINOPSE
-.B cf new
+.B moodev new
 .I nome
 .RB [ \-\-branch
 .IR branch ]
@@ -20,26 +20,26 @@ cf \- cria, serve e remove os ambientes Docker das worktrees do courses\-free
 .IR modo ]
 .RB [ \-\-no\-code ]
 .br
-.B cf use
+.B moodev use
 .I worktree
 .br
-.B cf rm
+.B moodev rm
 .I worktree
 .RB [ \-\-force ]
 .br
-.B cf
+.B moodev
 .RB { ls | doctor }
 .br
-.B cf
+.B moodev
 .RB { up | down | restart | logs | code | shell | build }
 .RI [ worktree ]
 .br
-.B cf cli
+.B moodev cli
 .I script.php
 .RI [ argumentos ]
 .
 .SH DESCRICAO
-.B cf
+.B moodev
 abrevia
 .BR courses\-free ,
 o nome do projeto. O comando gerencia os ambientes Docker de um repositorio
@@ -58,7 +58,7 @@ delas por vez.
 .PP
 Sem
 .BR \-\-new\-stack ,
-.B cf new
+.B moodev new
 apenas troca o codigo montado no container que ja roda: mesmo banco, mesmas
 portas, custo zero, mas um ambiente de cada vez. Com
 .BR \-\-new\-stack ,
@@ -135,7 +135,7 @@ Reconstroi a imagem. E o unico comando que carrega
 .
 .SH OPCOES
 Validas para
-.BR "cf new" .
+.BR "moodev new" .
 .TP
 .BI \-\-branch " branch"
 Nome da branch, quando difere do nome da pasta. Por padrao,
@@ -173,7 +173,7 @@ Nao abre o VS Code ao final. Util em script ou por SSH.
 .TP
 .B \-\-force
 Em
-.BR "cf rm" :
+.BR "moodev rm" :
 pula a confirmacao por nome.
 .
 .SH NOME DA PASTA E NOME DA BRANCH
@@ -182,16 +182,16 @@ pasta sai dela trocando barra por hifen:
 .PP
 .RS
 .EX
-cf new paygw\-pix            # pasta paygw\-pix      branch feature/paygw\-pix
-cf new fix/tls\-porta        # pasta fix\-tls\-porta  branch fix/tls\-porta
-cf new x \-\-branch hotfix/y  # pasta x              branch hotfix/y
+moodev new paygw\-pix            # pasta paygw\-pix      branch feature/paygw\-pix
+moodev new fix/tls\-porta        # pasta fix\-tls\-porta  branch fix/tls\-porta
+moodev new x \-\-branch hotfix/y  # pasta x              branch hotfix/y
 .EE
 .RE
 .PP
 Sem barra, mantem\-se o prefixo
 .BR feature/ .
 O
-.B cf rm
+.B moodev rm
 le a branch da worktree em vez de deduzi\-la do nome da pasta, entao uma branch
 .B fix/...
 nao fica orfa.
@@ -213,18 +213,18 @@ Offset@Significa@Portas
 Offset
 .B \-
 nao e erro: e uma worktree que nao e a atual.
-.B cf use
+.B moodev use
 a coloca no ar.
 .
 .SH ARQUIVOS
 .TP
-.I <raiz>/.cf/registry.tsv
+.I <raiz>/.moodev/registry.tsv
 Registro das worktrees: nome, offset, stack e caminhos de dado. Fica fora de
 qualquer worktree porque e estado da maquina, nao do codigo.
 .TP
 .I <worktree>/.env
 Gerado pelo
-.BR cf .
+.BR moodev .
 Variaveis de interpolacao do compose. Nao editar a mao.
 .TP
 .I <worktree>/.devcontainer/compose/.env
@@ -236,18 +236,18 @@ e sem este link o Reopen in Container falha.
 .TP
 .I ~/localhost/cf-data/<nome>/
 Banco e moodledata das worktrees com stack proprio. E o unico lugar de onde o
-.B cf rm
+.B moodev rm
 apaga dados.
 .
 .SH DIAGNOSTICO
 .TP
-.B cf: command not found
+.B moodev: command not found
 O symlink ficou pendurado, em geral porque a worktree que ele apontava foi
 removida. Reaponte para a indirecao na raiz do repositorio.
 .TP
 .B arithmetic syntax error: operand expected
 Versao antiga do
-.B cf
+.B moodev
 lendo um registro escrito por uma versao nova. Atualize a worktree que fornece
 o comando.
 .TP
@@ -255,7 +255,7 @@ o comando.
 Falta o symlink
 .IR .devcontainer/compose/.env .
 Um
-.B cf up
+.B moodev up
 recria.
 .TP
 .B invaliddatarootpermissions
@@ -265,34 +265,34 @@ Diretorio com dono root dentro do moodledata. O entrypoint corrige no boot.
 .TP
 Comecar uma feature:
 .EX
-cf new paygw\-pix
+moodev new paygw\-pix
 .EE
 .TP
 Comparar duas features lado a lado:
 .EX
-cf new relatorios \-\-new\-stack
+moodev new relatorios \-\-new\-stack
 .EE
 .TP
 Alternar entre worktrees existentes:
 .EX
-cf use paygw\-pix
+moodev use paygw\-pix
 .EE
 .TP
 Rodar um CLI do Moodle:
 .EX
-cf cli upgrade.php \-\-non\-interactive
+moodev cli upgrade.php \-\-non\-interactive
 .EE
 .TP
 Encerrar depois do merge:
 .EX
-cf rm paygw\-pix
+moodev rm paygw\-pix
 .EE
 .
 .SH VEJA TAMBEM
 .BR git\-worktree (1),
 .BR docker\-compose (1)
 .PP
-.I docs/dev/cf.md
+.I docs/dev/moodev.md
 \- documentacao completa
 .br
 .I docs/dev/guia\-worktrees.md

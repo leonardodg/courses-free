@@ -374,7 +374,7 @@ jobs:
   #
   #     no matching manifest for linux/amd64 in the manifest list entries
   #
-  # e o unico caminho local era compilar ("cf build").
+  # e o unico caminho local era compilar ("moodev build").
   #
   # A saida NAO e "platforms: linux/amd64,linux/arm64" num job so: isso poe o
   # amd64 sob emulacao QEMU, que num build de Moodle custa dezenas de minutos -

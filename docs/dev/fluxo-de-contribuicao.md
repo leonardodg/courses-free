@@ -5,7 +5,7 @@ caminho normal.
 
 ```mermaid
 flowchart LR
-    A[cf new minha-feature] --> B[commits]
+    A[moodev new minha-feature] --> B[commits]
     B --> C[git push -u]
     C --> D[gh pr create --base dev]
     D --> E{CI do PR}
@@ -14,7 +14,7 @@ flowchart LR
     F --> G{Pipeline de dev}
     G --> H[imagem multi-arch]
     H --> I[deploy na VPS]
-    F --> J[cf rm minha-feature]
+    F --> J[moodev rm minha-feature]
 ```
 
 **O PR não toca na VPS.** Os jobs de imagem e deploy têm
@@ -37,7 +37,7 @@ está na worktree errada.
 Rode o que o CI vai rodar, para não descobrir pelo robô:
 
 ```bash
-cf shell
+moodev shell
 php vendor/bin/phpunit --testsuite local_marketplace_testsuite
 ```
 
@@ -139,7 +139,7 @@ Se o deploy falhar, **a VPS continua na imagem anterior** — o
 ## 5. Depois do merge
 
 ```bash
-# 1. dev alimenta o cf do PATH — atualize primeiro
+# 1. dev alimenta o moodev do PATH — atualize primeiro
 cd ~/localhost/gitworktree-bare-moodle/dev
 git pull --ff-only origin dev
 
@@ -147,13 +147,13 @@ git pull --ff-only origin dev
 curl -s -o /dev/null -w '%{http_code}\n' https://courses.leodg.dev/
 
 # 3. só então remova a worktree
-cf rm <worktree>
+moodev rm <worktree>
 ```
 
-A ordem importa. Se a mudança mexeu no próprio `cf`, o comando do PATH só passa
+A ordem importa. Se a mudança mexeu no próprio `moodev`, o comando do PATH só passa
 a ser o novo depois do passo 1 — antes disso você roda a versão antiga sem
-perceber. E se a worktree removida for a servida, o `cf rm` move o stack para
-`dev` sozinho (ver [`cf.md`](cf.md#6-cf-rm)).
+perceber. E se a worktree removida for a servida, o `moodev rm` move o stack para
+`dev` sozinho (ver [`moodev.md`](moodev.md#6-moodev-rm)).
 
 ---
 
@@ -196,6 +196,6 @@ jobs rodaram, não que o site responde. Confirme com `curl` na VPS.
 
 ## Ver também
 
-- [`cf.md`](cf.md) — o comando que cria e remove os ambientes
+- [`moodev.md`](moodev.md) — o comando que cria e remove os ambientes
 - [`guia-worktrees.md`](guia-worktrees.md) — portas, VS Code, o que não pode vazar para a VPS
 - [`../ai-plans/`](../ai-plans/) — registrar o plano quando o trabalho for de agente de IA

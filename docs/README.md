@@ -8,7 +8,7 @@ split de pagamento. Gateways: Mercado Pago e Asaas.
 | Se você quer… | Vá para |
 |---|---|
 | entender a estrutura de worktrees | [`dev/estrutura-worktrees.md`](dev/estrutura-worktrees.md) |
-| montar o ambiente e começar a codar | [`dev/cf.md`](dev/cf.md) e [`dev/guia-worktrees.md`](dev/guia-worktrees.md) |
+| montar o ambiente e começar a codar | [`dev/moodev.md`](dev/moodev.md) e [`dev/guia-worktrees.md`](dev/guia-worktrees.md) |
 | mandar a mudança para produção | [`dev/fluxo-de-contribuicao.md`](dev/fluxo-de-contribuicao.md) |
 | entender **por que** o sistema é assim | [`architecture/decisoes-marketplace.md`](architecture/decisoes-marketplace.md) |
 | saber o que existe e o que falta | [`architecture/estado-e-proximas-fases.md`](architecture/estado-e-proximas-fases.md) |
@@ -49,7 +49,7 @@ configurado e as armadilhas dele:
 | [`legal/`](legal/) | privacidade, termos de uso e o mapa do que é coletado |
 | [`ai-plans/`](ai-plans/) | **registro de todo plano executado por agente de IA** |
 | [`history/`](history/) | de onde o projeto veio: ideia inicial, conversas fundadoras |
-| [`man/`](man/) | páginas de manual instaláveis (`man cf`) |
+| [`man/`](man/) | páginas de manual instaláveis (`man moodev`) |
 | `private/` | **fora do git** — material comercial interno. Ver a regra em "Convenções" |
 
 ## Convenções

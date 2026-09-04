@@ -67,5 +67,5 @@ viria de branch de desenvolvimento junto.
 As ferramentas vivem na imagem, não no container:
 
 ```bash
-cf build
+moodev build
 ```

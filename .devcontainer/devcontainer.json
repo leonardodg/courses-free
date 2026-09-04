@@ -17,17 +17,17 @@
 //      com context ../../ - o caminho muda a cada worktree, entao o cache nao
 //      aproveita e a imagem e reconstruida. Aqui usamos a imagem ja publicada
 //      (leodg/courses-free:development). Para reconstruir de proposito, use
-//      "cf build", que carrega o build-dev.yml explicitamente.
+//      "moodev build", que carrega o build-dev.yml explicitamente.
 //
 // Resultado: abrir uma worktree nova conecta no container em segundos, sem
-// build. Ver .devcontainer/bin/cf.
+// build. Ver .devcontainer/bin/moodev.
 // ============================================================================
 {
     // O basename identifica a worktree na barra de titulo. Com varias janelas
     // abertas ao mesmo tempo, sem isso nao da para saber qual e qual.
     "name": "courses-free — ${localWorkspaceFolderBasename}",
 
-    // Mesma lista que o "cf" usa para subir o stack. Precisa bater exatamente:
+    // Mesma lista que o "moodev" usa para subir o stack. Precisa bater exatamente:
     // se divergir, a extensao considera a configuracao diferente e RECRIA os
     // containers que o cf acabou de subir.
     //
