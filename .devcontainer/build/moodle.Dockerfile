@@ -203,9 +203,10 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Grunt CLI global (build JS/LESS/SCSS do Moodle e seus temas)
-RUN npm install -g grunt-cli \
-    && grunt --version
+# O grunt-cli saiu daqui: a versao dele agora e declarada em
+# .devcontainer/devtools/package.json, junto das demais ferramentas de
+# desenvolvimento, e instalada mais abaixo. Um "npm install -g <pacote>" solto
+# nao tem versao, nao aparece em code review e muda sozinho a cada rebuild.
 
 # -----------------------------------------------------------------------
 # Historico de shell persistente.
@@ -235,14 +236,57 @@ RUN mkdir -p /commandhistory \
 COPY .devcontainer/php/opcache-dev.ini /usr/local/etc/php/conf.d/moodle-opcache.ini
 
 # -----------------------------------------------------------------------
-# Vendor com pacotes de DEV (inclui phpunit, moodle-cs, phpcs do composer-dev)
-# NOTA: para phpcs + moodle-cs aparecerem aqui, adicionar ao composer.json:
-#   "require-dev": {
-#     "squizlabs/php_codesniffer": "^3.0",
-#     "moodlehq/moodle-cs": "^3.0"
-#   }
+# Vendor com pacotes de DEV (phpunit e behat vem daqui)
+#
+# O phpcs NAO vem: o comentario que estava aqui pedia para acrescentar
+# moodlehq/moodle-cs ao composer.json da raiz, e isso e uma armadilha. Aquele
+# composer.json e do UPSTREAM do Moodle, byte a byte - conferido em 04/09/2026,
+# os ultimos commits nele sao MDL-86462 e MDL-86460. Mexer ali criaria conflito
+# em TODA sincronizacao com o upstream, que e exatamente o que ja acontece com o
+# .gitattributes da raiz.
+#
+# As ferramentas do projeto vao para /opt/devtools, logo abaixo.
 # -----------------------------------------------------------------------
 COPY --from=composer-dev --chown=www-data:www-data /app/vendor/ /var/www/html/vendor/
+
+# -----------------------------------------------------------------------
+# Ferramentas de desenvolvimento, fora do vendor do Moodle.
+#
+# Ficam na IMAGEM, e nao instaladas a mao no container: container recriado
+# perdia tudo, e cada worktree nova comecava sem phpcs. A imagem e a mesma para
+# todos os stacks, entao instalar uma vez atende todo mundo.
+#
+# /opt/devtools tem composer.json PROPRIO, sem relacao com o do Moodle - e o que
+# permite ter phpcs sem tocar em arquivo do upstream.
+# -----------------------------------------------------------------------
+# A LISTA NAO FICA AQUI. Ela vive em .devcontainer/devtools/, em manifesto de
+# verdade - versao de ferramenta e dependencia, e dependencia se declara onde da
+# para revisar e fixar faixa. O porque de cada escolha esta no README de la.
+ENV COMPOSER_ALLOW_SUPERUSER=1
+COPY .devcontainer/devtools/ /opt/devtools/
+
+RUN composer install -n --no-dev -d /opt/devtools \
+    && ln -sf /opt/devtools/vendor/bin/phpcs   /usr/local/bin/phpcs \
+    && ln -sf /opt/devtools/vendor/bin/phpcbf  /usr/local/bin/phpcbf \
+    # Falha o build se o padrao moodle nao registrar. Sem isto a imagem sai com
+    # um phpcs que roda e nao conhece o padrao do projeto - e o erro so aparece
+    # na primeira vez que alguem tenta conferir codigo.
+    && phpcs -i | grep -q moodle \
+    && npm install --prefix /opt/devtools \
+    && ln -sf /opt/devtools/node_modules/.bin/grunt /usr/local/bin/grunt
+
+# moosh e clonado, e nao requerido por composer. Nao e preguica: ele declara
+# TREZE repositories inline para dependencias que so existem no GitHub, e o
+# composer ignora "repositories" de pacote transitivo - requere-lo daqui exigiria
+# copiar as treze para o nosso manifesto e ve-las apodrecer. O projeto dele se
+# trata como raiz, e clonar e a forma suportada.
+#
+# A versao NAO esta hardcoded nesta linha: sai de devtools/moosh.version.
+RUN git clone -q --branch "$(cat /opt/devtools/moosh.version)" --depth 1 \
+        https://github.com/tmuras/moosh.git /opt/moosh \
+    && composer install -n --no-dev -d /opt/moosh \
+    && ln -sf /opt/moosh/moosh.php /usr/local/bin/moosh \
+    && chmod +x /opt/moosh/moosh.php
 
 # Copia todo o codigo (em dev geralmente sera sobrescrito por bind-mount do dev.yml)
 COPY --chown=www-data:www-data . .

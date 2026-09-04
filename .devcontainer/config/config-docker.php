@@ -108,6 +108,48 @@ $CFG->phpunit_prefix = 't_';
 define('PHPUNIT_LONGTEST', true);
 
 // -----------------------------------------------------------------------------
+// Behat.
+//
+// Fica AQUI, no template versionado, e nao no config-local.php como a primeira
+// rodada de behat instruiu. Nenhum destes tres valores e verdadeiro em uma
+// maquina so: sao a mesma coisa em toda worktree e em todo clone. Deixa-los no
+// arquivo de maquina significava que cada ambiente novo nascia sem behat e
+// alguem tinha que descobrir isso de novo.
+//
+// O behat DERRUBA E RECRIA o banco e o dataroot que ele usa - por isso prefixo
+// e dataroot proprios, separados do site de trabalho e do phpunit.
+$CFG->behat_dataroot = '/var/www/behatdata';
+$CFG->behat_prefix = 'bht_';
+
+// 0.0.0.0, e nao 127.0.0.1, no servidor que atende este endereco: o Chrome roda
+// em OUTRO container, e um servidor presO ao loopback do container do Moodle
+// seria invisivel para ele. O nome 'moodle' resolve pela rede do compose.
+$CFG->behat_wwwroot = 'http://moodle:8000';
+
+// Perfil para os cenarios @javascript, que exigem navegador de verdade.
+//
+// O servico 'selenium' do compose/behat.yml nao sobe junto com o stack: Chrome
+// ocupa memoria e a maioria das rodadas nao precisa dele. Suba sob demanda -
+// ver docs/dev/behat.md.
+$CFG->behat_profiles = [
+    'chrome' => [
+        'browser' => 'chrome',
+        'wd_host' => 'http://selenium:4444/wd/hub',
+        'capabilities' => [
+            'extra_capabilities' => [
+                'goog:chromeOptions' => [
+                    // --no-sandbox e exigencia de Chrome dentro de container.
+                    // --disable-dev-shm-usage evita o travamento classico em
+                    // /dev/shm pequeno, que aparece como aba morrendo no meio
+                    // do cenario.
+                    'args' => ['--no-sandbox', '--disable-dev-shm-usage', '--window-size=1280,900'],
+                ],
+            ],
+        ],
+    ],
+];
+
+// -----------------------------------------------------------------------------
 // Ajuste local da maquina.
 //
 // ESTE ARQUIVO E GERADO. O deploy sobrescreve config.php a cada execucao, entao
