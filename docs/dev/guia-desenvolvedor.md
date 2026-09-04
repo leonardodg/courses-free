@@ -396,9 +396,19 @@ ip -4 addr show wg0 | grep -oP 'inet \K[\d.]+'
 O banco passa a escutar na VPN e continua invisível na internet, sem abrir porta
 em firewall de borda.
 
+`DB_BIND_ADDR` mexe **só** na porta do banco. O Apache e o Xdebug seguem o
+`BIND_ADDR`, que é fixo em `127.0.0.1` no deploy. Eram a mesma variável até
+2026-08-25, e nessa forma o conselho acima derrubava o site: mudar a interface do
+banco tirava o Apache do `127.0.0.1`, e o nginx da VPS fala com `127.0.0.1:8095`.
+
 > **Não use `0.0.0.0`.** MariaDB exposto na internet é alvo de varredura
 > constante — força bruta em `root` e CVEs conhecidas — e o ganho sobre a VPN é
-> nenhum.
+> nenhum. Some-se que o `db.yml` define `MARIADB_ROOT_HOST="%"`: o `root` aceita
+> conexão de qualquer origem, então a única barreira seria a senha.
+
+> **Confira o IP antes de gravar a variable.** Se o valor não corresponder a uma
+> interface existente na VPS, o Docker recusa o bind com *cannot assign requested
+> address* e o container do banco não sobe.
 
 Editar o `.env` direto na VPS não adianta: o deploy reescreve o arquivo inteiro a
 cada execução, pelo mesmo motivo que o `config.php` é gerado.
