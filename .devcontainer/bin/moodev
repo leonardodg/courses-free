@@ -271,6 +271,29 @@ dc() {
     ( cd "$wt_path" && compose_env "$wt_path" && docker compose "$@" )
 }
 
+# Igual ao dc, mas enxergando tambem os servicos OPCIONAIS.
+#
+# Existe para o "down": o selenium vive no behat.yml, que de proposito nao entra
+# no COMPOSE_FILE padrao - se entrasse, todo "up" subiria o Chrome. Sem este
+# helper o compose simplesmente nao sabe que o servico existe, e o resultado e
+# um Chrome sobrevivendo ao stack que o criou.
+#
+# Medido em 04/09/2026: depois de um "moodev rm" o courses-free-selenium
+# continuou de pe por 37 minutos, comendo memoria de um ambiente que ja nao
+# existia.
+dc_full() {
+    local wt_path="$1"; shift
+    local extra="$wt_path/.devcontainer/compose/behat.yml"
+
+    # Worktree de branch antiga pode nao ter o behat.yml. Sem a guarda, o
+    # compose aborta com "no such file" e o down nao acontece - trocando um
+    # container orfao por um stack inteiro orfao.
+    [ -f "$extra" ] || { dc "$wt_path" "$@"; return; }
+
+    ( cd "$wt_path" && compose_env "$wt_path" \
+      && COMPOSE_FILE="$COMPOSE_FILE:$extra" docker compose "$@" )
+}
+
 # Nome do container de um servico.
 container_of() {
     local wt_path="$1" svc="$2"
@@ -418,7 +441,7 @@ cmd_down() {
     require_registered "$name"
     local wt_path; wt_path="$(wt_path_of "$name")"
     info "parando '$name'"
-    dc "$wt_path" down
+    dc_full "$wt_path" down
     ok "parado"
 }
 
@@ -1161,7 +1184,17 @@ cmd_rm() {
         alvo="$(readlink -f "$no_path" 2>/dev/null || true)"
         case "$alvo" in
             "$wt_path"/*)
-                principal="$(awk -F'\t' '$2==0 {print $4; exit}' "$MOODEV_REGISTRY")"
+                # A worktree de REPOUSO, e nao a de offset 0.
+                #
+                # O offset 0 pode ser justamente a worktree sendo removida - e
+                # ai o link seria reapontado para o que vai deixar de existir,
+                # quebrando o comando exatamente como este bloco existe para
+                # evitar. Aconteceu em 04/09/2026, e so nao quebrou porque o
+                # link tinha sido movido a mao antes.
+                #
+                # A de repouso e permanente por definicao: o moodev rm recusa
+                # remove-la, logo o link nunca fica pendurado.
+                principal="$MOODEV_ROOT/$MOODEV_BASE_WT"
                 if [ -n "$principal" ] && [ -x "$principal/.devcontainer/bin/moodev" ]; then
                     info "o moodev do PATH vinha desta worktree; repontando para '$principal'"
                     ln -sfn "$principal/.devcontainer/bin/moodev" "$no_path"
@@ -1246,7 +1279,7 @@ cmd_rm() {
     # so deveria mexer numa worktree secundaria.
     if [ "$dados_proprios" -eq 1 ] && [ -d "$wt_path" ]; then
         info "derrubando o stack"
-        dc "$wt_path" down -v 2>/dev/null || true
+        dc_full "$wt_path" down -v 2>/dev/null || true
     fi
 
     local branch="$branch_prevista"
