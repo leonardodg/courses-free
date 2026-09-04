@@ -6,6 +6,10 @@ name: CI/CD - courses.leodg.dev
 #   pull_request        -> so valida
 #   push em dev ou main -> valida, publica a imagem e faz deploy
 #
+# A validacao e UM JOB POR PLUGIN, em paralelo (matrix alimentada pelo job
+# "plugins"). Era um for sequencial e custava 79 minutos de parede para um
+# deploy de 2. Detalhe e motivo no comentario do job "validate".
+#
 # dev deploya porque o ambiente e um so. Exigir um PR dev->main a cada mudanca
 # so acrescentava um clique entre o merge e a VPS, sem separar nada: os dois
 # branches iam para a mesma maquina, com a mesma tag de imagem.
@@ -51,56 +55,47 @@ concurrency:
 
 jobs:
   # ===========================================================================
-  validate:
-    name: Validar plugins proprios
+  # Job de preparo: barato, sem banco, e roda o que so precisa acontecer UMA vez.
+  #
+  # Existe para alimentar a matrix do job seguinte. Uma matrix precisa da lista
+  # de valores ANTES de o job comecar, e a lista mora num arquivo do repositorio
+  # - entao alguem tem que ler o arquivo e publicar o JSON.
+  plugins:
+    name: Ler a lista de plugins
     runs-on: ubuntu-latest
-
-    # moodle-plugin-ci instala um Moodle de verdade para rodar os testes,
-    # entao precisa de um banco no runner.
-    #
-    # MariaDB, e nao Postgres, porque a VPS roda MariaDB. Testar num motor
-    # diferente do de producao deixa passar exatamente o que so aparece em
-    # producao: diferenca de collation, de tipo de coluna, de comportamento em
-    # ordenacao. A versao acompanha a do compose.
-    services:
-      mariadb:
-        image: mariadb:11.4
-        env:
-          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'true'
-          MARIADB_CHARACTER_SET_SERVER: utf8mb4
-          # utf8mb4_bin e exigencia do Moodle, e e a mesma da VPS.
-          MARIADB_COLLATION_SERVER: utf8mb4_bin
-        ports: ['3306:3306']
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
+    outputs:
+      list: ${{ steps.ler.outputs.list }}
     steps:
       - uses: actions/checkout@v4
         with:
           path: plugins-src
 
       - name: Ler .github/moodle-plugins.txt
-        id: plugins
+        id: ler
         working-directory: plugins-src
         run: |
+          set -euo pipefail
           # Ignora comentarios e linhas vazias.
           LIST=$(grep -vE '^\s*(#|$)' .github/moodle-plugins.txt || true)
+
+          # Lista vazia e ERRO, e nao "nada a validar".
+          #
+          # Antes isto era tolerado, de quando o arquivo ainda ia ser preenchido.
+          # Hoje ele tem nove plugins e e versionado: chegar aqui vazio significa
+          # que alguem esvaziou o arquivo, e seguir em frente deployaria SEM
+          # validar nada. Uma matrix vazia tambem quebra o GitHub Actions
+          # ("does not contain any values"), entao a falha e explicita.
           if [ -z "$LIST" ]; then
-            echo "Nenhum plugin proprio listado ainda - nada a validar."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "$LIST"
-            echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "list<<EOF" >> "$GITHUB_OUTPUT"
-            echo "$LIST" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "::error::.github/moodle-plugins.txt esta vazio - nada seria validado"
+            exit 1
           fi
+          echo "$LIST"
+
+          # A matrix consome JSON. O -R/-s/-c le linha a linha e devolve o array
+          # numa linha so, que e o que o GITHUB_OUTPUT aceita.
+          echo "list=$(printf '%s\n' "$LIST" | jq -R -s -c 'split("\n")|map(select(length>0))')" >> "$GITHUB_OUTPUT"
 
       - name: Conferir que cada path listado existe e tem version.php
-        if: steps.plugins.outputs.found == 'true'
         working-directory: plugins-src
         run: |
           FAIL=0
@@ -110,14 +105,12 @@ jobs:
               echo "::error::$p nao tem version.php"
               FAIL=1
             fi
-          done <<< "${{ steps.plugins.outputs.list }}"
+          done <<< "$(grep -vE '^\s*(#|$)' .github/moodle-plugins.txt)"
           exit $FAIL
 
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, mysqli, gd, zip, intl, soap, xmlrpc
-          ini-values: max_input_vars=5000
           coverage: none
 
       # Plugins de terceiros: SO phplint.
@@ -128,7 +121,10 @@ jobs:
       #
       # O que phplint pega e o risco real de manter plugin de terceiro: subir a
       # versao do PHP e so descobrir em producao que um deles usa sintaxe
-      # removida. Roda antes do resto porque e barato e falha rapido.
+      # removida.
+      #
+      # Mora aqui, e nao na matrix, porque a resposta nao muda por plugin nosso:
+      # na matrix ele rodaria nove vezes para dar nove vezes o mesmo resultado.
       - name: Conferir que os plugins de terceiros parseiam no PHP do projeto
         working-directory: plugins-src
         run: |
@@ -162,29 +158,91 @@ jobs:
           done <<< "$LIST"
           exit $FAIL
 
+  # ===========================================================================
+  # UM JOB POR PLUGIN, EM PARALELO.
+  #
+  # Antes isto era um `for` dentro de um job so: cada volta instalava um Moodle
+  # inteiro pelo moodle-plugin-ci e rodava phpunit. Com nove plugins deu 79
+  # MINUTOS de parede, medidos - e o deploy em si custa 2. A fila era o custo,
+  # nao o trabalho.
+  #
+  # A matrix nao reduz trabalho nenhum: sao os mesmos nove Moodles e os mesmos
+  # testes. O que muda e que os nove runners rodam ao mesmo tempo, entao o tempo
+  # de parede passa a ser o do plugin MAIS LENTO, e nao a soma dos nove.
+  validate:
+    name: Validar ${{ matrix.plugin }}
+    runs-on: ubuntu-latest
+    needs: plugins
+
+    strategy:
+      # Sem isto, o primeiro plugin que falhar cancela os outros oito e voce
+      # descobre um problema por rodada. Queremos a lista inteira de uma vez.
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.plugins.outputs.list) }}
+
+    # moodle-plugin-ci instala um Moodle de verdade para rodar os testes,
+    # entao precisa de um banco no runner.
+    #
+    # MariaDB, e nao Postgres, porque a VPS roda MariaDB. Testar num motor
+    # diferente do de producao deixa passar exatamente o que so aparece em
+    # producao: diferenca de collation, de tipo de coluna, de comportamento em
+    # ordenacao. A versao acompanha a do compose.
+    #
+    # Cada job da matrix levanta o PROPRIO servico, num runner proprio. Foi o
+    # que dispensou o "um banco por plugin" que existia aqui: o
+    # 'database already exists' vinha de varias instalacoes dividirem o mesmo
+    # MariaDB, e agora nao dividem mais.
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'true'
+          MARIADB_CHARACTER_SET_SERVER: utf8mb4
+          # utf8mb4_bin e exigencia do Moodle, e e a mesma da VPS.
+          MARIADB_COLLATION_SERVER: utf8mb4_bin
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugins-src
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, mysqli, gd, zip, intl, soap, xmlrpc
+          ini-values: max_input_vars=5000
+          coverage: none
+
       # O PHPUnit do Moodle exige en_AU.UTF-8 e aborta sem ele, com
       # "Required locale 'en_AU.UTF-8' is not installed" - antes de rodar teste
       # nenhum. O runner do GitHub nao traz esse locale.
       - name: Instalar o locale que o PHPUnit do Moodle exige
-        if: steps.plugins.outputs.found == 'true'
         run: |
           sudo locale-gen en_AU.UTF-8
           sudo update-locale
 
       - name: moodle-plugin-ci
-        if: steps.plugins.outputs.found == 'true'
         env:
           # Tem que acompanhar a branch do repo.
           MOODLE_BRANCH: MOODLE_502_STABLE
           # Acompanha o servico acima e o motor da VPS.
           DB: mariadb
+          PLUGIN: ${{ matrix.plugin }}
+          LISTA_JSON: ${{ needs.plugins.outputs.list }}
         run: |
           set -euo pipefail
           composer create-project -n --no-dev --prefer-dist \
             moodlehq/moodle-plugin-ci /tmp/ci ^4
           export PATH="/tmp/ci/bin:/tmp/ci/vendor/bin:$PATH"
 
-          # Quatro dos cinco plugins dependem do local_marketplace: o enrol e o
+          # Quatro dos plugins dependem do local_marketplace: o enrol e o
           # availability usam as classes dele, e o block declara a dependencia.
           # Instalar um sozinho num Moodle limpo faria o phpunit falhar por
           # classe inexistente - falha do arranjo, nao do codigo.
@@ -192,52 +250,36 @@ jobs:
           # Por isso cada rodada leva os OUTROS plugins da lista em
           # --extra-plugins, que espera um diretorio plano com um plugin por
           # subpasta, nomeada com o nome do componente.
-          LIST='${{ steps.plugins.outputs.list }}'
+          EXTRA=/tmp/extra
+          mkdir -p "$EXTRA"
+          for dep in $(echo "$LISTA_JSON" | jq -r '.[]'); do
+            [ "$dep" = "$PLUGIN" ] && continue
+            cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
+          done
 
-          i=0
-          while IFS= read -r p; do
-            [ -z "$p" ] && continue
-            i=$((i+1))
-            echo "::group::$p"
+          # Dependencias que sao plugin de TERCEIRO, e por isso vivem em
+          # moodle-plugins-thirdparty.txt e nao entram na lista acima.
+          #
+          # Hoje ha uma so: o theme_ldg e filho do theme_moove. Sem o pai
+          # aqui, o install monta um tema com parents = ['moove','boost']
+          # apontando para o nada e o job morre - nao no phpcs, no install.
+          #
+          # A lista e explicita de proposito. Copiar o arquivo de terceiros
+          # inteiro instalaria tambem o attendance, o onetopic e o tiles, que
+          # nao tem release 5.2 e derrubariam o install por outro motivo.
+          for dep in public/theme/moove; do
+            [ "$dep" = "$PLUGIN" ] && continue
+            cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
+          done
 
-            # Monta o diretorio de dependencias, sem o plugin sob teste.
-            EXTRA="/tmp/extra-$i"
-            rm -rf "$EXTRA" && mkdir -p "$EXTRA"
-            while IFS= read -r dep; do
-              [ -z "$dep" ] && continue
-              [ "$dep" = "$p" ] && continue
-              cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
-            done <<< "$LIST"
-
-            # Dependencias que sao plugin de TERCEIRO, e por isso vivem em
-            # moodle-plugins-thirdparty.txt e nao entram no $LIST acima.
-            #
-            # Hoje ha uma so: o theme_ldg e filho do theme_moove. Sem o pai
-            # aqui, o install monta um tema com parents = ['moove','boost']
-            # apontando para o nada e o job morre - nao no phpcs, no install.
-            #
-            # A lista e explicita de proposito. Copiar o arquivo de terceiros
-            # inteiro instalaria tambem o attendance, o onetopic e o tiles, que
-            # nao tem release 5.2 e derrubariam o install por outro motivo.
-            for dep in public/theme/moove; do
-              [ "$dep" = "$p" ] && continue
-              cp -a "$GITHUB_WORKSPACE/plugins-src/$dep" "$EXTRA/$(basename "$dep")"
-            done
-
-            # Um banco POR plugin. O install nao derruba o banco anterior, e a
-            # segunda rodada morria com 'database "moodle" already exists'.
-            rm -rf "/tmp/moodle-$i"
-            moodle-plugin-ci install \
-              --plugin "$GITHUB_WORKSPACE/plugins-src/$p" \
-              --extra-plugins "$EXTRA" \
-              --db-host 127.0.0.1 \
-              --db-name "moodle_ci_$i" \
-              --moodle "/tmp/moodle-$i"
-            moodle-plugin-ci phplint
-            moodle-plugin-ci phpcs --max-warnings 0
-            moodle-plugin-ci phpunit
-            echo "::endgroup::"
-          done <<< "$LIST"
+          moodle-plugin-ci install \
+            --plugin "$GITHUB_WORKSPACE/plugins-src/$PLUGIN" \
+            --extra-plugins "$EXTRA" \
+            --db-host 127.0.0.1 \
+            --moodle /tmp/moodle
+          moodle-plugin-ci phplint
+          moodle-plugin-ci phpcs --max-warnings 0
+          moodle-plugin-ci phpunit
 
   # ===========================================================================
   # Roda os testes dos plugins de TERCEIROS no Moodle 5.2.
