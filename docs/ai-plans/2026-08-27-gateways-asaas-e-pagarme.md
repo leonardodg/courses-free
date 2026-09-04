@@ -9,6 +9,11 @@
 [#59](https://github.com/leonardodg/courses-free/pull/59) merjeadas.
 **Pagar.me não começou** — falta CNPJ para abrir conta.
 
+> Este é o **registro do ciclo**. O plano que o originou é o
+> [`2026-08-27-plano-original-asaas-e-pagarme.md`](2026-08-27-plano-original-asaas-e-pagarme.md),
+> e é lá que a **Fase 2 do `paygw_pagarme` está escrita por inteiro**, esperando
+> o CNPJ. Quem for retomar o Pagar.me começa por ele, não por aqui.
+
 ---
 
 ## Contexto
