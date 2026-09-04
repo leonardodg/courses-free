@@ -50,6 +50,7 @@ configurado e as armadilhas dele:
 | [`ai-plans/`](ai-plans/) | **registro de todo plano executado por agente de IA** |
 | [`history/`](history/) | de onde o projeto veio: ideia inicial, conversas fundadoras |
 | [`man/`](man/) | páginas de manual instaláveis (`man cf`) |
+| `private/` | **fora do git** — material comercial interno. Ver a regra em "Convenções" |
 
 ## Convenções
 
@@ -73,5 +74,11 @@ negócio — margem, custo, simulação de lucro. O remote é **público** e o d
 faz `rsync` de `docs/` para a VPS, então a regra está no `.gitignore`
 versionado, e não num exclude local que ninguém enxerga.
 
-O que pode entrar em documento versionado são os números que a landing **exibe**:
-preço, percentual de comissão, resolução por faixa. Margem e custo, nunca.
+A linha de corte, quando um número precisa entrar em código ou em documento
+versionado: **pode o que a plataforma exibe em público** — mensalidade dos
+planos, percentual de comissão, tetos de resolução, faixas de ticket; **não pode
+o que explica a nossa margem** — custo de banda, custo por aluno ativo, lucro
+líquido, e o que o concorrente cobra.
+
+Nada em `private/` sobrevive a um clone novo. É material de trabalho do dono do
+projeto, e não documentação do sistema.

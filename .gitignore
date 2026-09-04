@@ -71,6 +71,9 @@ tsconfig.aliases.json
 #
 # O que pode entrar em documento versionado e so o que a landing EXIBE: preco,
 # percentual de comissao, resolucao por faixa. Margem e custo, nunca.
+#
+# Ignorado aqui, no .gitignore versionado, e nao em .git/info/exclude, de
+# proposito: um exclude invisivel some num clone novo e ninguem revisa.
 /docs/private/
 
 # Segredos e certificados locais de dev - nunca versionar.
