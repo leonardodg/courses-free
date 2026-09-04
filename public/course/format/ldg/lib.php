@@ -107,10 +107,22 @@ class format_ldg extends core_courseformat\base {
      * A secao 0 e a abertura do curso, e nao um modulo - ela costuma guardar
      * avisos e a apresentacao, entao numera-la como "Modulo 0" seria mentira.
      *
-     * @param stdClass|section_info $section
+     * NORMALIZA ANTES DE LER. Este metodo e publico e o core o chama DIRETO,
+     * sem passar pelo get_section_name() - o course/editsection.php entrega o
+     * registro cru de course_sections, que tem "section" e NAO tem
+     * "sectionnum". Sem esta linha saia "Undefined property" na tela de editar
+     * secao; e o aviso, sendo saida, ainda derrubava o redirect() seguinte, que
+     * virava um segundo erro sobre sessao mutada depois de fechada.
+     *
+     * A assinatura do core tambem aceita o numero puro, e ai a leitura direta
+     * dava "Attempt to read property on int".
+     *
+     * @param int|stdClass|section_info $section
      * @return string
      */
     public function get_default_section_name($section) {
+        $section = $this->get_section($section);
+
         if ($section->sectionnum == 0) {
             return get_string('section0name', 'format_ldg');
         }
