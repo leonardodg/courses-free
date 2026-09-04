@@ -196,8 +196,11 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **187 testes** (102 no núcleo, 29 no local_partners, 48 no
-Asaas, 8 no MP), phpcs limpo, CI validando os plugins a cada push.
+webhook, matrícula. **270 testes** (102 no núcleo, 48 no Asaas, 47 no
+`format_ldg`, 31 no `local_partners`, 8 no MP, e 34 nos quatro plugins que até
+04/09/2026 não tinham teste nenhum: `enrol_marketplace`,
+`availability_marketplace`, `block_marketplace` e `theme_ldg`). phpcs limpo, e o
+CI valida **um job por plugin, em paralelo**.
 
 **O split foi provado** no sandbox do Asaas, com duas contas distintas. Em
 2026-08-27, R$ 100 brutos → R$ 97,52 líquidos → 25% = R$ 24,38 na carteira da
