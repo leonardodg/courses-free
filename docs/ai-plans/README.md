@@ -27,6 +27,13 @@ um nome aleatório (`lovely-wandering-scott.md`). Renomeie para a convenção
 **quando o trabalho for registrado no índice**, e não antes: a sessão em curso
 ainda está escrevendo naquele caminho, e renomear no meio quebra o arquivo.
 
+**Renomear não é estética — é o que impede a perda.** O nome gerado é
+reaproveitado: em 02/09/2026 um plano novo caiu em `shiny-dreaming-popcorn.md` e
+**apagou** o plano de 31/08 que morava ali, o maior já escrito neste projeto, com
+as seis fases do `theme_ldg` e do `local_partners`. Ele só voltou porque o texto
+aprovado ficou na transcrição da sessão. Um arquivo já renomeado para
+`AAAA-MM-DD-titulo.md` nunca é alvo de sobrescrita.
+
 ## Situações
 
 | Situação | Quer dizer |
@@ -68,6 +75,7 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-08-26 | [`cf`, fluxo de worktrees](2026-08-26-cf-fluxo-de-worktrees.md) | `executado` | entregue — PRs #50, #51, #52 |
 | 2026-08-27 | [Plano original: Asaas e Pagar.me](2026-08-27-plano-original-asaas-e-pagarme.md) | **`inacabado`** | Fases 0 e 1 entregues; **Fase 2 `paygw_pagarme` travada no CNPJ**, e dois itens do `paygw_mercadopago` em aberto |
 | 2026-08-27 | [Gateways além do Mercado Pago](2026-08-27-gateways-asaas-e-pagarme.md) | `executado` | registro do ciclo: Asaas entregue e **split provado** |
+| 2026-08-31 | [`theme_ldg`, `local_partners` e planos no banco](2026-08-31-theme-ldg-local-partners-e-planos.md) | `executado` | sete fases no PR #61; a última ponta da Fase 0 fechou no #68. **Recuperado da transcrição** — o arquivo tinha sido sobrescrito |
 | 2026-09-02 | [`format_ldg` e o fechamento do tema](2026-09-02-format-ldg-e-fechamento-do-tema.md) | `executado` | PR #65 — `format_ldg` em `MATURITY_BETA` |
 | 2026-09-03 | [Guarda de versão no `cf new`](2026-09-03-cf-new-guarda-de-versao.md) | `executado` | 2 commits na `dev`; destravou a worktree `fix-theme-ldg` |
 | 2026-09-03 | [`mod_video`, YouTube para contas free](2026-09-03-mod-video-youtube.md) | **`pendente`** | não começou; o recorte e as decisões estão no documento |
