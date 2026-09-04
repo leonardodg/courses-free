@@ -9,7 +9,7 @@
 #
 # Isso passou despercebido porque a imagem em uso vem do CI (Linux, LF) por
 # docker compose pull. So um "docker build" na maquina local exporia a falha -
-# exatamente o que o "cf build" faz.
+# exatamente o que o "moodev build" faz.
 #
 # O atributo eol=lf tem precedencia sobre core.autocrlf, entao vale para
 # qualquer clone, em qualquer maquina, sem depender de configuracao do usuario.

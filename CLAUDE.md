@@ -95,13 +95,17 @@ Detalhes de tabela e campo: `docs/dev/guia-desenvolvedor.md`.
 
 Worktrees de um bare repo em `/home/leodg/localhost/gitworktree-bare-moodle/`.
 A worktree de repouso é `dev`; as de trabalho nascem e morrem com as features.
-Use `cf ls` para ver quais existem e qual está sendo servida — não presuma.
+Use `moodev ls` para ver quais existem e qual está sendo servida — não presuma.
 
 **Índice da documentação: `docs/README.md`.**
 
+O comando do ambiente é o **`moodev`** (*Moodle Dev*): worktrees, devcontainer e
+ferramental num só. Chamava-se `cf` até 04/09/2026, e `cf` segue como atalho.
+Para levá-lo a outro fork do Moodle: `docs/dev/moodev-em-projeto-novo.md`.
+
 **Cada worktree tem o próprio ambiente, e vários rodam ao mesmo tempo.** O
-comando é o `cf` (`.devcontainer/bin/cf`): `cf ls` mostra worktrees, offsets,
-portas e status; `cf new <nome>` cria worktree, ambiente, dados e stack, e
+comando é o `moodev` (`.devcontainer/bin/moodev`): `moodev ls` mostra worktrees, offsets,
+portas e status; `moodev new <nome>` cria worktree, ambiente, dados e stack, e
 ramifica de `origin/dev` por padrão. Cada worktree recebe um offset, e dele saem
 o nome do stack e as portas — offset 0 é o principal (`courses-free`,
 8080/8443/3307/9004), offset 1 soma 10 a cada uma.
@@ -109,15 +113,15 @@ Guia completo em `docs/dev/guia-worktrees.md`.
 
 **O código vem do `--from`, mas o banco vem do offset 0.** Se ele estiver numa
 branch à frente da base, o banco nasce com plugin mais novo que o código e o
-upgrade recusa (`cannotdowngrade`). O `cf new` confere e para antes de criar
-qualquer coisa: veja no `cf ls` qual branch o offset 0 serve e passe no `--from`.
+upgrade recusa (`cannotdowngrade`). O `moodev new` confere e para antes de criar
+qualquer coisa: veja no `moodev ls` qual branch o offset 0 serve e passe no `--from`.
 
-Não edite `.env` nem portas à mão: o `cf` gera esses arquivos e o `cf doctor`
+Não edite `.env` nem portas à mão: o `moodev` gera esses arquivos e o `moodev doctor`
 reclama quando divergem do registro.
 
-O `cf` do `PATH` é um symlink encadeado que resolve para
-`dev/.devcontainer/bin/cf`. Ao editar o próprio `cf` numa branch, chame pelo
-caminho (`./.devcontainer/bin/cf`) — `cf` puro executa a versão de `dev`.
+O `moodev` do `PATH` é um symlink encadeado que resolve para
+`dev/.devcontainer/bin/moodev`. Ao editar o próprio `moodev` numa branch, chame pelo
+caminho (`./.devcontainer/bin/moodev`) — `moodev` puro executa a versão de `dev`.
 
 Moodle 5.2 usa layout `public/` — os plugins ficam em `public/local/…`,
 `public/payment/gateway/…`, e o `config.php` fica na raiz, fora do webroot.

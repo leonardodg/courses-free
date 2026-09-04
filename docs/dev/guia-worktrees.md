@@ -15,7 +15,7 @@ O repositório é um *bare repo* com várias worktrees:
 ```
 /home/leodg/localhost/gitworktree-bare-moodle/
 ├── .bare/                  repositório git de verdade
-├── .cf/                    registro de ambientes (criado pelo cf)
+├── .moodev/                    registro de ambientes (criado pelo moodev)
 ├── feature-marketplace/    worktree principal
 ├── leodg-academy/
 └── main/  dev/  ...
@@ -37,14 +37,14 @@ Além disso o ambiente era **único por construção**: `base.yml` fixava
 worktree não criava um segundo ambiente — **recriava o mesmo container**
 apontando para outro código.
 
-O `cf` resolve os dois problemas.
+O `moodev` resolve os dois problemas.
 
 ---
 
 ## 2. Começando
 
 ```bash
-cf new paygw-pix
+moodev new paygw-pix
 ```
 
 Isso faz, em ordem:
@@ -66,7 +66,7 @@ foi criado.
 Para um ambiente **isolado**, que roda em paralelo com o atual:
 
 ```bash
-cf new paygw-pix --new-stack
+moodev new paygw-pix --new-stack
 ```
 
 Aí sim vêm container, banco e portas próprios, e o site fica em
@@ -77,30 +77,30 @@ Aí sim vêm container, banco e portas próprios, e o site fica em
 ## 3. Comandos
 
 Notação: `<obrigatório>`, `[opcional]`. Onde aparece `[worktree]`, é o **nome da
-worktree** — a mesma coluna `WORKTREE` que o `cf ls` mostra, por exemplo
+worktree** — a mesma coluna `WORKTREE` que o `moodev ls` mostra, por exemplo
 `paygw-pix`.
 
 | Comando | O que faz |
 |---|---|
-| `cf new <nome> [opções]` | cria worktree e ambiente (opções logo abaixo) |
-| `cf use <worktree>` | o stack atual passa a servir outra worktree |
-| `cf ls` | worktrees, offsets, stacks, status e URLs |
-| `cf up [worktree]` | sobe o stack |
-| `cf down [worktree]` | para o stack |
-| `cf restart [worktree]` | `down` e `up` |
-| `cf code [worktree]` | abre o VS Code dentro do container |
-| `cf shell [worktree]` | `bash` no container, como `1000:33` |
-| `cf logs [worktree]` | segue os logs |
-| `cf cli <script.php> [args]` | roda um `admin/cli` do Moodle |
-| `cf build [worktree]` | reconstrói a imagem (único que carrega `build-dev.yml`) |
-| `cf rm <worktree> [--force]` | remove worktree, branch, dados e stack |
-| `cf doctor` | confere ferramentas, disco, certificado, `.env` e portas |
+| `moodev new <nome> [opções]` | cria worktree e ambiente (opções logo abaixo) |
+| `moodev use <worktree>` | o stack atual passa a servir outra worktree |
+| `moodev ls` | worktrees, offsets, stacks, status e URLs |
+| `moodev up [worktree]` | sobe o stack |
+| `moodev down [worktree]` | para o stack |
+| `moodev restart [worktree]` | `down` e `up` |
+| `moodev code [worktree]` | abre o VS Code dentro do container |
+| `moodev shell [worktree]` | `bash` no container, como `1000:33` |
+| `moodev logs [worktree]` | segue os logs |
+| `moodev cli <script.php> [args]` | roda um `admin/cli` do Moodle |
+| `moodev build [worktree]` | reconstrói a imagem (único que carrega `build-dev.yml`) |
+| `moodev rm <worktree> [--force]` | remove worktree, branch, dados e stack |
+| `moodev doctor` | confere ferramentas, disco, certificado, `.env` e portas |
 
 **Omitindo o nome, o comando age sobre a worktree do diretório atual.** Estando
-dentro de `paygw-pix/`, `cf up` sobe aquele ambiente; de fora, seria
-`cf up paygw-pix`.
+dentro de `paygw-pix/`, `moodev up` sobe aquele ambiente; de fora, seria
+`moodev up paygw-pix`.
 
-### Lendo o `cf ls`
+### Lendo o `moodev ls`
 
 ```
 WORKTREE               OFFSET STACK                      STATUS  URL
@@ -121,17 +121,17 @@ comando faz com ela:
 |---|---|---|
 | `0` | é quem o **stack principal serve agora** | é o site em 8443 |
 | `≥ 1` | tem **stack próprio**, rodando em paralelo | portas próprias, banco próprio |
-| `-` | existe no disco, **sem ambiente servindo** | `cf use` a coloca no ar |
+| `-` | existe no disco, **sem ambiente servindo** | `moodev use` a coloca no ar |
 
 Uma worktree com `-` não está quebrada — só não é a que o container está
 servindo no momento. A segunda linha de cada entrada é a **branch**, que pode
-diferir do nome da pasta (ver §3, opções do `cf new`).
+diferir do nome da pasta (ver §3, opções do `moodev new`).
 
 ### Dois modos: trocar o código, ou subir um ambiente novo
 
 Esta é a decisão mais importante ao começar uma feature, e o padrão é o barato.
 
-| | **Padrão** (`cf new`, `cf use`) | **`cf new --new-stack`** |
+| | **Padrão** (`moodev new`, `moodev use`) | **`moodev new --new-stack`** |
 |---|---|---|
 | Container | o que já roda | novo |
 | Banco | **o mesmo** | próprio |
@@ -144,8 +144,8 @@ mesma URL — o que muda é qual worktree o Apache serve. É instantâneo e não
 consome nada.
 
 ```bash
-cf new fix-docs        # worktree nova, servida pelo stack que já roda
-cf use paygw-pix       # volta o stack para outra worktree existente
+moodev new fix-docs        # worktree nova, servida pelo stack que já roda
+moodev use paygw-pix       # volta o stack para outra worktree existente
 ```
 
 Use `--new-stack` quando precisar das **duas features no ar ao mesmo tempo**
@@ -153,19 +153,19 @@ Use `--new-stack` quando precisar das **duas features no ar ao mesmo tempo**
 outra) ou de **bancos separados**:
 
 ```bash
-cf new paygw-pix --new-stack
+moodev new paygw-pix --new-stack
 ```
 
 > **O banco é compartilhado no modo padrão.** Trocar entre branches com versões
 > diferentes de plugin faz o Moodle pedir `upgrade.php` de ida e de volta — o
-> `cf use` roda isso sozinho ao trocar. Se as migrações forem destrutivas,
+> `moodev use` roda isso sozinho ao trocar. Se as migrações forem destrutivas,
 > prefira `--new-stack`.
 
 Ao trocar, a worktree anterior **sai do registro** (o `.env` dela fica no disco).
-Um `cf up` nela para com "não está no registro", em vez de disputar as portas com
+Um `moodev up` nela para com "não está no registro", em vez de disputar as portas com
 o stack que agora serve outra coisa.
 
-### Opções do `cf new`
+### Opções do `moodev new`
 
 | Opção | Padrão | O que faz |
 |---|---|---|
@@ -177,45 +177,45 @@ o stack que agora serve outra coisa.
 
 #### Nome da pasta ≠ nome da branch
 
-São duas coisas, e o `cf` deixava isso confuso: cravava `feature/` em tudo, então
-`cf new fix-docs` criava a branch `feature/fix-docs` — um conserto classificado
+São duas coisas, e o `moodev` deixava isso confuso: cravava `feature/` em tudo, então
+`moodev new fix-docs` criava a branch `feature/fix-docs` — um conserto classificado
 como feature.
 
 **Barra no nome significa "isto é a branch inteira"**, e a pasta sai dela
 trocando barra por hífen:
 
 ```bash
-cf new paygw-pix              # pasta paygw-pix       branch feature/paygw-pix
-cf new fix/tls-porta          # pasta fix-tls-porta   branch fix/tls-porta
-cf new x --branch hotfix/y    # pasta x               branch hotfix/y
+moodev new paygw-pix              # pasta paygw-pix       branch feature/paygw-pix
+moodev new fix/tls-porta          # pasta fix-tls-porta   branch fix/tls-porta
+moodev new x --branch hotfix/y    # pasta x               branch hotfix/y
 ```
 
 Sem barra, mantém-se o prefixo `feature/`, que cobre o caso comum sem obrigar a
-digitá-lo. O `cf` recusa nome de branch inválido ou já existente, antes de criar
-qualquer coisa. O `cf rm` **lê a branch da worktree** em vez de deduzi-la do
+digitá-lo. O `moodev` recusa nome de branch inválido ou já existente, antes de criar
+qualquer coisa. O `moodev rm` **lê a branch da worktree** em vez de deduzi-la do
 nome da pasta, então uma `fix/…` não fica órfã.
 
 #### `--no-code`
 
-O `cf new` termina abrindo o VS Code **dentro** do container. `--no-code` pula
+O `moodev new` termina abrindo o VS Code **dentro** do container. `--no-code` pula
 esse passo — útil em script, por SSH, ou quando você só quer o ambiente no ar
 para rodar teste por linha de comando. A worktree fica pronta do mesmo jeito;
-dá para abrir depois com `cf code <worktree>`.
+dá para abrir depois com `moodev code <worktree>`.
 
 #### `--seed <modo>`
 
 De onde vêm os dados do banco. Só tem efeito com `--new-stack`; sem ele o banco é
-o do stack atual, e o `cf` avisa se você passar `--seed` à toa.
+o do stack atual, e o `moodev` avisa se você passar `--seed` à toa.
 
 **`clone` (padrão) — cópia do banco e do `moodledata` do principal**
 
 ```bash
-cf new fix/tls-porta --new-stack --from <branch do offset 0>
+moodev new fix/tls-porta --new-stack --from <branch do offset 0>
 ```
 
 `mariadb-dump` do stack de origem mais cópia do `moodledata`: a feature nasce com
 os cursos, usuários e matrículas de teste. ~30–60 s. Exige o stack de origem **no
-ar** (o dump roda no container dele); se estiver parado, `cf up <origem>` antes.
+ar** (o dump roda no container dele); se estiver parado, `moodev up <origem>` antes.
 Cache, sessões e `temp` não vão junto — são do outro domínio, e sessão copiada faz
 o site novo tentar validar um login que não é dele.
 
@@ -224,7 +224,7 @@ O `--from` é o que mantém código e banco alinhados; veja a seção 8.
 **`fresh` — Moodle instalado do zero**
 
 ```bash
-cf new fix/tls-porta --new-stack --seed fresh
+moodev new fix/tls-porta --new-stack --seed fresh
 ```
 
 `install_database.php`, login **admin / admin**. Site limpo, sem curso e sem tema
@@ -235,13 +235,13 @@ subida, e o único modo que dispensa o `--from`.
 **`share` — usa os dados do principal**
 
 ```bash
-cf new fix/tls-porta --new-stack --seed share --from <branch do offset 0>
+moodev new fix/tls-porta --new-stack --seed share --from <branch do offset 0>
 ```
 
 Reescreve o `.env` apontando `MOODLE_HOST_DATA` e `DB_HOST_DATA` para os caminhos
 do principal, e avisa em amarelo. **Os dois stacks disputam o mesmo schema** — um
 `upgrade.php` num afeta o outro — e dois MariaDB no mesmo diretório de dados não
-convivem: na prática, só com o principal parado (`cf down`). Só para inspeção
+convivem: na prática, só com o principal parado (`moodev down`). Só para inspeção
 rápida.
 
 | Quero… | Modo |
@@ -250,8 +250,8 @@ rápida.
 | site limpo, ou fugir do `--from` da origem | `fresh` |
 | mexer nos dados do principal com outro código | `share`, com o principal parado |
 
-Desfazer é igual nos três: `cf rm fix-tls-porta` — worktree, branch, dados e
-stack. Note a pasta com hífen, mesmo tendo criado com barra. E o `cf rm` só apaga
+Desfazer é igual nos três: `moodev rm fix-tls-porta` — worktree, branch, dados e
+stack. Note a pasta com hífen, mesmo tendo criado com barra. E o `moodev rm` só apaga
 dados sob `cf-data/`, então um `--seed share` não leva o banco principal junto.
 
 ---
@@ -271,7 +271,7 @@ O offset 0 é o ambiente que já existia. `base.yml` usa
 `name: ${STACK_NAME:-courses-free}`, então **sem `STACK_NAME` definido nada
 muda** — é assim que o principal e a VPS continuam funcionando sem alteração.
 
-O `cf` só entrega um offset depois de conferir com `ss -ltn` que as quatro
+O `moodev` só entrega um offset depois de conferir com `ss -ltn` que as quatro
 portas estão livres. Se alguma estiver ocupada por outro serviço da máquina, ele
 pula para o offset seguinte.
 
@@ -295,7 +295,7 @@ um dia aquele caminho contiver o nome da worktree.
 
 ### O ajuste no `dev.env`
 
-O `dev.env` copiado traz o `MOODLE_URL` da origem. O `cf` reescreve três linhas:
+O `dev.env` copiado traz o `MOODLE_URL` da origem. O `moodev` reescreve três linhas:
 
 ```bash
 MOODLE_URL=https://localhost:8453          # tem que bater com a porta do stack
@@ -308,15 +308,15 @@ navegador, a sessão não fecha e o login entra em laço.
 
 > O `dev.env` do repositório apontava para `feature-infra-vps`, uma worktree que
 > não existe mais. Era inofensivo — a variável só é lida como interpolação a
-> partir do `.env` — mas mostra por que o `cf` reescreve em vez de confiar.
+> partir do `.env` — mas mostra por que o `moodev` reescreve em vez de confiar.
 
 ---
 
 ## 5. Duas worktrees ao mesmo tempo
 
 ```bash
-cf new paygw-pix          # offset 1
-cf ls
+moodev new paygw-pix          # offset 1
+moodev ls
 ```
 
 ```
@@ -361,7 +361,7 @@ simultâneas funcionam porque as portas não colidem.
 
 ## 6. Como funciona no VS Code
 
-`cf code` (ou `cf new`) abre a janela **já conectada ao container**, sem passar
+`moodev code` (ou `moodev new`) abre a janela **já conectada ao container**, sem passar
 pela caixa de diálogo. Por baixo é o endereçamento padrão da extensão Dev
 Containers:
 
@@ -376,7 +376,7 @@ container. O que existe é um custo único, na *criação* de cada worktree.
 
 | Momento | Antes | Agora |
 |---|---|---|
-| `cf new` (uma vez por worktree) | build completo da imagem | camada de UID, ~726 MB |
+| `moodev new` (uma vez por worktree) | build completo da imagem | camada de UID, ~726 MB |
 | Reopen in Container | build completo de novo | ~1 s, container reaproveitado |
 
 A camada de UID vem de `updateRemoteUserUID`, ligado por padrão quando o
@@ -409,9 +409,9 @@ Estas sim reconstruíam a imagem **a cada abertura**:
 2. **`build-dev.yml` na lista de compose.** Aquele arquivo tem uma seção
    `build:` com `context: ../../` — o caminho muda a cada worktree, o cache não
    aproveita e a imagem é reconstruída. Hoje o `devcontainer.json` usa a imagem
-   já publicada; `build-dev.yml` só entra via `cf build`.
+   já publicada; `build-dev.yml` só entra via `moodev build`.
 
-### Por que o `cf` sobe pela CLI do Dev Containers
+### Por que o `moodev` sobe pela CLI do Dev Containers
 
 Se o stack sobe por `docker compose` puro e depois você faz "Reopen in
 Container", a extensão gera os próprios arquivos de override, considera a
@@ -419,7 +419,7 @@ configuração diferente e **recria** os containers que acabaram de subir.
 Subindo pela mesma CLI que o VS Code usa, a janela apenas se conecta.
 
 A CLI está instalada em `~/.local/share/devcontainers-cli`, com symlink em
-`~/.local/bin/devcontainer`. Sem ela o `cf` ainda funciona, avisando que o
+`~/.local/bin/devcontainer`. Sem ela o `moodev` ainda funciona, avisando que o
 primeiro Reopen vai recriar os containers.
 
 ### Fechar a janela não derruba o ambiente
@@ -429,45 +429,45 @@ estava rodando — o padrão da extensão com compose é parar os serviços.
 
 ---
 
-## 7. Onde o `cf` mora, e como chamá-lo sem caminho
+## 7. Onde o `moodev` mora, e como chamá-lo sem caminho
 
-O script é **versionado no repositório**, em `.devcontainer/bin/cf`. Ou seja,
+O script é **versionado no repositório**, em `.devcontainer/bin/moodev`. Ou seja,
 ele viaja com a branch e toda worktree tem a sua cópia.
 
-Para digitar `cf` de qualquer diretório, a instalação usa **dois** symlinks
+Para digitar `moodev` de qualquer diretório, a instalação usa **dois** symlinks
 encadeados:
 
 ```
-~/.local/bin/cf
-   └─> ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf     (ponto fixo)
-          └─> ../../dev/.devcontainer/bin/cf                        (qual versão)
+~/.local/bin/moodev
+   └─> ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/moodev     (ponto fixo)
+          └─> ../../dev/.devcontainer/bin/moodev                        (qual versão)
 ```
 
 ```bash
-# ponto fixo na raiz, apontando para a worktree que fornece o cf
+# ponto fixo na raiz, apontando para a worktree que fornece o moodev
 mkdir -p ~/localhost/gitworktree-bare-moodle/.devcontainer/bin
-ln -sfn ../../dev/.devcontainer/bin/cf \
-        ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf
+ln -sfn ../../dev/.devcontainer/bin/moodev \
+        ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/moodev
 
 # o PATH aponta para o ponto fixo, e nunca mais muda
-ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf ~/.local/bin/cf
+ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/moodev ~/.local/bin/moodev
 ```
 
 **Por que dois em vez de um.** O script mora *dentro* de uma worktree, e
 worktree é coisa descartável — apontar o `PATH` direto para uma delas significa
 que apagá-la faz o comando sumir sem explicação. Com a indireção, trocar de
-worktree é mexer em **um** symlink na raiz; o `~/.local/bin/cf` fica intacto.
-O `readlink -f` percorre a cadeia inteira, então o `cf` continua descobrindo a
+worktree é mexer em **um** symlink na raiz; o `~/.local/bin/moodev` fica intacto.
+O `readlink -f` percorre a cadeia inteira, então o `moodev` continua descobrindo a
 raiz corretamente.
 
 **Por que `dev` e não `main`.** `main` não tem `.devcontainer/` — está 108
 commits atrás e fora do caminho normal deste projeto, onde o fluxo é
 `feature → dev → deploy`, sem PR `dev`→`main`. `dev` é a branch de integração:
-sempre tem a versão mais recente do `cf` que passou por PR.
+sempre tem a versão mais recente do `moodev` que passou por PR.
 
-> **Efeito colateral:** o `cf` do `PATH` passa a ser o de `dev`. Para exercitar
+> **Efeito colateral:** o `moodev` do `PATH` passa a ser o de `dev`. Para exercitar
 > uma versão em desenvolvimento, chame pelo caminho:
-> `./.devcontainer/bin/cf doctor` de dentro da worktree da feature.
+> `./.devcontainer/bin/moodev doctor` de dentro da worktree da feature.
 
 `~/.local/bin` já entra no `PATH` nesta máquina, pelo `~/.profile` (padrão do
 Ubuntu) e pelo `~/.bashrc`. Em outra máquina, confira:
@@ -476,10 +476,10 @@ Ubuntu) e pelo `~/.bashrc`. Em outra máquina, confira:
 case ":$PATH:" in *":$HOME/.local/bin:"*) echo ok;; *) echo "falta no PATH";; esac
 ```
 
-O `cf doctor` avisa se o link resolver para dentro de uma worktree **removível**
-— ou seja, registrada com offset diferente de 0, que o `cf rm` pode apagar.
+O `moodev doctor` avisa se o link resolver para dentro de uma worktree **removível**
+— ou seja, registrada com offset diferente de 0, que o `moodev rm` pode apagar.
 Worktree permanente (`dev`, `main`) e a principal não disparam o aviso. E o
-`cf rm` reaponta o link sozinho se ele vier da worktree que está prestes a sair.
+`moodev rm` reaponta o link sozinho se ele vier da worktree que está prestes a sair.
 
 ### CLI do Dev Containers
 
@@ -500,20 +500,20 @@ Não faça as duas: `~/.local/bin` vem antes no `PATH` e sombreia a global.
 ### Conferindo
 
 ```bash
-cf doctor
+moodev doctor
 ```
 
-A primeira seção da saída é a instalação do próprio `cf`: onde está o script,
+A primeira seção da saída é a instalação do próprio `moodev`: onde está o script,
 sob que nome ele responde no `PATH` e se o symlink aponta para lugar seguro.
 
 ### O registro
 
-`~/localhost/gitworktree-bare-moodle/.cf/registry.tsv`, um TSV com
+`~/localhost/gitworktree-bare-moodle/.moodev/registry.tsv`, um TSV com
 `nome, offset, stack, wwwroot, moodledata, dbdata`. Fica fora de qualquer
 worktree porque é estado **da máquina**, não do código — não deve ser commitado
 nem sumir quando uma worktree é removida.
 
-Na primeira execução o `cf` adota o ambiente existente como offset 0, descobrindo
+Na primeira execução o `moodev` adota o ambiente existente como offset 0, descobrindo
 qual worktree é a principal pelo bind mount do container que está no ar.
 
 ---
@@ -524,8 +524,8 @@ O default do `--from` é **`origin/dev`**, a branch de integração — o mesmo 
 que o fluxo do projeto usa (`feature → dev → deploy`). Na prática:
 
 ```bash
-cf new paygw-pix                 # nasce de origin/dev
-cf new paygw-pix --from outra    # só quando você tem motivo
+moodev new paygw-pix                 # nasce de origin/dev
+moodev new paygw-pix --from outra    # só quando você tem motivo
 ```
 
 > Isto mudou. Enquanto `.devcontainer/` existia apenas nas branches de feature,
@@ -536,13 +536,13 @@ cf new paygw-pix --from outra    # só quando você tem motivo
 **`main` não serve como base.** Continua sem `.devcontainer/` e está fora do
 fluxo normal, onde não há PR `dev`→`main`.
 
-O `cf new` confere que a base tem `.devcontainer/devcontainer.json` **antes de
+O `moodev new` confere que a base tem `.devcontainer/devcontainer.json` **antes de
 criar qualquer coisa** e para com a mensagem do que fazer. Uma worktree meio
 provisionada é pior que nenhuma, porque parece pronta.
 
 ### A base tem que combinar com o banco
 
-O `cf new` resolve **duas origens diferentes**, e elas não são a mesma coisa:
+O `moodev new` resolve **duas origens diferentes**, e elas não são a mesma coisa:
 
 | | vem de |
 |---|---|
@@ -557,15 +557,15 @@ mais novo que o código, e o Moodle recusa:
 Cannot downgrade format_ldg from 2026090304 to 2026090301
 ```
 
-Então: **olhe o `cf ls`, veja em qual branch está o offset 0, e passe essa branch
+Então: **olhe o `moodev ls`, veja em qual branch está o offset 0, e passe essa branch
 no `--from`.**
 
 ```bash
-cf ls                                          # offset 0 → fix/format-ldg-navegador
-cf new fix/tls-porta --from fix/format-ldg-navegador
+moodev ls                                          # offset 0 → fix/format-ldg-navegador
+moodev new fix/tls-porta --from fix/format-ldg-navegador
 ```
 
-Esquecer não custa nada: o `cf` compara os `version.php` que mudaram entre as duas
+Esquecer não custa nada: o `moodev` compara os `version.php` que mudaram entre as duas
 refs e recusa antes de criar qualquer coisa, listando os plugins e dizendo qual
 `--from` usar. É só repetir o comando. A outra saída é `--new-stack --seed fresh`,
 que nasce com banco vazio e por isso nem é checado.
@@ -574,7 +574,7 @@ Quando a `origin/dev` já estiver em dia com o principal — depois que a featur
 vez for merjeada —, o `--from` volta a ser dispensável.
 
 > A comparação lê o `HEAD` do offset 0. Um bump de versão ainda não commitado lá
-> já está no banco e não aparece; nesse caso o `cf` avisa, mas segue.
+> já está no banco e não aparece; nesse caso o `moodev` avisa, mas segue.
 
 ---
 
@@ -630,16 +630,16 @@ Não se usa `platforms: linux/amd64,linux/arm64` num job único de propósito �
 isso poria o amd64 sob QEMU, que num build de Moodle custa dezenas de minutos.
 
 > Nem sempre foi assim. O CI publicava só `linux/arm64`, e em amd64 o `pull`
-> batia em `no matching manifest for linux/amd64`, deixando o `cf build` como
+> batia em `no matching manifest for linux/amd64`, deixando o `moodev build` como
 > única fonte local da imagem.
 
-### Quando ainda usar `cf build`
+### Quando ainda usar `moodev build`
 
 Depois de mexer no `Dockerfile` e antes de o CI publicar, para testar a imagem
 localmente:
 
 ```bash
-cf build
+moodev build
 ```
 
 Antes de reconstruir, vale marcar a imagem que funciona, para ter para onde
@@ -698,25 +698,25 @@ Se acontecer com o container no ar:
 docker exec -u root <container> chown -R www-data:www-data /var/www/moodledata
 ```
 
-**Rode os CLI como `1000:33`.** uid do host, grupo `www-data`. É o que `cf shell`
-e `cf cli` já fazem. Sem isso o PHPUnit não escreve no dataroot e os arquivos
+**Rode os CLI como `1000:33`.** uid do host, grupo `www-data`. É o que `moodev shell`
+e `moodev cli` já fazem. Sem isso o PHPUnit não escreve no dataroot e os arquivos
 gerados ficam com dono errado no host.
 
 **`< /dev/null` no `docker compose exec`.** Sem ele o exec consome o stdin do
 shell que chamou e o comando seguinte do script morre. Já quebrou um deploy.
 
 **Espaço em disco.** Cada feature custa ~900 MB (worktree ~600, `dbdata` ~250).
-O `cf new` recusa abaixo de 5 GB livres, e `cf doctor` avisa antes.
+O `moodev new` recusa abaixo de 5 GB livres, e `moodev doctor` avisa antes.
 
 **Banco à frente do código.** `Cannot downgrade <plugin> from X to Y` quer dizer
 que o banco conhece uma versão de plugin que o código não tem — worktree criada de
-uma base atrás da branch que o banco veio, ou troca de branch depois. O `cf new`
+uma base atrás da branch que o banco veio, ou troca de branch depois. O `moodev new`
 recusa isso desde 03/09/2026 (seção 8); se já aconteceu, traga o código para a
 altura do banco:
 
 ```bash
 git -C <worktree> merge --ff-only <branch que o banco conhece>
-cf cli upgrade.php --non-interactive && cf cli purge_caches.php
+moodev cli upgrade.php --non-interactive && moodev cli purge_caches.php
 ```
 
 Aconteceu criando a `fix/theme-ldg` de `origin/dev` enquanto o principal servia
@@ -730,13 +730,13 @@ bumpados no banco, e o ambiente subiu inteiro só para morrer no último passo.
 Depois do merge do PR:
 
 ```bash
-cf rm paygw-pix
+moodev rm paygw-pix
 ```
 
 Remove a worktree e a **branch que ela tem de fato** — lida da worktree, não
 deduzida do nome da pasta, para que uma `fix/…` não fique órfã.
 
-O resto depende do estado da worktree, que o `cf ls` mostra na coluna `OFFSET`:
+O resto depende do estado da worktree, que o `moodev ls` mostra na coluna `OFFSET`:
 
 | | Stack próprio (`≥ 1`) | Servida agora (`0`) | Sem stack (`-`) |
 |---|---|---|---|
@@ -753,7 +753,7 @@ outra.
 A distinção de dados não é cosmética. A linha de registro de uma worktree sem
 stack aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a
 serviu. Apagar por ali destruiria o banco principal a partir de um comando que
-parece local. O `cf rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba
+parece local. O `moodev rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba
 stack quando existe um próprio.
 
 Antes de remover, avisa se houver alteração não commitada ou commit da **própria
@@ -762,8 +762,8 @@ branch** fora do remoto, e pede o nome da worktree por extenso (`--force` pula).
 ### A worktree de repouso
 
 `dev` é para onde o stack volta quando a worktree servida é removida, e por isso
-**o `cf rm` a recusa**. Ela é a escolha natural: é a branch de integração, tem
-`.devcontainer/`, e é de onde o `cf new` ramifica — o repouso é o mesmo ponto de
+**o `moodev rm` a recusa**. Ela é a escolha natural: é a branch de integração, tem
+`.devcontainer/`, e é de onde o `moodev new` ramifica — o repouso é o mesmo ponto de
 partida.
 
 `main` não serve: não tem `.devcontainer/` e está 108 commits atrás, então o

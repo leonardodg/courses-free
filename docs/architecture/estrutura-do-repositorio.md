@@ -57,22 +57,22 @@ git push origin dev
 
 - Passo 2: Criar a worktree da feature
 
-Use o `cf`. Ele cria a worktree, copia os arquivos que o git ignora (`.env`,
+Use o `moodev`. Ele cria a worktree, copia os arquivos que o git ignora (`.env`,
 `config.php`, secrets, certificados, `env/*.env`), aloca portas próprias, clona
 o banco, sobe o stack e abre o VS Code dentro do container:
 
 ```
-cf new meu-plugin
+moodev new meu-plugin
 ```
 
 A base e `origin/dev` por padrao, que e o Passo 1 acima — nao precisa passar
 `--from`. `main` nao serve como base: segue sem `.devcontainer/` e esta fora do
-fluxo. O `cf new` confere isso antes de criar qualquer coisa.
+fluxo. O `moodev new` confere isso antes de criar qualquer coisa.
 
 Documentação completa dos comandos, portas, `.env`, VS Code e como rodar duas
 worktrees ao mesmo tempo: **`docs/dev/guia-worktrees.md`** dentro da worktree.
 
-Fazendo à mão (equivalente ao que o `cf` automatiza):
+Fazendo à mão (equivalente ao que o `moodev` automatiza):
 
 ```
 cd ~/localhost/gitworktree-bare-moodle
@@ -96,13 +96,13 @@ Abra o PR: `feature/instalacao-plugin` -> `dev`. Depois do merge, remova o
 ambiente local inteiro (stack, worktree, branch e dados) com:
 
 ```
-cf rm meu-plugin
+moodev rm meu-plugin
 ```
 
 Ele avisa se houver alteração não commitada ou commit da propria branch fora do
 remoto, e pede confirmação.
 
-O que acontece depende do estado da worktree (coluna `OFFSET` do `cf ls`):
+O que acontece depende do estado da worktree (coluna `OFFSET` do `moodev ls`):
 
 | | Stack proprio (`>= 1`) | Servida agora (`0`) | Sem stack (`-`) |
 |---|---|---|---|
@@ -113,7 +113,7 @@ O que acontece depende do estado da worktree (coluna `OFFSET` do `cf ls`):
 
 So a worktree SERVIDA move o stack, e por obrigacao: o codigo montado no
 container vai sumir do disco. `dev` e a worktree de repouso e por isso o
-`cf rm` a recusa.
+`moodev rm` a recusa.
 
 Fazendo à mão:
 
@@ -150,25 +150,25 @@ php admin/cli/upgrade.php --non-interactive
 
 
 
-## Ambientes locais (cf)
+## Ambientes locais (moodev)
 
 **Não é mais preciso "trocar de worktree".** Cada worktree tem o próprio
 ambiente, e vários rodam ao mesmo tempo.
 
 ```
-cf ls                          # worktrees, portas, status e URLs
-cf new <nome>                  # worktree nova, servida pelo stack que ja roda
-cf new <nome> --new-stack      # worktree nova com ambiente PROPRIO, em paralelo
-cf use <worktree>              # o stack atual passa a servir outra worktree
-cf up|down|restart [worktree]  # controla o stack
-cf code [worktree]             # abre o VS Code dentro do container
-cf shell [worktree]            # bash no container, como 1000:33
-cf cli upgrade.php             # roda um admin/cli do Moodle
-cf rm <worktree>               # remove worktree, branch, dados e stack
-cf doctor                      # confere ferramentas, disco, cert, .env e portas
+moodev ls                          # worktrees, portas, status e URLs
+moodev new <nome>                  # worktree nova, servida pelo stack que ja roda
+moodev new <nome> --new-stack      # worktree nova com ambiente PROPRIO, em paralelo
+moodev use <worktree>              # o stack atual passa a servir outra worktree
+moodev up|down|restart [worktree]  # controla o stack
+moodev code [worktree]             # abre o VS Code dentro do container
+moodev shell [worktree]            # bash no container, como 1000:33
+moodev cli upgrade.php             # roda um admin/cli do Moodle
+moodev rm <worktree>               # remove worktree, branch, dados e stack
+moodev doctor                      # confere ferramentas, disco, cert, .env e portas
 ```
 
-**Dois modos.** Por padrao o `cf new` so troca o codigo montado no container que
+**Dois modos.** Por padrao o `moodev new` so troca o codigo montado no container que
 ja roda: mesmo banco, mesmas portas, custo zero — mas um ambiente de cada vez.
 Com `--new-stack`, sobe um ambiente proprio que roda em PARALELO, ao custo de
 ~900 MB (container, banco e portas separados).
@@ -189,19 +189,19 @@ que o stack principal e a VPS continuam iguais.
 armadilhas): `docs/dev/guia-worktrees.md`, dentro de qualquer worktree que tenha
 `.devcontainer/`.
 
-### Onde o cf mora
+### Onde o moodev mora
 
-O script e versionado no repo, em `.devcontainer/bin/cf` — cada worktree tem a
+O script e versionado no repo, em `.devcontainer/bin/moodev` — cada worktree tem a
 sua copia. Como worktree e coisa descartavel, o PATH nao aponta direto para
 nenhuma: ha um **ponto fixo na raiz** que indireciona.
 
 ```
-~/.local/bin/cf
-   └─> ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf   (ponto fixo)
-          └─> ../../dev/.devcontainer/bin/cf                      (qual versao)
+~/.local/bin/moodev
+   └─> ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/moodev   (ponto fixo)
+          └─> ../../dev/.devcontainer/bin/moodev                      (qual versao)
 ```
 
-Trocar a worktree que fornece o `cf` e mexer em **um** symlink, o da raiz; o do
+Trocar a worktree que fornece o `moodev` e mexer em **um** symlink, o da raiz; o do
 PATH nunca muda. `~/.local/bin` ja esta no PATH pelo `~/.profile` e `~/.bashrc`.
 
 Aponta para `dev` e nao para `main` porque `main` nao tem `.devcontainer/` — o
@@ -211,15 +211,15 @@ fluxo do projeto e `feature → dev → deploy`, sem PR `dev`→`main`.
 
 ```
 mkdir -p ~/localhost/gitworktree-bare-moodle/.devcontainer/bin
-ln -sfn ../../dev/.devcontainer/bin/cf ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf
-ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/cf ~/.local/bin/cf
+ln -sfn ../../dev/.devcontainer/bin/moodev ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/moodev
+ln -sfn ~/localhost/gitworktree-bare-moodle/.devcontainer/bin/moodev ~/.local/bin/moodev
 sudo npm install -g @devcontainers/cli
-cf doctor
+moodev doctor
 ```
 
 ### Modo manual
 
-Se precisar apontar um container para outra worktree sem o `cf`, o caminho
+Se precisar apontar um container para outra worktree sem o `moodev`, o caminho
 montado vem de `MOODLE_HOST_WWWROOT` no `.env`:
 
 ```
@@ -237,7 +237,7 @@ docker compose up -d
 
 > O `sed "s#feature-marketplace#$(basename $PWD)#"` que este README ensinava
 > antes substitui a string em QUALQUER linha, inclusive dentro de
-> `MOODLE_HOST_DATA`. O `cf new` gera o `.env` em vez de reescrevê-lo.
+> `MOODLE_HOST_DATA`. O `moodev new` gera o `.env` em vez de reescrevê-lo.
 >
 > `build-dev.yml` saiu desta lista: ele tem uma seção `build:` e reconstrói a
-> imagem a cada caminho novo. Para reconstruir de propósito, use `cf build`.
+> imagem a cada caminho novo. Para reconstruir de propósito, use `moodev build`.

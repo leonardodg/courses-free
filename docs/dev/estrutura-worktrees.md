@@ -19,10 +19,10 @@ banco de objetos. Trocar de contexto vira `cd`, e nada é reescrito.
 
 O que isso destrava neste projeto:
 
-- **Vários ambientes ao mesmo tempo** — o [`cf`](cf.md) sobe um stack por
+- **Vários ambientes ao mesmo tempo** — o [`moodev`](moodev.md) sobe um stack por
   worktree quando você pede `--new-stack`
 - **Comparar branches lado a lado**, sem `git stash`
-- **Manter `dev` sempre disponível** — é a worktree de repouso do `cf` e a que
+- **Manter `dev` sempre disponível** — é a worktree de repouso do `moodev` e a que
   alimenta o comando no `PATH`
 
 O custo: ~600 MB de arquivos por worktree. Os objetos do git **não** são
@@ -36,8 +36,8 @@ duplicados.
 gitworktree-bare-moodle/
 ├── .bare/                      o repositório de verdade (bare)
 ├── .git                        arquivo de uma linha: gitdir: ./.bare
-├── .cf/                        registro de ambientes (criado pelo cf)
-├── .devcontainer/bin/cf        symlink -> ../../dev/.devcontainer/bin/cf
+├── .moodev/                        registro de ambientes (criado pelo moodev)
+├── .devcontainer/bin/moodev        symlink -> ../../dev/.devcontainer/bin/moodev
 ├── docs -> dev/docs/           atalho de leitura
 │
 ├── dev/                        branch de integração — worktree de repouso
@@ -46,7 +46,7 @@ gitworktree-bare-moodle/
 └── <sua-feature>/              nascem e morrem com as features
 ```
 
-**A raiz não é um working tree.** Ela guarda o `.bare/`, o estado do `cf` e as
+**A raiz não é um working tree.** Ela guarda o `.bare/`, o estado do `moodev` e as
 worktrees. Não commite arquivos ali — foi de onde saíram `README.md`, o SVG e a
 conversa inicial, hoje em [`../architecture/`](../architecture/) e
 [`../history/`](../history/).
@@ -93,7 +93,7 @@ git worktree add MOODLE_502_STABLE upstream/MOODLE_502_STABLE
 > `fetch` que não popula `refs/remotes/`, então `origin/dev` não existe e
 > `git worktree add <nome> <branch>` falha sem explicar por quê.
 
-Depois, a instalação do `cf` — ver [`cf.md`](cf.md#9-instalação).
+Depois, a instalação do `moodev` — ver [`moodev.md`](moodev.md#9-instalação).
 
 ---
 
@@ -102,10 +102,10 @@ Depois, a instalação do `cf` — ver [`cf.md`](cf.md#9-instalação).
 ### Criar
 
 ```bash
-cf new minha-feature          # worktree + ambiente + VS Code
+moodev new minha-feature          # worktree + ambiente + VS Code
 ```
 
-O caminho manual, para saber o que o `cf` faz:
+O caminho manual, para saber o que o `moodev` faz:
 
 ```bash
 cd ~/localhost/gitworktree-bare-moodle
@@ -113,22 +113,22 @@ git worktree add minha-feature -b feature/minha-feature origin/dev
 ```
 
 Só isso não dá um ambiente: faltam os arquivos que o `.gitignore` esconde. É
-para isso que o `cf` existe — ver [`cf.md`](cf.md#4-cf-new).
+para isso que o `moodev` existe — ver [`moodev.md`](moodev.md#4-cf-new).
 
 ### Listar
 
 ```bash
 git worktree list     # o que o git conhece
-cf ls                 # o que tem ambiente, com portas e status
+moodev ls                 # o que tem ambiente, com portas e status
 ```
 
 As duas listas respondem perguntas diferentes. Uma worktree pode existir para o
-git e não estar registrada no `cf`.
+git e não estar registrada no `moodev`.
 
 ### Remover
 
 ```bash
-cf rm minha-feature   # worktree, branch, e o stack/dados se forem dela
+moodev rm minha-feature   # worktree, branch, e o stack/dados se forem dela
 ```
 
 Manual:
@@ -181,26 +181,26 @@ branch já checada em outro lugar. É proteção, não limitação: duas pastas
 editando a mesma branch divergiriam em silêncio.
 
 **A pasta e a branch são coisas diferentes.** A worktree
-`docs-organize-and-improve` tem a branch `docs/organize-and-improve` — o `cf`
-faz essa tradução (barra vira hífen). Ver [`cf.md`](cf.md#nome-da-pasta--nome-da-branch).
+`docs-organize-and-improve` tem a branch `docs/organize-and-improve` — o `moodev`
+faz essa tradução (barra vira hífen). Ver [`moodev.md`](moodev.md#nome-da-pasta--nome-da-branch).
 
 **`git config` na raiz é global para todas as worktrees.** A configuração vive
 em `.bare/config`, compartilhada. Só `core.worktree` e alguns poucos são por
 worktree.
 
-**Commits ficam órfãos se a worktree for removida antes do push.** O `cf rm`
+**Commits ficam órfãos se a worktree for removida antes do push.** O `moodev rm`
 avisa; o `git worktree remove` não avisa sobre commits, só sobre arquivos
 modificados.
 
 **`git status` numa worktree só vê a própria branch** — mas `git log --branches`
-vê todas. Foi assim que o `cf rm` chegou a acusar commits pendentes que eram de
+vê todas. Foi assim que o `moodev rm` chegou a acusar commits pendentes que eram de
 outra branch.
 
 ---
 
 ## Ver também
 
-- [`cf.md`](cf.md) — o comando que transforma worktree em ambiente
+- [`moodev.md`](moodev.md) — o comando que transforma worktree em ambiente
 - [`guia-worktrees.md`](guia-worktrees.md) — portas, `.env`, VS Code, a VPS
 - [`fluxo-de-contribuicao.md`](fluxo-de-contribuicao.md) — da worktree ao deploy
 - [`../architecture/estrutura-do-repositorio.md`](../architecture/estrutura-do-repositorio.md) — o fluxo de branches

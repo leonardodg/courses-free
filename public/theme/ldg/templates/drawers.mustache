@@ -169,7 +169,8 @@
                             title="{{#str}}opendrawerindex, core{{/str}}"
                         >
                             <span class="sr-only">{{#str}}opendrawerindex, core{{/str}}</span>
-                            {{#pix}} t/index_drawer, moodle {{/pix}}
+                            {{! t/index_drawer tambem foi depreciado no Moodle 5; a/view_list_active desenha o mesmo fa-list. }}
+                            {{#pix}} a/view_list_active, moodle {{/pix}}
                         </button>
                     </div>
                 {{/hasleftdrawer}}
@@ -185,8 +186,19 @@
                             title="{{#str}}opendrawerblocks, core{{/str}}"
                         >
                             <span class="sr-only">{{#str}}opendrawerblocks, core{{/str}}</span>
-                            <span class="dir-rtl-hide">{{#pix}}t/blocks_drawer, core{{/pix}}</span>
-                            <span class="dir-ltr-hide">{{#pix}}t/blocks_drawer_rtl, core{{/pix}}</span>
+                            {{!
+                                t/blocks_drawer e t/blocks_drawer_rtl foram
+                                DEPRECIADOS no Moodle 5. O par abaixo desenha o
+                                mesmo chevron (fa-chevron-left / -right) e nao
+                                emite aviso. Herdamos os antigos do theme_moove,
+                                que ainda os usa.
+
+                                Achado pelo behat com Chrome: a checagem de
+                                icone depreciado roda no cliente, entao nem o
+                                phpunit nem o behat sem JS a executam.
+                            }}
+                            <span class="dir-rtl-hide">{{#pix}}t/collapsedchevron_rtl, core{{/pix}}</span>
+                            <span class="dir-ltr-hide">{{#pix}}t/collapsedchevron, core{{/pix}}</span>
                         </button>
                     </div>
                 {{/hasblocks}}
