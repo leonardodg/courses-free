@@ -78,3 +78,105 @@ Feature: O portal do aluno
     # NAO se checa "Debug info" aqui: esse texto existe no JSON de strings de
     # idioma que o Moodle embute para o JavaScript, e a assercao falharia sempre.
     # Pagina com excecao ja reprova sozinha, pelo behat_hooks.
+
+  # O chrome do portal. Continua sem @javascript porque a troca de layout e
+  # decidida no SERVIDOR, pelo hook: o que se verifica aqui e qual layout o
+  # Moodle escolheu, e isso chega no HTML. A conferencia de acessibilidade com
+  # axe-core exige navegador e por isso nao esta aqui.
+  #
+  # O TEMA PRECISA SER O LDG, e isso nao e detalhe de arranjo: o portal so
+  # existe se o tema ativo declarar o layout 'ldgportal'. O site do behat nasce
+  # com o boost, e sem esta linha os cenarios falham - o que, na primeira vez,
+  # foi a prova de que o guard do hook funciona.
+  Scenario: O aluno ve o portal, sem o chrome do Moodle
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-portal__header" "css_element" should exist
+    And ".ldg-portal__exit" "css_element" should exist
+    # O menu de usuario nao pode sumir junto com a navbar, senao o aluno fica
+    # preso no curso, sem perfil e sem sair.
+    And "[data-region='usermenu']" "css_element" should exist
+    And "nav.navbar" "css_element" should not exist
+
+  # Este cenario e o que separa "professor" de "editando". Sem ele, o seguinte
+  # passaria por acidente mesmo que a regra fosse pelo PAPEL - e a regra e pela
+  # edicao.
+  Scenario: O professor sem editar tambem ve o portal
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "professor"
+    Then ".ldg-portal__header" "css_element" should exist
+    And "nav.navbar" "css_element" should not exist
+
+  # Sem isto o professor tinha que LIGAR A EDICAO para chegar nas notas: a
+  # navegacao do curso mora na navbar, e o portal nao tem navbar.
+  Scenario: Quem gerencia leva a navegacao do curso para dentro do portal
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "professor"
+    Then ".ldg-portal__coursenav" "css_element" should exist
+
+  # E o outro lado da mesma regra. A navegacao secundaria do core NAO e
+  # exclusiva de professor - o aluno tem uma, com Curso e Notas -, e sem a trava
+  # de capacidade ela voltava para ele: seria reintroduzir no portal justamente
+  # o chrome que o portal existe para tirar.
+  Scenario: O aluno nao ve a navegacao do curso
+    Given the following config values are set as admin:
+      | theme | ldg |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-portal__header" "css_element" should exist
+    And ".ldg-portal__coursenav" "css_element" should not exist
+
+  Scenario: Com a edicao ligada volta o chrome do Moodle
+    Given the following config values are set as admin:
+      | theme | ldg |
+    And I am on the "ldgcurso" "Course" page logged in as "professor"
+    When I turn editing mode on
+    Then "nav.navbar" "css_element" should exist
+    And ".ldg-portal__header" "css_element" should not exist
+
+  # O formato tem que ser instalavel com QUALQUER tema: e o motivo de o hook
+  # conferir se o layout existe antes de trocar. Com o boost, o curso abre no
+  # chrome do proprio boost, sem portal e sem erro.
+  Scenario: Com outro tema o curso abre no chrome daquele tema
+    Given the following config values are set as admin:
+      | theme | boost |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-lessonlist" "css_element" should exist
+    And ".ldg-portal__header" "css_element" should not exist
+    And "nav.navbar" "css_element" should exist
+    # A ESTRUTURA sobrevive sem o tema, e e por isso que ela mora no
+    # styles.css do formato: o Moodle o carrega para qualquer tema.
+    And ".ldg-portal__body" "css_element" should exist
+
+  # Os quatro destinos. Sem @javascript porque sao links de verdade: o destino
+  # viaja na URL e a pagina volta montada do servidor.
+  Scenario: O aluno troca de destino e a aula em foco nao se perde
+    Given the following config values are set as admin:
+      | theme | ldg |
+    And the following "activities" exist:
+      | activity | course   | section | name       |
+      | resource | ldgcurso | 1       | Apostila   |
+      | forum    | ldgcurso | 2       | Duvidas    |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    Then ".ldg-portal__nav" "css_element" should exist
+    # Pelas CLASSES, e nao pelo rotulo: o site do behat roda em ingles, e o
+    # teste nao pode depender do idioma para provar navegacao.
+    And ".ldg-portal__navitem--materials" "css_element" should exist
+    And ".ldg-portal__navitem--forum" "css_element" should exist
+    # Certificado nao existe neste curso, entao o destino nao aparece.
+    And ".ldg-portal__navitem--certificate" "css_element" should not exist
+
+  Scenario: O material aparece no destino dele, e nao na lista de aulas
+    Given the following config values are set as admin:
+      | theme | ldg |
+    And the following "activities" exist:
+      | activity | course   | section | name     |
+      | resource | ldgcurso | 1       | Apostila |
+    When I am on the "ldgcurso" "Course" page logged in as "aluno"
+    # A apostila saiu da lista de aulas.
+    Then I should not see "Apostila" in the ".ldg-lessonlist" "css_element"
+    When I click on ".ldg-portal__navitem--materials" "css_element"
+    Then ".ldg-materiallist" "css_element" should exist
+    And I should see "Apostila"

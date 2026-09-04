@@ -28,6 +28,10 @@
 // A ordem abaixo importa: navbar antes de surfaces porque a altura da navbar e
 // o offset dos drawers, e drawer e superficie.
 
+// As fontes vem primeiro: o @font-face precisa existir antes de qualquer regra
+// que peca a familia, e o body daqui define a do site inteiro.
+@import "ldg/fonts";
+
 // O mixin vem antes de quem o usa - o sass nao resolve para tras.
 @import "ldg/mixins/accessibilityfontsize";
 @import "ldg/accessibilitystyles";

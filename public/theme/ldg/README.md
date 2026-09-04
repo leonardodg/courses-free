@@ -63,6 +63,104 @@ faz de template `core/*` some — sem erro, servindo o template do core.
 nunca é instanciada. Também aqui não há erro: o site fica no ar lendo os
 settings do **Moove**, que nunca configuramos. O sintoma é "sumiu o logo".
 
+**Não escreva grade do portal em `_format.scss`.** A estrutura do miolo do portal
+— colunas, breakpoints, sticky — mora em `course/format/ldg/styles.css`, para o
+formato funcionar com qualquer tema. O CSS do tema entra **depois** do
+`styles.css` do plugin no arquivo servido (medido: plugin em ~207k, tema em
+~1,19M), então layout escrito aqui vence o de lá **em silêncio**. Foi o que
+aconteceu em 03/09/2026: este arquivo tinha um grid de duas colunas antigo, e a
+grade de três colunas do formato nunca chegou a valer na tela.
+
+A exceção é o **chrome**: cabeçalho, menu de usuário e botão de fechar são
+desenhados pelo layout `ldgportal`, que é deste tema — a estrutura deles é daqui
+mesmo.
+
+## O layout `ldgportal`
+
+A página do curso em `format_ldg` é servida por um layout **sem navbar e sem
+drawers**: o chrome inteiro é do portal. Quem **pede** a troca é
+`\format_ldg\hook_callbacks`, no hook `before_http_headers`; quem **desenha** é
+`layout/ldgportal.php` com `templates/ldgportal.mustache`.
+
+O nome `ldgportal` é o **contrato** entre os dois plugins — o formato só troca o
+layout se encontrar essa chave em `$THEME->layouts`. Renomear aqui desliga o
+portal em silêncio, e é assim que o formato continua instalável com outro tema.
+
+O menu de usuário do core vai junto de propósito: tirar a navbar não pode tirar
+perfil, notificações e **sair**, deixando o aluno preso no curso. Pelo mesmo
+motivo o `output.edit_switch` está no cabeçalho — sem ele o professor não tem
+como ligar a edição, e foi o Behat que descobriu.
+
+## O portal para quem gerencia
+
+O layout `ldgportal` não tem navbar — e a navegação do curso mora nela. Sem
+tratamento, o professor tinha que **ligar a edição** para chegar em Notas ou
+Participantes, o que ninguém espera.
+
+O layout carrega a navegação secundária **do próprio core**, e só para quem tem
+`moodle/course:update`. A trava de capacidade não é detalhe: a navegação
+secundária do core **não é exclusiva de professor** — o aluno tem uma, com Curso
+e Notas —, e sem a condição ela volta para ele, reintroduzindo no portal
+exatamente o chrome que o portal existe para tirar. Dois cenários de Behat fixam
+os dois lados, porque só o primeiro passaria com a trava errada.
+
+> A classe do `<body>` no portal é **`ldg-portal-page`**, e não `ldg-portal`. O
+> formato usa `.ldg-portal` na div raiz dele, e as duas iguais casavam com a mesma
+> regra — o recuo lateral era aplicado duas vezes, 48px contra os 24 do desenho.
+
+## Dois consertos de layout do core, e por que eles existem
+
+Ambos em `_corefixes.scss`, medidos no navegador e não deduzidos do SCSS.
+
+**O cabeçalho das páginas de administração encolhia até o conteúdo.** Em
+`/admin/*`, título e busca apareciam espremidos no meio da tela: o
+`<header class="header-maxwidth">` tinha **370px** de largura com 365px de margem
+de cada lado. A causa não é o `max-width`, que é onde se olha primeiro — é o
+`margin: 0 auto` que o Boost põe em `.header-maxwidth`, combinado com o
+`#page-wrapper #page { display: flex; flex-direction: column }`, também dele:
+margem automática no **eixo cruzado** de um flex cancela o `stretch` e encolhe o
+item. Quem respondeu isso foi o `CSS.getMatchedStylesForNode` do Chrome, que
+mostrou ser a única regra a casar.
+
+**A navegação secundária vira faixa, antes do título.** É a ordem do tema pai. O
+recuo do `#page.drawers` é **assimétrico** — 16px à esquerda, 48px à direita —,
+e cancelar 48 dos dois lados joga a faixa **por baixo do trilho de ícones**. Ela
+não passa por baixo dele de propósito: o trilho é coluna fixa, e "ponta a ponta"
+aqui é a área de conteúdo. O tema pai não tem trilho, e é por isso que a barra
+dele vai até a borda da janela.
+
+## Fontes empacotadas
+
+`fonts/` traz **Inter** e **JetBrains Mono**, em subconjuntos variáveis (peso 400
+a 700 num arquivo só), `latin` e `latin-ext` — 176 KB no total. Declaradas em
+`scss/ldg/_fonts.scss` com `[[font:theme|...]]`, que o `theme_config` reescreve
+para uma URL do próprio site.
+
+**Não troque por Google Fonts.** A tipografia de uma página que o aluno abre todo
+dia passaria a depender de um terceiro estar no ar, e na VPS seria uma requisição
+externa em cada carga.
+
+O `latin-ext` não é opcional: é ele que traz `ã ç õ é ñ`. Sem ele o português e o
+espanhol caem na fonte do sistema **no meio da frase**.
+
+A licença é OFL 1.1, que permite empacotar e **exige** o aviso junto — está em
+`fonts/OFL.txt`.
+
+## Contraste: os pares medidos
+
+Todo par de cor do tema foi calculado, não estimado. Os que exigiram valor
+diferente do design system:
+
+| Papel | Valor | Contraste | Por quê |
+|---|---|---|---|
+| `--ldg-text-label` (escuro) | `#8a8f94` | 5,11:1 | o `#6C7075` do desenho dá **3,34:1** e reprova em AA, e é onde ele põe rótulo de 12px |
+| `--ldg-text-label` (claro) | `#5c6a80` | 5,49:1 | o primeiro palpite (`#6b7a90`) dava 4,36:1 |
+| `--ldg-accent-fill` (claro) | `#0062cc` | 5,80:1 com branco | branco sobre `#007aff` dá **4,02:1** |
+| `--ldg-accent` (escuro) | `#4b8eff` | 5,90:1 | o do design system, e vale para o site inteiro no escuro |
+
+Cor nova entra medida, nos **dois** modos. `#30D158` sobre branco dá 1,8:1 — no
+modo claro o sucesso é `#1a7f37`.
+
 ## Os dez overrides do renderer, e por que existem
 
 > Esta seção já descreveu "os seis métodos em que o Moove faz

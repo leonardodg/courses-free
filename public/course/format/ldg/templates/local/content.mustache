@@ -105,27 +105,92 @@
         }
     }
 }}
-<div id="course-format-{{uniqid}}" class="ldg-portal">
+<div id="course-format-{{uniqid}}" class="ldg-portal{{#hidenav}} ldg-portal--hide-nav{{/hidenav}}{{#hideindex}} ldg-portal--hide-index{{/hideindex}}">
     <h2 class="accesshide">{{{title}}}</h2>
     {{{completionhelp}}}
 
-    {{#hascourseprogress}}
-        <div class="ldg-portal__progress">
-            <div class="ldg-portal__progress-label">{{courseprogresslabel}}</div>
-            <div class="progress" role="progressbar"
-                 aria-label="{{#str}}courseprogressbar, format_ldg{{/str}}"
-                 aria-valuenow="{{courseprogress}}" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar" style="width: {{courseprogress}}%"></div>
-            </div>
-        </div>
-    {{/hascourseprogress}}
-
     <div class="ldg-portal__body">
+        {{!
+            O cartao do aluno e a PRIMEIRA regiao da grade, e nao um bloco solto
+            no topo da pagina. A barra de progresso vivia atravessando a tela
+            inteira; aqui ela fica onde o desenho a poe, junto de quem ela
+            descreve.
+
+            Nao ha selo de plano: nao existe no Moodle nada que diga o plano do
+            aluno nesta tela, e inventar um seria mentir para ele.
+        }}
+        {{^isediting}}
+            <div class="ldg-portal__student">
+                <div class="ldg-portal__studenthead">
+                    <p class="ldg-portal__greeting">{{studentgreeting}}</p>
+
+                    {{!
+                        Os dois botoes vivem aqui, e nao dentro das laterais: uma
+                        lateral escondida nao pode guardar o proprio botao de
+                        voltar. O cartao do aluno esta sempre visivel.
+                    }}
+                    <span class="ldg-portal__asidetoggles">
+                        <button type="button" class="ldg-portal__asidetoggle"
+                                data-ldg-aside="nav" aria-expanded="{{^hidenav}}true{{/hidenav}}{{#hidenav}}false{{/hidenav}}"
+                                aria-controls="ldg-portal-nav">{{#str}}togglenav, format_ldg{{/str}}</button>
+                        <button type="button" class="ldg-portal__asidetoggle"
+                                data-ldg-aside="index" aria-expanded="{{^hideindex}}true{{/hideindex}}{{#hideindex}}false{{/hideindex}}"
+                                aria-controls="ldg-portal-index">{{#str}}toggleindex, format_ldg{{/str}}</button>
+                    </span>
+                </div>
+
+                {{#hascourseprogress}}
+                    <div class="ldg-portal__progress">
+                        <div class="ldg-portal__progress-label">{{courseprogresslabel}}</div>
+                        <div class="progress" role="progressbar"
+                             aria-label="{{#str}}courseprogressbar, format_ldg{{/str}}"
+                             aria-valuenow="{{courseprogress}}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: {{courseprogress}}%"></div>
+                        </div>
+                    </div>
+                {{/hascourseprogress}}
+            </div>
+
+            {{#js}}
+            require(['format_ldg/aside'], function(aside) {
+                aside.init('#course-format-{{uniqid}}');
+            });
+            {{/js}}
+        {{/isediting}}
+
+        {{!
+            A navegacao entra UMA vez e desenha as tres superficies - menu, abas
+            e barra de baixo -, que sao IRMAS do miolo e da lista. E de proposito:
+            o styles.css usa grid e poe cada uma no seu lugar por largura. Incluir
+            o parcial duas vezes daria seis elementos de navegacao na mesma
+            pagina, e o leitor de tela leria todos.
+        }}
+        {{^isediting}}
+            {{#portalnav}}
+                {{> format_ldg/local/content/portalnav }}
+            {{/portalnav}}
+        {{/isediting}}
+
         <div class="ldg-portal__main">
             {{^isediting}}
-                {{#lessonviewer}}
-                    {{> format_ldg/local/content/lessonviewer }}
-                {{/lessonviewer}}
+                {{#ismaterials}}
+                    {{#materiallist}}
+                        {{> format_ldg/local/content/materiallist }}
+                    {{/materiallist}}
+                {{/ismaterials}}
+
+                {{^ismaterials}}
+                    {{! O atalho vem ANTES do quadro, e nao embaixo: ele e o que
+                        sobra quando as laterais estao escondidas, e precisa
+                        estar na tela sem rolar. }}
+                    {{#lessonnav}}
+                        {{> format_ldg/local/content/lessonnav }}
+                    {{/lessonnav}}
+
+                    {{#lessonviewer}}
+                        {{> format_ldg/local/content/lessonviewer }}
+                    {{/lessonviewer}}
+                {{/ismaterials}}
             {{/isediting}}
             {{#isediting}}
             <ul class="{{format}} section-list" data-for="course_sectionlist">

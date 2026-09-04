@@ -136,6 +136,12 @@ class format_ldg extends core_courseformat\base {
             $url->param('lesson', (int) $options['lesson']);
         }
 
+        // O destino do portal viaja na URL, como a aula. Assim o botao voltar, o
+        // favorito e o Ctrl+clique funcionam sem uma linha de JavaScript.
+        if (!empty($options['ldgview'])) {
+            $url->param('ldgview', (string) $options['ldgview']);
+        }
+
         return $url;
     }
 
@@ -167,7 +173,12 @@ class format_ldg extends core_courseformat\base {
             foreach ($modinfo->sections[$section->sectionnum] ?? [] as $cmid) {
                 $cm = $modinfo->cms[$cmid];
 
-                if (!$cm->is_visible_on_course_page() || !$cm->is_of_type_that_can_display()) {
+                // So AULA. Material, forum e certificado tem destino proprio no
+                // portal, e sem este corte um link velho para a apostila abriria
+                // um PDF no lugar da aula. O catalogo e a unica regra sobre o
+                // que e cada coisa - antes ela vivia duplicada aqui e no
+                // lessonlist.
+                if (\format_ldg\catalog::classify($cm) !== \format_ldg\catalog::AULA) {
                     continue;
                 }
 
@@ -282,4 +293,28 @@ class format_ldg extends core_courseformat\base {
 
         return parent::is_section_visible($section);
     }
+}
+
+/**
+ * Preferencias de usuario que este formato pode gravar por AJAX.
+ *
+ * Sem esta funcao o core_user_update_user_preferences RECUSA a gravacao vinda do
+ * navegador: a lateral fecha na tela e reabre no proximo carregamento, sem erro
+ * visivel - so um 400 no console. E o mesmo mecanismo que o theme_ldg usa para
+ * as preferencias dele.
+ *
+ * @return array
+ */
+function format_ldg_user_preferences(): array {
+    return [
+        // Guarda QUAIS laterais estao escondidas, e nao um booleano: sao duas
+        // colunas independentes - a navegacao e o indice - e o aluno pode
+        // querer esconder so uma.
+        'format_ldg_aside_hidden' => [
+            'type' => PARAM_ALPHAEXT,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => '',
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+    ];
 }

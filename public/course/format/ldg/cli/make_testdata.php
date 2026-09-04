@@ -51,6 +51,8 @@ require(__DIR__ . '/../../../../../config.php');
 require_once($CFG->libdir . '/clilib.php');
 require_once($CFG->libdir . '/completionlib.php');
 require_once($CFG->libdir . '/questionlib.php');
+// A constante RESOURCELIB_DISPLAY_DOWNLOAD vive aqui, e nao no mod_resource.
+require_once($CFG->libdir . '/resourcelib.php');
 require_once($CFG->dirroot . '/course/lib.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
@@ -229,6 +231,41 @@ $aulas[] = $generator->get_plugin_generator('mod_url')->create_instance([
 ]);
 
 $aulas[] = format_ldg_make_page($generator, $course, 3, 'Aula 6 - Revisao', COMPLETION_TRACKING_AUTOMATIC);
+
+cli_writeln('Criando o material de apoio...');
+
+// Dois materiais que caem em ramos DIFERENTES da regra do miolo, e e por isso
+// que sao dois. A pasta tem pagina propria e abre dentro do quadro embutido; o
+// arquivo com download forcado vira link, porque dentro de um iframe o download
+// dispara e o quadro fica em branco - o aluno acha que a pagina quebrou.
+//
+// Com um so, metade da regra nunca seria exercida no curso de demonstracao.
+$generator->get_plugin_generator('mod_folder')->create_instance([
+    'course' => $course->id,
+    'section' => 2,
+    'name' => 'Anexos do modulo 2',
+    'intro' => 'Os arquivos que acompanham as aulas deste modulo.',
+]);
+
+$generator->get_plugin_generator('mod_resource')->create_instance([
+    'course' => $course->id,
+    'section' => 2,
+    'name' => 'Apostila em PDF',
+    'display' => RESOURCELIB_DISPLAY_DOWNLOAD,
+]);
+
+cli_writeln('Criando o forum...');
+
+// O forum e o QUARTO destino do portal. Sem ele o curso de demonstracao mostra
+// so tres, e qualquer conferencia visual estaria comparando com uma tela que
+// nao existe no desenho.
+$generator->get_plugin_generator('mod_forum')->create_instance([
+    'course' => $course->id,
+    'section' => 3,
+    'name' => 'Duvidas da turma',
+    'intro' => 'Onde a turma pergunta e responde.',
+    'completion' => COMPLETION_TRACKING_MANUAL,
+]);
 
 cli_writeln('Criando o quiz...');
 

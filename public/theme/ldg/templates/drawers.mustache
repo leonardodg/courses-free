@@ -141,6 +141,18 @@
     {{/hasblocks}}
     <div id="page" data-region="mainpage" data-usertour="scroller" class="drawers {{#courseindexopen}}show-drawer-left{{/courseindexopen}} {{#blockdraweropen}}show-drawer-right{{/blockdraweropen}} drag-container">
 
+        {{!
+            A navegacao secundaria vem ANTES do cabecalho da pagina, e nao
+            depois: e a barra que atravessa a tela abaixo da navbar, como no
+            tema pai. Depois do titulo ela virava um cartao no meio do conteudo,
+            e o titulo perdia o topo da pagina.
+        }}
+        {{#secondarymoremenu}}
+            <div class="secondary-navigation d-print-none">
+                {{> core/moremenu}}
+            </div>
+        {{/secondarymoremenu}}
+
         {{{ output.full_header }}}
 
         <div id="topofscroll" class="main-inner">
@@ -179,14 +191,6 @@
                     </div>
                 {{/hasblocks}}
             </div>
-
-            {{#secondarymoremenu}}
-                <div class="secondary-navigation d-print-none">
-                    <div class="ldg-container-fluid">
-                        {{> core/moremenu}}
-                    </div>
-                </div>
-            {{/secondarymoremenu}}
 
             <div id="page-content" class="pb-3 d-print-block">
                 <div id="region-main-box">

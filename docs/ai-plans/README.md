@@ -46,3 +46,9 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 |---|---|---|
 | 2026-08-26 | [`cf`, fluxo de worktrees](2026-08-26-cf-fluxo-de-worktrees.md) | entregue — PRs #50, #51, #52 |
 | 2026-08-27 | [Gateways além do Mercado Pago](2026-08-27-gateways-asaas-e-pagarme.md) | parcial — Asaas entregue e **split provado**; Pagar.me em espera do CNPJ |
+| 2026-09-03 | [Portal do aluno no `format_ldg`](2026-09-03-portal-do-aluno-format-ldg.md) | desenho aprovado; implementação não começou |
+| 2026-09-03 | [Portal, plano 1: chrome e layout](2026-09-03-portal-plano-1-chrome-e-layout.md) | **executado** — 5 commits, testes verdes; planos 2 a 4 a escrever |
+| 2026-09-03 | [Portal, plano 2: destinos e catálogo](2026-09-03-portal-plano-2-destinos-e-catalogo.md) | **executado** — 5 commits; 52 testes e 12 cenários verdes |
+| 2026-09-03 | [Portal, plano 3: marca e tipografia](2026-09-03-portal-plano-3-marca-e-tipografia.md) | **executado** — 4 commits; contraste e fontes medidos no Chrome |
+| 2026-09-03 | [Portal, plano 4: conferência visual](2026-09-03-portal-plano-4-conferencia-visual.md) | **executado** — medidas no alvo, axe-core limpo |
+| 2026-09-03 | [Portal, plano 5: ajustes do layout](2026-09-03-portal-plano-5-ajustes-do-layout.md) | **executado** — inclui o portal para gestor e o tema nas páginas de admin |

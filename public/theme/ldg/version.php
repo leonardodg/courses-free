@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'theme_ldg';
-$plugin->version   = 2026090221;
+$plugin->version   = 2026090239;
 $plugin->requires  = 2026042000; // Moodle 5.2.
 $plugin->supported = [502, 502];
 $plugin->maturity  = MATURITY_ALPHA;

@@ -31,6 +31,7 @@ use core_availability\info;
 use core_courseformat\base as course_format;
 use core\output\named_templatable;
 use core\output\renderer_base;
+use format_ldg\catalog;
 use format_ldg\lesson;
 use format_ldg\section_progress;
 use renderable;
@@ -163,7 +164,10 @@ class lessonlist implements named_templatable, renderable {
         foreach ($modinfo->sections[$sectionnum] ?? [] as $cmid) {
             $cm = $modinfo->cms[$cmid];
 
-            if ($cm->is_visible_on_course_page() && $cm->is_of_type_that_can_display()) {
+            // A regra sobre o que e aula mora no catalogo, e num lugar so.
+            // Material, forum e certificado saem daqui porque tem destino
+            // proprio no portal - apareciam nas duas listas.
+            if (catalog::classify($cm) === catalog::AULA) {
                 $candidatos[] = $cm;
             }
         }
