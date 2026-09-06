@@ -33,6 +33,11 @@ public/theme/ldg
 # por parametro justamente para nao depender de tema instalado.
 public/course/format/ldg
 
+# Aula em video por embed: a peca do plano Free. Nao depende do format_ldg nem
+# do local_marketplace - a atividade funciona em qualquer curso, e o portal a
+# embute como embute qualquer outra. Roda sozinho no CI.
+public/mod/ldgvideo
+
 # --- Plugins de terceiros -----------------------------------------------------
 # INSTALADOS em 2026-08-24, da release oficial 5.2 do marketplace, com MD5
 # conferido. NAO passam pelo moodle-plugin-ci: sao codigo de upstream, e um
