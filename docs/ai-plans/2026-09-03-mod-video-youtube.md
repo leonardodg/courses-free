@@ -1,6 +1,21 @@
 # mod_video — aula de vídeo do YouTube, só para contas free
 
-> **Situação:** pendente · **Pedido em:** 2026-09-03
+> **Situação:** RESOLVIDO em 2026-09-04 · **Pedido em:** 2026-09-03
+>
+> **O plano nasceu daqui e está em [`2026-09-04-mod-ldgvideo.md`](2026-09-04-mod-ldgvideo.md).**
+> Duas decisões deste documento **não** sobreviveram, e é bom saber quais antes
+> de citá-lo:
+>
+> | O que dizia aqui | O que ficou |
+> |---|---|
+> | o componente sai `mod_video` | **`mod_ldgvideo`**. O nome genérico estava livre no diretório oficial (conferido na API), mas colidiria com um plugin de terceiro publicado depois, e renomear seria migração de tabela |
+> | exclusivo para vídeo do YouTube | **qualquer plataforma que o site saiba embutir.** O `core_media_manager` já traz o regex de cada player, e o próprio plano Free nomeia "YouTube/Vimeo" |
+> | o esqueleto vem do MDLCode Wizard | **cópia do `mod_page`**, podada. Foi o que o usuário pediu na sessão |
+>
+> A pergunta aberta do fim — *"como o formato de curso descobre o tipo de vídeo"* —
+> **foi respondida: ele não descobre, e não precisa.** O `catalog::classify()` do
+> `format_ldg` já manda a atividade para Aulas sem saber o que ela é, e o 16:9
+> vive dentro da página do módulo. O `format_ldg` não recebeu nenhuma alteração.
 > **Origem:** memória `plugin-futuro-mod-video.md` — o pedido nunca virou documento de plano,
 > e o que segue é o conteúdo dela, sem acréscimo. **Não é um plano de execução:** é o
 > recorte e as decisões já tomadas, para o plano nascer daqui.

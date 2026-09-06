@@ -133,6 +133,19 @@ O tema de captacao havia sido abandonado por qualidade de codigo. Voltou como
 imaginava. O Moove ja resolvia a base visual, e o custo passou a ser sobrescrever
 os quatro metodos dele que carregam `theme_config::load('moove')` fixo.
 
+## Plano Free - a peca tecnica existe desde 04/09/2026
+
+O `mod_ldgvideo` entrega a aula em video por embed, e os dois papeis de empresa
+fecham os caminhos para o moodledata. Juntos, sao o que faz o plano Free custar
+zero de banda: sem arquivo local, nao ha video nosso para servir.
+
+O que **nao** existe ainda e o Free como plano vendavel em
+`local_marketplace_plan` - este trabalho entregou a peca tecnica, e nao a
+comercial.
+
+Ver [ADR-0008](../adr/0008-embed-multiplataforma-pelo-core.md) e
+[ADR-0009](../adr/0009-papeis-de-empresa-sem-upload.md).
+
 ## Fase 5 - conteudo hospedado na plataforma
 
 **Bloqueada por decisao de negocio**, nao por tecnica. Falta definir a cobranca:
@@ -140,6 +153,12 @@ assinatura com cota de storage e banda mais comissao menor, ou comissao maior co
 limite tecnico por curso.
 
 `course_policy::validate_hostingtype()` recusa `platform` hoje, de proposito.
+
+Quando ela destravar, o plugin de video do plano pago **e outro** - com upload,
+chave de API e link assinado. O `mod_ldgvideo` nao vira aquilo: a
+`plan::max_resolution_for()` nao tem consumidor aqui, porque o YouTube nunca
+suportou travar resolucao pela URL do embed. Ver a
+[ADR-0005](../adr/0005-trava-de-resolucao-por-ticket.md).
 
 ## Multi-pais
 

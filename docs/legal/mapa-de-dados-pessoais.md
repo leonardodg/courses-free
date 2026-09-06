@@ -104,8 +104,26 @@ o titular como transferência a terceiro.
 | **Mercado Pago** | valor, moeda, nome do item | criação da preferência de pagamento |
 | **Google reCAPTCHA** | quando ligado, dados do navegador do visitante | anti-robô no formulário público |
 | **Google Analytics** | quando configurado no tema | métrica de uso |
+| **YouTube, Vimeo e demais serviços de vídeo** | **endereço IP e dados do navegador do aluno**, a cada aula de vídeo aberta | o vídeo do plano Free é embed: o player é carregado do serviço, e não daqui |
 
-**As duas últimas são opcionais e nascem desligadas.** Se a política de
+### O vídeo incorporado é transferência a terceiro, e não é opcional
+
+Esta linha merece parágrafo próprio porque é fácil não enxergá-la: o
+`mod_ldgvideo` não copia vídeo nenhum, e por isso mesmo **o navegador do aluno
+fala direto com o YouTube** — mandando o IP dele assim que a página carrega,
+**antes** de qualquer clique em play.
+
+Não há como servir vídeo do plano Free sem isso: a hospedagem externa é o que
+mantém o custo em zero, e é a razão de o plano existir. Então a política de
+privacidade precisa **nomear** os serviços de vídeo, e não tratá-los como
+opcional.
+
+O que **reduz** o dano, e é recomendado no
+[README do plugin](../../public/mod/ldgvideo/README.md): ligar o `nocookie` do
+`media_youtube`, em *Plugins → Players de mídia*. Ele não elimina o IP — nada
+elimina —, mas corta o cookie de rastreio antes do play.
+
+**As duas linhas do Google são opcionais e nascem desligadas.** Se a política de
 privacidade menciona Google, tem que ser condicional — e se elas forem ligadas em
 produção, a política precisa ser atualizada **antes**.
 

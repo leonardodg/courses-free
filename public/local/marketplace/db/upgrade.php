@@ -336,6 +336,23 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026090110, 'local', 'marketplace');
     }
 
+    if ($oldversion < 2026090410) {
+        // Dois papeis onde havia um, e a lista de proibicao fechada.
+        //
+        // ESTE PASSO EXISTE PORQUE O db/install.php NAO RODA AQUI. Ele so e
+        // executado em instalacao nova, entao ate 04/09/2026 toda mudanca na
+        // lista de capabilities do papel de vendedor valia apenas para quem
+        // instalasse a plataforma do zero - a producao seguia com a lista do
+        // dia em que foi instalada.
+        //
+        // ensure() e migrate_owners() sao idempotentes, e isso nao e luxo: um
+        // upgrade que morre no meio e rodado de novo.
+        \local_marketplace\roles::ensure();
+        \local_marketplace\roles::migrate_owners();
+
+        upgrade_plugin_savepoint(true, 2026090410, 'local', 'marketplace');
+    }
+
     return true;
 }
 

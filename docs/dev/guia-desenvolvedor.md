@@ -117,10 +117,12 @@ N vendedores por empresa; uma pessoa pode estar em várias.
 
 | Campo | Para que serve |
 |---|---|
-| `memberrole` | `owner` ou `seller`. As capabilities são as mesmas — a distinção existe para impedir que a empresa fique sem responsável pela conta de pagamento. |
+| `memberrole` | `owner` ou `seller`, e **as capabilities são diferentes desde 04/09/2026**: o `owner` recebe o papel `marketplacemanager`, que alcança a conta de pagamento, os membros e o relatório; o `seller` recebe o `marketplaceseller`, que só monta curso. Nenhum dos dois coloca arquivo no site — ver [ADR-0009](../adr/0009-papeis-de-empresa-sem-upload.md). |
 
-> **O vínculo são duas coisas inseparáveis.** Gravar a linha e atribuir o papel
-> `marketplaceseller` no contexto da categoria. Só a linha produz alguém que
+> **O vínculo são duas coisas inseparáveis.** Gravar a linha e atribuir **o papel
+> que corresponde ao `memberrole`** no contexto da categoria — a tradução está em
+> `roles::shortname_for()`, e `api::assign_member_role()` atribui um e tira o
+> outro. Só a linha produz alguém que
 > consta como vendedor e não consegue fazer nada; só o papel produz alguém
 > invisível ao marketplace. Use sempre `api::add_member()` e
 > `api::remove_member()`.

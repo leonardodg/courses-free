@@ -84,8 +84,46 @@ Detalhe em [ADR-0007](../../../docs/adr/0007-comissao-sobre-o-bruto.md).
 | `local/marketplace:publishcourse` | quem publica oferta |
 | `local/marketplace:viewreport` | quem vê o relatório da empresa |
 
-O papel da empresa é criado no provisionamento e atribuído no **contexto da
-categoria** — é o que impede a empresa A de enxergar a B.
+### Os dois papéis da empresa
+
+São criados na instalação e no upgrade, por `\local_marketplace\roles::ensure()`,
+e atribuídos no **contexto da categoria** — é o que impede a empresa A de
+enxergar a B. Qual deles a pessoa recebe sai do `memberrole` do vínculo.
+
+| | `marketplacemanager` (`owner`) | `marketplaceseller` (`seller`) |
+|---|---|---|
+| Criar e editar curso, publicar oferta | sim | sim |
+| Conta de pagamento, dados da empresa, relatório | sim | **não** |
+| Atribuir papel, configurar matrícula | sim | **não** |
+| Colocar arquivo no site | **não** | **não** |
+
+Até 04/09/2026 havia um papel só, e quem apenas montava curso também alcançava a
+credencial financeira da empresa.
+
+### Por que nenhum dos dois envia arquivo
+
+**É a fronteira que sustenta a margem do plano Free**, e não uma preferência.
+O plano existe para custar zero de banda: o vídeo é embed de serviço externo.
+Se o professor conseguisse subir um `.mp4`, a plataforma passaria a servir vídeo
+de graça — ver a [ADR-0009](../../../docs/adr/0009-papeis-de-empresa-sem-upload.md).
+
+A regra **não é uma capability própria**: é a ausência das que colocam arquivo
+no `moodledata`. A lista está em `roles::PROHIBIT`, cobre todo repositório que
+copia arquivo para dentro, e usa `CAP_PROHIBIT` — o `CAP_PREVENT` não serviria,
+porque o papel de usuário autenticado **permite** `repository/upload:view`, e o
+`ALLOW` vence o `PREVENT`.
+
+Três consequências que aparecem no uso:
+
+- a **imagem de capa** vem de URL externa, e não do seletor de arquivos;
+- no portal do aluno, **"Material de apoio" vale só para `mod_url`** — `mod_resource` e `mod_folder` podem ser criados e ficam vazios;
+- capability acrescentada à mão ao papel **some no upgrade seguinte**: o `ensure()` reconcilia.
+
+O escopo é a **categoria**, e não o site: a proibição vale onde o curso é
+montado, e não no perfil pessoal de quem monta. O vendedor ainda pode subir
+arquivo nos próprios *Arquivos privados*, e aquilo não chega a aluno nenhum.
+
+O `cli/status.php` relata quando um repositório habilitado escapa da lista.
 
 ## Telas
 
