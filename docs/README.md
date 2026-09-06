@@ -33,6 +33,8 @@ configurado e as armadilhas dele:
 | matrícula | [`public/enrol/marketplace/`](../public/enrol/marketplace/README.md) |
 | liberação de seção | [`public/availability/condition/marketplace/`](../public/availability/condition/marketplace/README.md) |
 | bloco de assinaturas | [`public/blocks/marketplace/`](../public/blocks/marketplace/README.md) |
+| portal do aluno | [`public/course/format/ldg/`](../public/course/format/ldg/README.md) |
+| aula em vídeo | [`public/mod/ldgvideo/`](../public/mod/ldgvideo/README.md) |
 
 ## As pastas
 

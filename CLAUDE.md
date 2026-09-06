@@ -77,7 +77,7 @@ Empresa (local_marketplace_company)
         └── vendas                → local_marketplace_sale, neutra de gateway
 ```
 
-Seis plugins:
+Sete plugins:
 
 - `local_marketplace` — núcleo. Empresas, ofertas, direitos, vendas, relatórios,
   vitrine, telas de admin, `core_payment\service_provider`. **Não sabe o nome de
@@ -88,6 +88,8 @@ Seis plugins:
 - `enrol_marketplace` — matrícula por diferença, a partir dos direitos
 - `availability_marketplace` — libera seção mediante compra
 - `block_marketplace` — assinaturas do aluno no Dashboard
+- `mod_ldgvideo` — aula em vídeo por embed, a peça do plano Free. Guarda o
+  endereço, nunca o arquivo; quem reconhece a plataforma é o `core_media_manager`
 
 Detalhes de tabela e campo: `docs/dev/guia-desenvolvedor.md`.
 
@@ -144,10 +146,18 @@ docker exec -u 1000:33 -e COMPOSER_HOME=/tmp/composer courses-free-moodle-1 \
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
   php vendor/bin/phpunit --testsuite local_marketplace_testsuite
 
-# phpcs — LEIA O TOTAL, não corte a saída
-docker exec -u 1000:33 courses-free-moodle-1 sh -c \
-  'cd /tmp/cs && ./vendor/bin/phpcs --standard=moodle --report=summary <caminho>' \
-  | grep -E "A TOTAL OF"
+# phpcs — LEIA O TOTAL, não corte a saída. O CI roda com --max-warnings 0,
+# então aviso também reprova. Saída vazia = limpo; use -p para ver o que ele varreu.
+docker exec -u 1000:33 courses-free-moodle-1 \
+  phpcs --standard=moodle -p --report=summary <caminho>
+
+# behat com navegador (cenários @javascript, e os que MEDEM a tela)
+moodev up --full
+docker exec -d -u 1000:33 courses-free-moodle-1 \
+  sh -c 'cd /var/www/html/public && php -S 0.0.0.0:8000 >/tmp/behatweb.log 2>&1'
+docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+  vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
+  --profile=chrome --tags "@mod_ldgvideo"
 
 # CLI do marketplace, na VPS (o < /dev/null é obrigatório)
 docker compose exec -T moodle \
@@ -196,15 +206,27 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 | Upgrade quebra em `messages.php` | `MESSAGE_DEFAULT_LOGGEDIN` não existe no 5.2. Use `MESSAGE_DEFAULT_ENABLED` |
 | Empresa "sem meio de pagamento" após vincular | `account::is_available()` exige o gateway **habilitado**, não só o token |
 | Filtro `branch=5.2` da API do diretório engana | Ele vai pelo `requires` (mínima). Confira `$plugin->supported` no `version.php` |
+| Vídeo some do quadro embutido do portal | `100vh` dentro da atividade. O `player.js` encolhe o quadro para **zero** antes de medir; use `aspect-ratio`, que deriva da largura |
+| Endereço `/embed/` ou `/shorts/` "não é vídeo" | Os regex dos players do core cobrem o link da **barra de endereços**, não o do `src`. Canonicalize antes de chamar `can_embed_url()` |
+| Behat `@javascript` morre em `localhost:4444` | Falta `--profile=chrome`, e o Selenium só sobe com `moodev up --full` |
+| Mudança em papel não chega à produção | `db/install.php` só roda em instalação nova. Sem passo no `db/upgrade.php`, nada muda no que está no ar |
+| `assign_capability()` não tira nada | Ele só acrescenta. Papel que já existe guarda as capabilities do desenho antigo — reconcilie, apagando o que saiu da lista |
 
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **270 testes** (102 no núcleo, 48 no Asaas, 47 no
-`format_ldg`, 31 no `local_partners`, 8 no MP, e 34 nos quatro plugins que até
-04/09/2026 não tinham teste nenhum: `enrol_marketplace`,
-`availability_marketplace`, `block_marketplace` e `theme_ldg`). phpcs limpo, e o
-CI valida **um job por plugin, em paralelo**.
+webhook, matrícula. **319 testes** (114 no núcleo, 48 no Asaas, 47 no
+`format_ldg`, **37 no `mod_ldgvideo`**, 31 no `local_partners`, 8 no MP, e 34 em
+`enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
+`theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
+
+O behat cobre 10 cenários dos dois plugins, e **três deles medem o vídeo na
+tela** — é a única prova de que o `aspect-ratio` do `mod_ldgvideo` continua
+vencendo o `width` fixo que o `core_media_manager` escreve no iframe.
+
+**O plano Free ganhou a peça dele** em 04/09/2026: o `mod_ldgvideo` e a
+separação dos papéis de empresa. A fronteira "vídeo fica fora da plataforma"
+passou a ter teste, e a lista de proibição saiu de 2 para 24 capabilities.
 
 **O split foi provado** no sandbox do Asaas, com duas contas distintas. Em
 2026-08-27, R$ 100 brutos → R$ 97,52 líquidos → 25% = R$ 24,38 na carteira da

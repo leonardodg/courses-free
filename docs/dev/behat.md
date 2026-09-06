@@ -76,14 +76,29 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 
 ## O que dá para testar aqui, e o que não dá
 
-**Não há Chrome nem Selenium neste ambiente**, então cenários `@javascript` não
-rodam. O que fica de fora:
+**Há Chrome, desde 04/09/2026** — mas ele não sobe junto com o stack:
 
-- o menu lateral recolhível e o alternador de modo de cor do `theme_ldg`
-- o autocomplete de dono na tela de aprovação
-- qualquer `hideIf` — no driver sem JS os campos escondidos continuam no DOM e
-  são submetíveis, o que na prática **ajuda**: dá para exercitar o formulário
-  inteiro sem simular a interação
+```bash
+moodev up --full     # acrescenta o servico 'selenium' ao stack
+```
+
+E os cenários `@javascript` precisam do **perfil**, senão o behat procura
+Selenium em `localhost:4444` e morre com erro de conexão que parece problema de
+ambiente:
+
+```bash
+vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
+  --profile=chrome --tags "@mod_ldgvideo"
+```
+
+Com ele, dá para testar o que só existe na tela: o `mod_ldgvideo` **mede o
+quadro do vídeo** em três larguras de janela, e é a única prova de que o
+`aspect-ratio` continua vencendo o `width` fixo que o core escreve no iframe.
+
+Sem o `--full`, o driver sem JS continua servindo para tudo que é desenhado no
+servidor — e para `hideIf`, onde na prática **ajuda**: os campos escondidos
+continuam no DOM e são submetíveis, então dá para exercitar o formulário inteiro
+sem simular a interação.
 
 ## Duas armadilhas que custaram tempo
 
@@ -104,3 +119,5 @@ correto. Casos assim ficam no phpunit.
 | `local/partners/tests/behat/application.feature` | envio, confirmação de e-mail, CNPJ inválido, duplicidade |
 | `local/partners/tests/behat/approval.feature` | aprovar cria empresa, recusar não cria, a fila |
 | `local/marketplace/tests/behat/plans.feature` | os três planos do seed, e a base de comissão indo e voltando |
+| `local/marketplace/tests/behat/roles.feature` | o responsável enxerga a empresa dele |
+| `mod/ldgvideo/tests/behat/ldgvideo.feature` | o trecho colado vira endereço, as duas recusas, e **a medição do quadro** |

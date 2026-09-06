@@ -79,7 +79,7 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-08-31 | [`theme_ldg`, `local_partners` e planos no banco](2026-08-31-theme-ldg-local-partners-e-planos.md) | `executado` | sete fases no PR #61; a última ponta da Fase 0 fechou no #68. **Recuperado da transcrição** — o arquivo tinha sido sobrescrito |
 | 2026-09-02 | [`format_ldg` e o fechamento do tema](2026-09-02-format-ldg-e-fechamento-do-tema.md) | `executado` | PR #65 — `format_ldg` em `MATURITY_BETA` |
 | 2026-09-03 | [Guarda de versão no `cf new`](2026-09-03-cf-new-guarda-de-versao.md) | `executado` | 2 commits na `dev`; destravou a worktree `fix-theme-ldg` |
-| 2026-09-03 | [`mod_video`, YouTube para contas free](2026-09-03-mod-video-youtube.md) | **`pendente`** | não começou; o recorte e as decisões estão no documento |
+| 2026-09-03 | [`mod_video`, YouTube para contas free](2026-09-03-mod-video-youtube.md) | `descartado` | o recorte virou o plano de 04/09; **o nome e a fronteira mudaram** |
 | 2026-09-03 | [Portal do aluno no `format_ldg`](2026-09-03-portal-do-aluno-format-ldg.md) | `executado` | desenho aprovado, e implementado pelos planos 1 a 5 — PRs #66 e #67 |
 | 2026-09-03 | [Portal, plano 1: chrome e layout](2026-09-03-portal-plano-1-chrome-e-layout.md) | `executado` | 5 commits, testes verdes; planos 2 a 4 a escrever |
 | 2026-09-03 | [Portal, plano 2: destinos e catálogo](2026-09-03-portal-plano-2-destinos-e-catalogo.md) | `executado` | 5 commits; 52 testes e 12 cenários verdes |
@@ -87,3 +87,4 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-09-03 | [Portal, plano 4: conferência visual](2026-09-03-portal-plano-4-conferencia-visual.md) | `executado` | medidas no alvo, axe-core limpo |
 | 2026-09-03 | [Portal, plano 5: ajustes do layout](2026-09-03-portal-plano-5-ajustes-do-layout.md) | `executado` | inclui o portal para gestor e o tema nas páginas de admin |
 | 2026-09-04 | [Planos no projeto e limpeza de worktrees](2026-09-04-planos-no-projeto-e-limpeza-de-worktrees.md) | `executado` | PR #68 — trouxe os planos para o git e apontou o `plansDirectory` |
+| 2026-09-04 | [`mod_ldgvideo` e os papéis de empresa](2026-09-04-mod-ldgvideo.md) | `executado` | plugin novo + a fronteira do plano Free nas duas camadas; 151 testes e 10 cenários verdes |
