@@ -73,7 +73,7 @@ class api {
             $owner->set('memberrole', member::ROLE_OWNER);
             $owner->create();
 
-            self::assign_seller_role($company, $ownerid);
+            self::assign_member_role($company, $ownerid, member::ROLE_OWNER);
             self::apply_theme($company);
             self::create_payment_account($company, $data->country ?? self::default_country());
 
@@ -610,20 +610,32 @@ class api {
     }
 
     /**
-     * Da a um usuario o papel de vendedor no contexto da empresa.
+     * Da a um usuario o papel do Moodle que corresponde ao vinculo dele.
+     *
+     * Sao dois papeis - gerente e vendedor -, divididos por risco: quem so
+     * monta curso nao alcanca a conta de pagamento. Qual deles vale sai do
+     * memberrole, e a traducao mora em roles::shortname_for().
+     *
+     * ATRIBUI UM E TIRA O OUTRO, sempre. Trocar o vinculo de dono para vendedor
+     * sem desfazer o papel anterior deixaria o antigo grudado, e a pessoa
+     * seguiria alcancando a conta de pagamento depois de ter sido rebaixada.
      *
      * @param company $company
      * @param int $userid
+     * @param string $memberrole member::ROLE_OWNER ou member::ROLE_SELLER.
      * @return void
      */
-    public static function assign_seller_role(company $company, int $userid): void {
-        global $DB;
+    public static function assign_member_role(company $company, int $userid, string $memberrole): void {
+        $contextid = $company->get_context()->id;
+        $escolhido = roles::shortname_for($memberrole);
 
-        $roleid = $DB->get_field('role', 'id', ['shortname' => 'marketplaceseller']);
-        if (!$roleid) {
-            throw new moodle_exception('errorsellerrolemissing', 'local_marketplace');
+        role_assign(roles::get_id($escolhido), $userid, $contextid);
+
+        foreach ([roles::MANAGER, roles::SELLER] as $shortname) {
+            if ($shortname !== $escolhido) {
+                role_unassign(roles::get_id($shortname), $userid, $contextid);
+            }
         }
-        role_assign($roleid, $userid, $company->get_context()->id);
     }
 
     /**
@@ -690,7 +702,7 @@ class api {
             $member->set('memberrole', member::ROLE_SELLER);
             $member->create();
 
-            self::assign_seller_role($company, $userid);
+            self::assign_member_role($company, $userid, member::ROLE_SELLER);
             $transaction->allow_commit();
         } catch (\Throwable $e) {
             $transaction->rollback($e);
@@ -722,14 +734,19 @@ class api {
             return false;
         }
 
-        $roleid = $DB->get_field('role', 'id', ['shortname' => 'marketplaceseller']);
+        $contextid = $company->get_context()->id;
 
         $transaction = $DB->start_delegated_transaction();
         try {
             $member->delete();
-            if ($roleid) {
-                role_unassign($roleid, $userid, $company->get_context()->id);
+
+            // OS DOIS papeis, e nao so o de vendedor. Tirar um deixaria o outro
+            // grudado, e a pessoa continuaria enxergando a empresa depois de ter
+            // sido removida dela.
+            foreach ([roles::MANAGER, roles::SELLER] as $shortname) {
+                role_unassign(roles::get_id($shortname), $userid, $contextid);
             }
+
             $transaction->allow_commit();
         } catch (\Throwable $e) {
             $transaction->rollback($e);
@@ -741,10 +758,11 @@ class api {
     /**
      * Troca o papel de um membro entre dono e vendedor.
      *
-     * As capabilities sao as mesmas: o papel do Moodle nao muda, so o registro
-     * de quem responde pela empresa. A distincao existe para a tela saber quem
-     * nao pode ser removido - uma empresa sem dono fica sem responsavel pela
-     * conta de pagamento.
+     * AS CAPABILITIES DEIXARAM DE SER AS MESMAS em 04/09/2026. O dono responde
+     * pela conta de pagamento e pelos membros; o vendedor so monta curso. Entao
+     * trocar o vinculo tem que trocar o papel do Moodle junto - gravar so a
+     * linha produziria um dono sem acesso a conta de pagamento da propria
+     * empresa, ou um vendedor que continua alcancando ela.
      *
      * @param company $company
      * @param int $userid
@@ -752,12 +770,24 @@ class api {
      * @return bool
      */
     public static function set_member_role(company $company, int $userid, string $memberrole): bool {
+        global $DB;
+
         $member = member::get_membership($company->get('id'), $userid);
         if (!$member) {
             return false;
         }
-        $member->set('memberrole', $memberrole);
-        $member->update();
+
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $member->set('memberrole', $memberrole);
+            $member->update();
+
+            self::assign_member_role($company, $userid, $memberrole);
+
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
 
         return true;
     }

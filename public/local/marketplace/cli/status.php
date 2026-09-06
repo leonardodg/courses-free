@@ -67,16 +67,31 @@ cli_writeln(sprintf(
 ));
 $availok = array_key_exists('marketplace', core_component::get_plugin_list('availability'));
 cli_writeln(sprintf('  availability_marketplace instalado ... %s', $availok ? $sim : 'NAO'));
-$roleid = $DB->get_field('role', 'id', ['shortname' => 'marketplaceseller']);
-$capcount = $roleid ? $DB->count_records('role_capabilities', ['roleid' => $roleid]) : 0;
-cli_writeln(sprintf(
-    '  papel de vendedor .................... %s (%d capabilities)',
-    $roleid ? $sim : 'NAO',
-    $capcount
-));
-if ($roleid && $capcount === 0) {
-    cli_writeln('    ATENCAO: papel existe sem capability nenhuma; reinstale o plugin.');
+$papeis = [
+    'papel de responsavel ................. ' => \local_marketplace\roles::MANAGER,
+    'papel de vendedor .................... ' => \local_marketplace\roles::SELLER,
+];
+foreach ($papeis as $rotulo => $shortname) {
+    $roleid = $DB->get_field('role', 'id', ['shortname' => $shortname]);
+    $capcount = $roleid ? $DB->count_records('role_capabilities', ['roleid' => $roleid]) : 0;
+    cli_writeln(sprintf('  %s%s (%d capabilities)', $rotulo, $roleid ? $sim : 'NAO', $capcount));
+    if ($roleid && $capcount === 0) {
+        cli_writeln('    ATENCAO: papel existe sem capability nenhuma; reinstale o plugin.');
+    }
 }
+
+// Os repositorios que ninguem proibiu.
+//
+// Este relatorio NAO conserta nada, e e de proposito. Quem tranca e a constante
+// roles::PROHIBIT; codigo que lesse a configuracao e proibisse sozinho seria
+// seguranca dependente de a configuracao estar certa. O que este bloco faz e
+// avisar que alguem habilitou um caminho novo para o moodledata - e, no plano
+// Free, caminho para o moodledata e video servido pela NOSSA banda.
+$abertos = \local_marketplace\roles::open_repositories();
+cli_writeln(sprintf(
+    '  repositorios sem proibicao ........... %s',
+    $abertos ? implode(', ', $abertos) . '  <-- caminho aberto para o moodledata' : 'NENHUM'
+));
 cli_writeln(sprintf(
     '  tema por categoria ligado ............ %s',
     !empty($CFG->allowcategorythemes) ? $sim : 'NAO  <-- tema por empresa nao vai funcionar'
