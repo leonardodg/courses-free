@@ -76,7 +76,7 @@ class payment_processor {
         // existe para expor: gravamos gross, que foi o que aconteceu, em vez de
         // gravar a intencao e deixar o relatorio mentir.
         $feebase = 'gross';
-        $fee = round($amount * ($feepercent / 100), 2);
+        $fee = self::fee_for($amount, $feepercent);
 
         $record = (object) [
             'preferenceid' => '',
@@ -100,45 +100,14 @@ class payment_processor {
 
         $client = new mp_client($config['accesstoken']);
 
-        $preferencebody = [
-            'items' => [[
-                'title' => helper::get_cost_as_string($amount, $currency),
-                'quantity' => 1,
-                'unit_price' => $amount,
-                'currency_id' => $currency,
-            ]],
-            'external_reference' => $reference,
-            // O marketplace_fee e a comissao da plataforma. So funciona porque
-            // o token acima veio do fluxo OAuth da NOSSA aplicacao.
-            'marketplace_fee' => $fee,
-            'back_urls' => [
-                'success' => $CFG->wwwroot . '/payment/gateway/mercadopago/return.php?ref=' . $reference,
-                'pending' => $CFG->wwwroot . '/payment/gateway/mercadopago/return.php?ref=' . $reference,
-                'failure' => $CFG->wwwroot . '/payment/gateway/mercadopago/return.php?ref=' . $reference,
-            ],
-            // O webhook e a fonte da verdade, nao a volta do navegador: o aluno
-            // pode fechar a aba antes de voltar, e com Pix a aprovacao chega
-            // depois do redirecionamento.
-            'notification_url' => $CFG->wwwroot . '/payment/gateway/mercadopago/webhook.php',
-            'auto_return' => 'approved',
-        ];
-
-        // Em teste, exige que o comprador entre na conta dele.
-        //
-        // Sem isto o Checkout Pro oferece pagar como visitante, e o pagador
-        // fica sem identidade - o Mercado Pago recusa a compra com "uma das
-        // partes e de teste", porque um visitante nao e usuario de teste. Nao
-        // existe forma de o comprador se identificar como conta de teste sem
-        // fazer login.
-        //
-        // Fica preso ao modo de teste de proposito. Em producao, wallet_purchase
-        // elimina pagamento sem cadastro, boleto e dinheiro - ou seja, corta
-        // conversao real para resolver um problema que so existe no sandbox.
-        if (!empty($appconfig->testmode)) {
-            $preferencebody['purpose'] = 'wallet_purchase';
-        }
-
-        $preference = $client->create_preference($preferencebody);
+        $preference = $client->create_preference(self::build_preference_body(
+            $amount,
+            $currency,
+            $reference,
+            $fee,
+            $CFG->wwwroot,
+            !empty($appconfig->testmode)
+        ));
 
         $record->preferenceid = (string) ($preference['id'] ?? '');
         $record->timemodified = time();
@@ -158,6 +127,101 @@ class payment_processor {
         }
 
         return $point;
+    }
+
+    /**
+     * Comissao da plataforma, em moeda.
+     *
+     * O marketplace_fee e VALOR ABSOLUTO, e nao percentual - por isso o numero
+     * sai daqui, calculado sobre o bruto, antes de a preferencia existir. A
+     * taxa do proprio Mercado Pago so e conhecida depois do pagamento, entao
+     * nao ha como cobrar percentual do liquido.
+     *
+     * O teto de 100% e a guarda contra configuracao errada: comissao maior que
+     * o bruto produz uma preferencia que o Mercado Pago recusa, e a recusa
+     * apareceria no checkout, diante do aluno. E a mesma trava do
+     * asaas_client::build_split().
+     *
+     * @param float $amount Valor bruto
+     * @param float $percent Percentual da comissao
+     * @return float Zero quando nao ha comissao a cobrar
+     */
+    public static function fee_for(float $amount, float $percent): float {
+        if ($amount <= 0 || $percent <= 0) {
+            return 0.0;
+        }
+
+        return round($amount * (min($percent, 100.0) / 100), 2);
+    }
+
+    /**
+     * Monta o corpo da preferencia do Checkout Pro.
+     *
+     * Separado do start_payment() para ser testavel: e aqui que mora o
+     * marketplace_fee, o unico numero deste plugin que move dinheiro, e ele
+     * ficou sem teste enquanto so existia dentro de um metodo que precisa de
+     * banco, sessao e rede para rodar.
+     *
+     * O wwwroot entra por parametro, e nao por $CFG, para o teste poder afirmar
+     * que as quatro URLs saem dele em vez de estarem escritas a mao.
+     *
+     * @param float $amount Valor bruto
+     * @param string $currency Moeda ISO da conta do vendedor
+     * @param string $reference Referencia externa, a chave de ligacao
+     * @param float $fee Comissao absoluta, ja calculada por fee_for()
+     * @param string $wwwroot Endereco do site
+     * @param bool $testmode Modo de teste do SITE, nao da conta
+     * @return array
+     */
+    public static function build_preference_body(
+        float $amount,
+        string $currency,
+        string $reference,
+        float $fee,
+        string $wwwroot,
+        bool $testmode
+    ): array {
+        $returnurl = $wwwroot . '/payment/gateway/mercadopago/return.php?ref=' . $reference;
+
+        $body = [
+            'items' => [[
+                'title' => helper::get_cost_as_string($amount, $currency),
+                'quantity' => 1,
+                'unit_price' => $amount,
+                'currency_id' => $currency,
+            ]],
+            'external_reference' => $reference,
+            // O marketplace_fee e a comissao da plataforma. So funciona porque
+            // o token usado na chamada veio do fluxo OAuth da NOSSA aplicacao.
+            'marketplace_fee' => $fee,
+            'back_urls' => [
+                'success' => $returnurl,
+                'pending' => $returnurl,
+                'failure' => $returnurl,
+            ],
+            // O webhook e a fonte da verdade, nao a volta do navegador: o aluno
+            // pode fechar a aba antes de voltar, e com Pix a aprovacao chega
+            // depois do redirecionamento.
+            'notification_url' => $wwwroot . '/payment/gateway/mercadopago/webhook.php',
+            'auto_return' => 'approved',
+        ];
+
+        // Em teste, exige que o comprador entre na conta dele.
+        //
+        // Sem isto o Checkout Pro oferece pagar como visitante, e o pagador
+        // fica sem identidade - o Mercado Pago recusa a compra com "uma das
+        // partes e de teste", porque um visitante nao e usuario de teste. Nao
+        // existe forma de o comprador se identificar como conta de teste sem
+        // fazer login.
+        //
+        // Fica preso ao modo de teste de proposito. Em producao, wallet_purchase
+        // elimina pagamento sem cadastro, boleto e dinheiro - ou seja, corta
+        // conversao real para resolver um problema que so existe no sandbox.
+        if ($testmode) {
+            $body['purpose'] = 'wallet_purchase';
+        }
+
+        return $body;
     }
 
     /**

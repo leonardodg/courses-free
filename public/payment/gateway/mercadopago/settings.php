@@ -80,11 +80,9 @@ if ($ADMIN->fulltree) {
         0
     ));
 
-    $settings->add(new admin_setting_configtext(
-        'paygw_mercadopago/defaultfeepercent',
-        get_string('defaultfeepercent', 'paygw_mercadopago'),
-        get_string('defaultfeepercent_desc', 'paygw_mercadopago'),
-        '25',
-        PARAM_FLOAT
-    ));
+    // Nao ha campo de comissao aqui, e a ausencia e deliberada. Ele existiu,
+    // nao era lido por ninguem, e o db/upgrade.php do local_marketplace ja
+    // migrou o valor para local_marketplace/defaultfeepercent - que e onde a
+    // comissao mora, porque ela e regra do marketplace e nao do gateway. Um
+    // campo de admin que nao muda nada e pior que campo ausente: ele mente.
 }

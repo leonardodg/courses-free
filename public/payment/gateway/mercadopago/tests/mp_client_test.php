@@ -18,12 +18,18 @@ namespace paygw_mercadopago;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 
+defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/fixtures/fake_mp_client.php');
+
 /**
- * Partes puras do cliente do Mercado Pago.
+ * Cliente do Mercado Pago.
  *
- * Testa o que nao depende de rede: PKCE, mapa de moeda e montagem da URL de
- * autorizacao. Sao justamente os pontos onde um erro nao aparece em
- * desenvolvimento - o Mercado Pago recusa em producao, com mensagem generica.
+ * Duas camadas. As partes puras - PKCE, mapa de moeda, URL de autorizacao - sao
+ * justamente os pontos onde um erro nao aparece em desenvolvimento: o Mercado
+ * Pago recusa em producao, com mensagem generica. A camada HTTP entra pela
+ * costura make_curl(), e cobre o que antes so era exercitavel batendo na API:
+ * o corpo enviado e o mapeamento de erro.
  *
  * @package    paygw_mercadopago
  * @copyright  2026 LeoDG <callme@leodg.dev>
@@ -31,6 +37,16 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(\paygw_mercadopago\mp_client::class)]
 final class mp_client_test extends \advanced_testcase {
+    /**
+     * O roteiro da fixture e estatico, entao atravessa teste se nao for limpo.
+     *
+     * @return void
+     */
+    protected function setUp(): void {
+        parent::setUp();
+        fake_mp_client::reset();
+    }
+
     /**
      * O verifier respeita o tamanho exigido pela RFC 7636.
      *
@@ -150,5 +166,171 @@ final class mp_client_test extends \advanced_testcase {
         $this->assertSame('chall123', $query['code_challenge']);
         $this->assertSame('S256', $query['code_challenge_method']);
         $this->assertSame('https://x.test/cb', $query['redirect_uri']);
+    }
+
+    /**
+     * A preferencia sai com o marketplace_fee intacto.
+     *
+     * E o unico campo deste plugin que move dinheiro. O corpo e montado pelo
+     * payment_processor, mas quem o serializa e o manda e daqui - um cliente que
+     * perdesse a chave no caminho produziria venda sem comissao, sem erro
+     * nenhum.
+     *
+     * @return void
+     */
+    public function test_create_preference_body(): void {
+        fake_mp_client::$nextresponse = ['id' => 'pref-1', 'init_point' => 'https://mp.test/x'];
+
+        $client = new fake_mp_client('token-do-vendedor');
+        $response = $client->create_preference([
+            'external_reference' => 'mdl-1-2-abc',
+            'marketplace_fee' => 25.0,
+        ]);
+
+        $this->assertSame('pref-1', $response['id']);
+        $this->assertSame([['POST', 'https://api.mercadopago.com/checkout/preferences']], fake_mp_client::$calls);
+        $this->assertSame('mdl-1-2-abc', fake_mp_client::$lastbody['external_reference']);
+
+        // Comparacao frouxa de proposito: o corpo e observado depois da ida e
+        // volta pelo JSON, e 25.0 volta de la como inteiro. O que importa e o
+        // numero - o tipo PHP depois do decode e do teste, nao do Mercado Pago.
+        $this->assertEquals(25.0, fake_mp_client::$lastbody['marketplace_fee']);
+    }
+
+    /**
+     * Erro da API carrega a mensagem do Mercado Pago.
+     *
+     * "HTTP 400" nao diz se o problema foi a comissao, a moeda ou o token. A
+     * mensagem original e o que permite descobrir sem repetir a compra.
+     *
+     * @return void
+     */
+    public function test_erro_da_api_carrega_a_mensagem(): void {
+        fake_mp_client::$nextstatus = 400;
+        fake_mp_client::$nextresponse = ['message' => 'invalid marketplace_fee'];
+
+        $client = new fake_mp_client('token');
+
+        try {
+            $client->create_preference(['marketplace_fee' => 999.0]);
+            $this->fail('status fora de 2xx tem que virar excecao');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('errorapi', $e->errorcode);
+            $this->assertStringContainsString('400: invalid marketplace_fee', $e->getMessage());
+        }
+    }
+
+    /**
+     * Resposta que nao e JSON vira excecao, e nao array vazio.
+     *
+     * O Mercado Pago em manutencao devolve HTML. Decodificar para null e seguir
+     * daria "preferencia sem init_point" la na frente, longe da causa.
+     *
+     * @return void
+     */
+    public function test_resposta_nao_json_e_recusada(): void {
+        fake_mp_client::$rawresponse = '<html>502 Bad Gateway</html>';
+
+        $client = new fake_mp_client('token');
+
+        $this->expectException(\moodle_exception::class);
+        $client->get_payment('123');
+    }
+
+    /**
+     * Falha de transporte e reportada antes de qualquer decodificacao.
+     *
+     * Timeout devolve corpo vazio com status 0. Sem olhar o errno primeiro, o
+     * erro relatado seria "resposta invalida" em vez de "nao alcancou o
+     * Mercado Pago".
+     *
+     * @return void
+     */
+    public function test_falha_de_transporte_e_reportada(): void {
+        fake_mp_client::$nexterrno = 28;
+        fake_mp_client::$nextstatus = 0;
+
+        $client = new fake_mp_client('token');
+
+        try {
+            $client->get_me();
+            $this->fail('erro de curl tem que virar excecao');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('errorcurl', $e->errorcode);
+        }
+    }
+
+    /**
+     * O test_token so vai no modo de teste.
+     *
+     * Sem ele, a aplicacao entra como producao mesmo com vendedor e comprador
+     * de teste, e o checkout morre com "uma das partes e de teste" sem dizer
+     * qual. Mandar sempre seria pior: emitiria token de teste em producao.
+     *
+     * @return void
+     */
+    public function test_exchange_code_manda_test_token(): void {
+        fake_mp_client::$nextresponse = ['access_token' => 'APP_USR-x', 'user_id' => 1];
+
+        fake_mp_client::exchange_code('cid', 'segredo', 'code', 'https://x.test/cb', 'verifier', true);
+        $this->assertSame('true', fake_mp_client::$lastbody['test_token']);
+
+        fake_mp_client::reset();
+        fake_mp_client::$nextresponse = ['access_token' => 'APP_USR-x', 'user_id' => 1];
+
+        fake_mp_client::exchange_code('cid', 'segredo', 'code', 'https://x.test/cb', 'verifier', false);
+        $this->assertArrayNotHasKey('test_token', fake_mp_client::$lastbody);
+    }
+
+    /**
+     * A troca leva o verifier do PKCE, e vai para o endpoint de OAuth.
+     *
+     * @return void
+     */
+    public function test_exchange_code_manda_o_verifier(): void {
+        fake_mp_client::$nextresponse = ['access_token' => 'APP_USR-x'];
+
+        fake_mp_client::exchange_code('cid', 'segredo', 'code-123', 'https://x.test/cb', 'verifier-abc', false);
+
+        $this->assertSame([['POST', 'https://api.mercadopago.com/oauth/token']], fake_mp_client::$calls);
+        $this->assertSame('authorization_code', fake_mp_client::$lastbody['grant_type']);
+        $this->assertSame('code-123', fake_mp_client::$lastbody['code']);
+        $this->assertSame('verifier-abc', fake_mp_client::$lastbody['code_verifier']);
+    }
+
+    /**
+     * A renovacao manda o refresh_token, e nenhum codigo de autorizacao.
+     *
+     * O token do vendedor expira em cerca de seis meses. Um corpo errado aqui
+     * so apareceria meio ano depois, no checkout daquele vendedor.
+     *
+     * @return void
+     */
+    public function test_refresh_token_body(): void {
+        fake_mp_client::$nextresponse = ['access_token' => 'APP_USR-novo'];
+
+        fake_mp_client::refresh_token('cid', 'segredo', 'refresh-abc');
+
+        $this->assertSame('refresh_token', fake_mp_client::$lastbody['grant_type']);
+        $this->assertSame('refresh-abc', fake_mp_client::$lastbody['refresh_token']);
+        $this->assertArrayNotHasKey('code', fake_mp_client::$lastbody);
+        $this->assertArrayNotHasKey('code_verifier', fake_mp_client::$lastbody);
+    }
+
+    /**
+     * O id do pagamento e escapado no caminho.
+     *
+     * O id vem do corpo de uma notificacao, ou seja, de fora. Concatenar sem
+     * escapar deixaria a URL da API ser reescrita por quem POSTasse no webhook.
+     *
+     * @return void
+     */
+    public function test_get_payment_escapa_o_id(): void {
+        fake_mp_client::$nextresponse = ['id' => 1, 'status' => 'approved'];
+
+        $client = new fake_mp_client('token');
+        $client->get_payment('12/34');
+
+        $this->assertSame([['GET', 'https://api.mercadopago.com/v1/payments/12%2F34']], fake_mp_client::$calls);
     }
 }

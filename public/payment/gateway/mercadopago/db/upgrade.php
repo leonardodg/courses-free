@@ -63,5 +63,18 @@ function xmldb_paygw_mercadopago_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026090110, 'paygw', 'mercadopago');
     }
 
+    if ($oldversion < 2026090810) {
+        // Apaga a comissao padrao que este plugin nunca leu.
+        //
+        // O campo existia em settings.php, nao era lido por linha nenhuma de
+        // codigo, e o valor ja foi migrado para local_marketplace pelo upgrade
+        // de la - a comissao e regra do marketplace, nao do gateway. Tirar so
+        // da tela deixaria a linha em config_plugins para sempre, e a proxima
+        // pessoa a encontrar acharia que ela significa alguma coisa.
+        unset_config('defaultfeepercent', 'paygw_mercadopago');
+
+        upgrade_plugin_savepoint(true, 2026090810, 'paygw', 'mercadopago');
+    }
+
     return true;
 }

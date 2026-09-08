@@ -215,14 +215,16 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **319 testes** (114 no núcleo, 48 no Asaas, 47 no
-`format_ldg`, **37 no `mod_ldgvideo`**, 31 no `local_partners`, 8 no MP, e 34 em
-`enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
+webhook, matrícula. **335 testes** (114 no núcleo, 48 no Asaas, 47 no
+`format_ldg`, **37 no `mod_ldgvideo`**, 31 no `local_partners`, **24 no MP**, e
+34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
 `theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
 
-O behat cobre 10 cenários dos dois plugins, e **três deles medem o vídeo na
+O behat cobre 14 cenários de três plugins, e **três deles medem o vídeo na
 tela** — é a única prova de que o `aspect-ratio` do `mod_ldgvideo` continua
-vencendo o `width` fixo que o `core_media_manager` escreve no iframe.
+vencendo o `width` fixo que o `core_media_manager` escreve no iframe. Os quatro
+do `paygw_mercadopago` cobrem a configuração e a trava que impede habilitar o
+gateway sem token.
 
 **O plano Free ganhou a peça dele** em 04/09/2026: o `mod_ldgvideo` e a
 separação dos papéis de empresa. A fronteira "vídeo fica fora da plataforma"
@@ -238,8 +240,40 @@ recebidos **da conta da plataforma**.
 Falta vê-lo chegar a `DONE` com o saldo se movendo — cartão liquida em D+30 no
 sandbox. Roteiro repetível em `docs/data-validation/asaas-sandbox.md`.
 
-**Continua sem prova:** o split no Mercado Pago, e a compra pelo Moodle com
-comissão maior que zero.
+**O split do Mercado Pago foi provado** em 08/09/2026, com duas contas distintas
+e dinheiro real. Pagamento `178004552586`, Pix: R$ 5,00 brutos − R$ 0,05 de taxa
+do MP − R$ 1,25 de `application_fee` = R$ 3,70 para o vendedor. Os R$ 1,25
+apareceram no extrato da DG como **dinheiro a liberar** — conferido nos dois
+lados, que é o que separa prova de impressão. Foi a rodada que confirmou a
+**ordem de dedução**: taxa do gateway primeiro, comissão do que sobra. Roteiro
+em `docs/data-validation/mercadopago-split.md`.
+
+**O vendedor NAO precisa ser pessoa jurídica.** A conta que vendeu naquela
+rodada é pessoa física, e só se descobriu depois: `/users/me` devolve
+`identification.type` vazio e sem a tag `business`. Quem precisa de CNPJ é a
+**plataforma**, dona da aplicação, que recebe a comissão. Ver `docs/adr/0010`.
+
+Daí uma regra de método: **confira o tipo da conta pela API antes de desenhar a
+rodada**. O rótulo do cadastro dizia "empresa"; a API disse outra coisa, e o
+resultado teria sido lido ao contrário se a prova tivesse falhado.
+
+**O sandbox do Checkout Pro não serve para isso.** Com `wallet_purchase` o
+checkout entra em loop no login de carteira; sem ele, devolve erro. Nos dois
+casos `payments/search` volta vazio. Prova de split no MP é com conta real.
+
+**A compra pelo Moodle com comissão maior que zero também foi provada**, no mesmo
+dia e pela vitrine, com o webhook chegando sozinho: pagamento `177042328687`,
+R$ 5,00, `application_fee` R$ 1,25. A linha gravou `feesource = company` — a
+comissão veio da empresa pela `commission_terms_for()`, e não do padrão de
+fábrica. Direito de acesso ativo por 30 dias exatos e matrícula pelo
+`enrol_marketplace`.
+
+**Continua sem prova:** o vendedor pessoa jurídica no Mercado Pago, que é o caso
+convencional e nunca foi exercitado.
+
+**Lacuna conhecida:** o `paygw_mercadopago` não tem tarefa de reconciliação, e o
+`paygw_asaas` tem. A linha nasce antes da chamada à API, o que é certo, mas
+checkout abandonado deixa `pending` órfão sem ninguém para fechar.
 
 **Fase 3** tem a fundação no ar; falta apontar um domínio real.
 **Fase 5** está bloqueada por decisão de negócio do usuário.

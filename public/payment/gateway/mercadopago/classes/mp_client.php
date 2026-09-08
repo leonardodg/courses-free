@@ -283,6 +283,28 @@ class mp_client {
     }
 
     /**
+     * Constroi o transporte HTTP.
+     *
+     * Existe para ser SOBRESCRITA no teste. Enquanto o curl era instanciado
+     * dentro de request() e post_json(), a montagem do corpo e o mapeamento de
+     * erro so eram exercitaveis batendo na API de verdade - e foi por isso que
+     * o marketplace_fee, o unico numero aqui que move dinheiro, passou a existir
+     * sem teste nenhum. E a mesma costura do asaas_client.
+     *
+     * E estatica porque o post_json() do fluxo OAuth tambem e estatico. A
+     * chamada usa static::, e nao self::, senao o late static binding nao
+     * alcanca a subclasse falsa e o teste voltaria a bater na rede.
+     *
+     * @return curl
+     */
+    protected static function make_curl(): curl {
+        global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
+
+        return new curl();
+    }
+
+    /**
      * Chamada autenticada com o token da instancia.
      *
      * @param string $method
@@ -291,10 +313,7 @@ class mp_client {
      * @return array
      */
     protected function request(string $method, string $path, ?array $body = null): array {
-        global $CFG;
-        require_once($CFG->libdir . '/filelib.php');
-
-        $curl = new curl();
+        $curl = static::make_curl();
         $curl->setHeader([
             'Authorization: Bearer ' . $this->accesstoken,
             'Content-Type: application/json',
@@ -323,10 +342,7 @@ class mp_client {
      * @return array
      */
     protected static function post_json(string $url, array $body): array {
-        global $CFG;
-        require_once($CFG->libdir . '/filelib.php');
-
-        $curl = new curl();
+        $curl = static::make_curl();
         $curl->setHeader(['Content-Type: application/json']);
         $response = $curl->post($url, json_encode($body), [
             'CURLOPT_TIMEOUT' => self::TIMEOUT,
