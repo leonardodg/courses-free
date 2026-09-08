@@ -40,11 +40,44 @@ distintas:
     bruto ...... R$ 100,00 | liquido R$ 97,52
     SPLIT ...... carteira da plataforma | AWAITING_CREDIT | 25% | R$ 24,38
 
-Primeira vez no projeto. No Mercado Pago vendedor e marketplace eram a mesma
-conta, entao o `marketplace_fee` nao transferia nada - e nao havia erro, que e
-o pior tipo de falso positivo. Continua sem prova no Mercado Pago, e falta ver o
-split chegar a DONE com o saldo se movendo. Roteiro repetivel em
-`../data-validation/asaas-sandbox.md`.
+Primeira vez no projeto. Falta ver o split do Asaas chegar a DONE com o saldo se
+movendo. Roteiro repetivel em `../data-validation/asaas-sandbox.md`.
+
+**O split do Mercado Pago - PROVADO em 2026-09-08**, com duas contas distintas e
+dinheiro real:
+
+    pagamento .. 178004552586 | approved/accredited | pix
+    bruto ...... R$ 5,00 | taxa do MP R$ 0,05 | liquido do vendedor R$ 3,70
+    SPLIT ...... application_fee | R$ 1,25 | collector 1233186727 != app 3675841384
+    extrato .... R$ 1,25 na conta da plataforma | dinheiro a liberar
+
+O vendedor daquela rodada e **pessoa fisica**, e isso so foi descoberto depois:
+o CNPJ nao e exigido de quem vende. Ver `../adr/0010-vendedor-pessoa-fisica-no-mercado-pago.md`.
+
+No mesmo dia, a **compra pela vitrine** fechou a cadeia inteira, com o webhook
+chegando sozinho:
+
+    pagamento .. 177042328687 | approved/accredited | pix | R$ 5,00
+    split ...... application_fee R$ 1,25 | taxa do MP R$ 0,05 | liquido R$ 3,70
+    moodle ..... paygw_mercadopago approved | feesource COMPANY | payments id 3
+    venda ...... local_marketplace_sale id 3 | externalid 177042328687
+    acesso ..... direito ativo por 30 dias exatos | matricula por enrol_marketplace
+
+O `feesource` gravado e `company`, e nao `site`: a comissao foi resolvida na
+linha da empresa, e nao caiu no padrao de fabrica.
+
+Antes disso, vendedor e marketplace eram a mesma conta, entao o `marketplace_fee`
+nao transferia nada - e nao havia erro, que e o pior tipo de falso positivo. Por
+isso a condicao `collector_id != dono da aplicacao` virou guarda automatica no
+script da prova. Roteiro em `../data-validation/mercadopago-split.md`.
+
+A rodada confirmou a ordem de deducao: a taxa do gateway sai primeiro, e a
+comissao sai do que sobra - a plataforma recebe o combinado, e quem absorve a
+taxa e o vendedor.
+
+Descoberta no caminho: o sandbox do Checkout Pro nao consegue cobrar com
+`marketplace_fee`. Com `wallet_purchase` ele entra em loop no login de carteira;
+sem ele, devolve erro. Nos dois casos `payments/search` volta vazio.
 
 Descoberta no caminho, que vale mais que a prova: baixa manual (`receiveInCash`)
 faz o split sair CANCELLED com o valor certo na tela. Dinheiro que nao passou

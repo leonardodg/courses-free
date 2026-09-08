@@ -44,3 +44,6 @@ Pago, já foi superada pelos ADRs abaixo.
 | [0005](0005-trava-de-resolucao-por-ticket.md) | A trava de resolução por ticket, e onde ela precisa ser aplicada | Proposta |
 | [0006](0006-aprovacao-automatica-de-parceiro.md) | Aprovação automática de parceiro, e por que ela ainda não pode existir | Proposta |
 | [0007](0007-comissao-sobre-o-bruto.md) | Base de cálculo da comissão: configurável, e fotografada na venda | Aceita |
+| [0008](0008-embed-multiplataforma-pelo-core.md) | O embed multiplataforma é do core, e a fronteira é "menos o próprio site" | Aceita |
+| [0009](0009-papeis-de-empresa-sem-upload.md) | Dois papéis de empresa, e a proibição de upload como lista estática | Aceita |
+| [0010](0010-vendedor-pessoa-fisica-no-mercado-pago.md) | Vendedor pessoa física é aceito no Mercado Pago | Aceita |
