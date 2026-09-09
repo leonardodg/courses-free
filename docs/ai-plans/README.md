@@ -88,3 +88,5 @@ ajuda ninguém; "abrir uma worktree existente leva ~1s, medido" ajuda.
 | 2026-09-03 | [Portal, plano 5: ajustes do layout](2026-09-03-portal-plano-5-ajustes-do-layout.md) | `executado` | inclui o portal para gestor e o tema nas páginas de admin |
 | 2026-09-04 | [Planos no projeto e limpeza de worktrees](2026-09-04-planos-no-projeto-e-limpeza-de-worktrees.md) | `executado` | PR #68 — trouxe os planos para o git e apontou o `plansDirectory` |
 | 2026-09-04 | [`mod_ldgvideo` e os papéis de empresa](2026-09-04-mod-ldgvideo.md) | `executado` | plugin novo + a fronteira do plano Free nas duas camadas; 151 testes e 10 cenários verdes |
+| 2026-09-08 | [Provar o split do Mercado Pago com duas contas](2026-09-08-mercadopago-split-duas-contas.md) | `executado` | o plano da prova; a conta usada como controle era PF, e isso mudou o resultado |
+| 2026-09-09 | [Provas de pagamento e assinatura](2026-09-09-provas-de-pagamento-e-assinatura.md) | `executado` | PRs #77–#91 — split provado, assinatura, estorno, permissões; **leia antes de abrir a sessão do Pagar.me** |
