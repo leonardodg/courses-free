@@ -295,13 +295,28 @@ vitalício ganha de qualquer data.
 **Continua sem prova:** o vendedor pessoa jurídica no Mercado Pago, que é o caso
 convencional e nunca foi exercitado.
 
-**Assinatura com débito automático é possível — pelo Asaas, e não está
-construída.** Medido em 08/09/2026 no sandbox: `POST /subscriptions` aceita o
-`split`, guarda com `status: ACTIVE`, e ele **chega na cobrança de cada ciclo**
-(`totalValue R$ 24,75`). O oposto do `preapproval` do Mercado Pago, que engole o
-campo. Atenção ao implementar: `percentualValue` incide sobre o **líquido**, como
-nas cobranças avulsas — comissão sobre o bruto exige `fixedValue`, que congela o
-valor de todos os ciclos.
+**Assinatura com débito automático existe no Asaas** desde 09/09/2026, e **não
+existe no Mercado Pago**. `POST /subscriptions` aceita o `split`, guarda com
+`status: ACTIVE`, e ele chega na cobrança de cada ciclo — o oposto do
+`preapproval` do MP, que engole o campo (ver `docs/adr/0001`).
+
+Como funciona: oferta `recurring` faz o gateway criar assinatura em vez de
+cobrança avulsa. Quem decide é o marketplace, por `api::recurrence_for()` — o
+gateway não sabe o que é uma oferta. **Cada ciclo é uma linha própria** em
+`paygw_asaas`, ligada pelo `subscriptionid`: o ciclo 1 nasce no checkout, e do 2
+em diante o Asaas cria a cobrança sozinho e o webhook a adota copiando o
+contexto e os termos da linha anterior.
+
+Cancelar no Moodle **para de cobrar no gateway**, via
+`api::stop_recurring_billing()` — marcar `norenew` e deixar o gateway cobrando
+seria tirar dinheiro de quem pediu para sair. O núcleo continua sem saber nome de
+gateway: pergunta a cada um habilitado.
+
+Duas armadilhas registradas: `percentualValue` incide sobre o **líquido**, então
+comissão sobre o bruto vira `fixedValue` e **congela** o valor de todos os ciclos
+— mudar o preço da oferta exige recriar a assinatura. E o intervalo em dias vira
+ciclo nomeado, tradução lossy: **empate vai para o ciclo maior**, porque errar
+cobrando mais cedo tira do aluno dinheiro que ele não combinou.
 
 **Lacuna conhecida:** o `paygw_mercadopago` não tem tarefa de reconciliação, e o
 `paygw_asaas` tem. A linha nasce antes da chamada à API, o que é certo, mas

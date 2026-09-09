@@ -234,6 +234,54 @@ class api {
     }
 
     /**
+     * O item e uma assinatura, e com que periodicidade cobra?
+     *
+     * Existe pelo mesmo motivo do commission_terms_for(): o gateway precisa
+     * decidir se cria uma cobranca avulsa ou uma assinatura, e nao pode saber
+     * o que e uma "oferta". Ele pergunta, e o marketplace responde.
+     *
+     * O core_payment nao tem conceito de assinatura - ele conhece pagamento
+     * unico. Por isso a informacao vem daqui, e nao do payable.
+     *
+     * Devolve null para qualquer coisa que nao seja assinatura, inclusive
+     * componente de fora: o gateway trata null como "cobranca avulsa", que e o
+     * comportamento que ele ja tinha antes desta funcao existir.
+     *
+     * @param string $component Componente do core_payment.
+     * @param int $itemid
+     * @return \stdClass|null days (intervalo de cobranca) e maxcycles, ou null
+     */
+    public static function recurrence_for(string $component, int $itemid): ?\stdClass {
+        if ($component !== 'local_marketplace') {
+            return null;
+        }
+
+        $offer = offer::get_record(['id' => $itemid]);
+        if (!$offer || $offer->get('accessmode') !== offer::ACCESS_RECURRING) {
+            return null;
+        }
+
+        // O intervalo de COBRANCA, e nao o de acesso. Sao campos separados de
+        // proposito - ver offer::calculate_expiry() -, e confundi-los aqui
+        // tiraria a carencia entre o vencimento da fatura e o corte do acesso.
+        $days = (int) $offer->get('billingdays');
+        if ($days <= 0) {
+            $days = (int) $offer->get('accessdays');
+        }
+        if ($days <= 0) {
+            // Assinatura sem periodicidade nao e assinatura. Melhor cair na
+            // cobranca avulsa do que criar no gateway algo que cobra sozinho
+            // num intervalo que ninguem definiu.
+            return null;
+        }
+
+        return (object) [
+            'days' => $days,
+            'maxcycles' => (int) $offer->get('maxcycles'),
+        ];
+    }
+
+    /**
      * Comissao padrao do site.
      *
      * Vive nas settings do local_marketplace, e nao nas de um gateway. Ate a
@@ -596,6 +644,56 @@ class api {
         sort($out);
 
         return $out;
+    }
+
+    /**
+     * Pede aos gateways que parem de cobrar esta assinatura.
+     *
+     * Cancelar no Moodle marcava so o norenew. Enquanto nao havia assinatura de
+     * verdade em gateway nenhum isso bastava - nao havia o que parar. Desde que
+     * o Asaas passou a criar assinatura que cobra sozinha, marcar a coluna e
+     * deixar o gateway cobrando seria tirar dinheiro de quem pediu para sair.
+     *
+     * O nucleo continua sem saber o nome de gateway nenhum: pergunta a cada um
+     * habilitado, do mesmo jeito que faz para descobrir moedas. Gateway que nao
+     * tem assinatura simplesmente nao implementa o metodo, e o callback devolve
+     * o padrao.
+     *
+     * Falha de um gateway nao impede os outros nem o cancelamento em si: o
+     * aluno pediu para sair, e isso vale mesmo que a chamada externa caia. O
+     * que sobra e uma cobranca a mais para estornar, visivel no relatorio - bem
+     * melhor que uma tela que recusa o cancelamento.
+     *
+     * @param string $component Componente do core_payment.
+     * @param int $itemid
+     * @param int $userid
+     * @return string[] Gateways que confirmaram ter cancelado algo.
+     */
+    public static function stop_recurring_billing(string $component, int $itemid, int $userid): array {
+        $parados = [];
+
+        foreach (array_keys(\core\plugininfo\paygw::get_enabled_plugins()) as $name) {
+            $classname = '\paygw_' . $name . '\gateway';
+            try {
+                $parou = \component_class_callback(
+                    $classname,
+                    'cancel_recurring',
+                    [$component, $itemid, $userid],
+                    false
+                );
+            } catch (\Throwable $e) {
+                debugging(
+                    'local_marketplace: gateway ' . $name . ' falhou ao cancelar assinatura - ' . $e->getMessage(),
+                    DEBUG_NORMAL
+                );
+                continue;
+            }
+            if ($parou) {
+                $parados[] = $name;
+            }
+        }
+
+        return $parados;
     }
 
     /**

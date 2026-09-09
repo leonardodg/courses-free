@@ -74,6 +74,12 @@ if (!is_array($payload)) {
 $event = (string) ($payload['event'] ?? '');
 $asaaspaymentid = (string) ($payload['payment']['id'] ?? '');
 
+// A assinatura vem do payload, e so ela. E identificacao, e nao verdade: serve
+// para descobrir de quem e uma cobranca que o Moodle nunca viu - a do ciclo 2
+// em diante, criada pelo Asaas sozinho. Valor e status continuam vindo da API,
+// consultados com a chave do vendedor.
+$subscriptionid = (string) ($payload['payment']['subscription'] ?? '');
+
 // Eventos que nao mudam o direito do aluno saem com 200 para o Asaas parar de
 // reenviar. 4xx aqui viraria fila de retentativa por um evento que nunca nos
 // interessou - e com envio sequencial, uma fila travada.
@@ -82,7 +88,7 @@ if (!payment_processor::is_relevant_event($event) || $asaaspaymentid === '') {
 }
 
 try {
-    $delivered = payment_processor::process_notification($asaaspaymentid);
+    $delivered = payment_processor::process_notification($asaaspaymentid, $subscriptionid);
     paygw_asaas_respond(200, $delivered ? 'processed' : 'ignored');
 } catch (\Throwable $e) {
     // 500 de proposito: o Asaas reenvia, e uma falha nossa - rede, banco - nao

@@ -307,4 +307,115 @@ final class payment_processor_test extends \advanced_testcase {
 
         $this->assertEqualsWithDelta(25.00, $fee, 0.001);
     }
+
+    /**
+     * O intervalo em dias vira o ciclo nomeado mais proximo.
+     *
+     * A traducao e lossy e nao ha como nao ser: o marketplace conta acesso em
+     * dias, o Asaas so aceita nomes. Escolher o MAIS PROXIMO, e nao o teto ou o
+     * piso, evita erro sistematico para um dos lados.
+     *
+     * @return void
+     */
+    public function test_ciclo_pelo_intervalo_em_dias(): void {
+        $this->assertSame('MONTHLY', payment_processor::cycle_for(30));
+        $this->assertSame('WEEKLY', payment_processor::cycle_for(7));
+        $this->assertSame('YEARLY', payment_processor::cycle_for(365));
+        $this->assertSame('BIWEEKLY', payment_processor::cycle_for(15));
+        $this->assertSame('BIMONTHLY', payment_processor::cycle_for(45), '45 fica mais perto de 60 que de 30');
+    }
+
+    /**
+     * Sem intervalo definido, cai no mensal.
+     *
+     * Zero aqui e configuracao incompleta, e nao "cobrar uma vez": uma
+     * assinatura sem periodicidade nao e assinatura.
+     *
+     * @return void
+     */
+    public function test_ciclo_sem_intervalo_cai_no_mensal(): void {
+        $this->assertSame('MONTHLY', payment_processor::cycle_for(0));
+        $this->assertSame('MONTHLY', payment_processor::cycle_for(-5));
+    }
+    /**
+     * O ciclo seguinte da assinatura ganha linha propria, copiando o contexto.
+     *
+     * Do ciclo 2 em diante quem cria a cobranca e o Asaas, sozinho, e o webhook
+     * fala de algo que o Moodle nunca viu. Sem esta adocao, o aluno pagaria a
+     * mensalidade e o acesso nao seria estendido.
+     *
+     * @return void
+     */
+    public function test_ciclo_seguinte_copia_o_contexto(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $primeiro = (object) [
+            'asaaspaymentid' => 'pay_ciclo1',
+            'subscriptionid' => 'sub_1',
+            'externalreference' => 'mdl-7-9-primeiro',
+            'customerid' => 'cus_1',
+            'component' => 'local_marketplace',
+            'paymentarea' => 'offer',
+            'itemid' => 9,
+            'userid' => 7,
+            'accountid' => 3,
+            'amount' => 100.0,
+            'currency' => 'BRL',
+            'feeamount' => 24.38,
+            'feepercent' => 25.0,
+            'feebase' => 'net',
+            'feesource' => 'company',
+            'billingtype' => 'PIX',
+            'environment' => 'sandbox',
+            'status' => 'RECEIVED',
+            'timecreated' => time() - DAYSECS,
+            'timemodified' => time() - DAYSECS,
+        ];
+        $DB->insert_record(payment_processor::TABLE, $primeiro);
+
+        $novo = payment_processor::adopt_subscription_cycle('pay_ciclo2', 'sub_1');
+
+        $this->assertNotNull($novo);
+        $this->assertSame('pay_ciclo2', $novo->asaaspaymentid);
+        $this->assertSame('sub_1', $novo->subscriptionid);
+        $this->assertSame('PENDING', $novo->status, 'o ciclo novo nasce pendente');
+        $this->assertNull($novo->paymentid);
+        $this->assertEquals(0, $novo->feeamount, 'a comissao do ciclo novo ainda nao aconteceu');
+
+        // Contexto copiado.
+        $this->assertSame('local_marketplace', $novo->component);
+        $this->assertEquals(9, $novo->itemid);
+        $this->assertEquals(7, $novo->userid);
+        $this->assertEquals(3, $novo->accountid);
+        $this->assertSame('sandbox', $novo->environment);
+
+        // Termos vem da LINHA, e nao de nova resolucao - ver docs/adr/0007.
+        $this->assertEquals(25.0, $novo->feepercent);
+        $this->assertSame('net', $novo->feebase);
+        $this->assertSame('company', $novo->feesource);
+
+        // Referencia propria: ela e UNIQUE, e repetir quebraria o insert bem no
+        // meio da renovacao.
+        $this->assertNotSame($primeiro->externalreference, $novo->externalreference);
+        $this->assertSame(2, $DB->count_records(payment_processor::TABLE, ['subscriptionid' => 'sub_1']));
+    }
+
+    /**
+     * Assinatura que nao e nossa nao cria linha nenhuma.
+     *
+     * O webhook e publico: adotar cobranca de uma assinatura desconhecida
+     * criaria venda a partir de um POST de qualquer um.
+     *
+     * @return void
+     */
+    public function test_assinatura_desconhecida_nao_vira_linha(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $this->assertNull(payment_processor::adopt_subscription_cycle('pay_x', 'sub_de_outro'));
+        $this->assertSame(0, $DB->count_records(payment_processor::TABLE));
+    }
 }

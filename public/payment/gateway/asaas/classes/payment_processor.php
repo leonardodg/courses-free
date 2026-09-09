@@ -82,6 +82,7 @@ class payment_processor {
         // criada no Asaas que o Moodle nunca soube que existiu.
         $record = (object) [
             'asaaspaymentid' => '',
+            'subscriptionid' => '',
             'externalreference' => $reference,
             'customerid' => '',
             'component' => $component,
@@ -125,11 +126,10 @@ class payment_processor {
             $document
         );
 
-        $response = $client->create_payment([
+        $comum = [
             'customer' => $customerid,
             'billingtype' => self::billing_type(),
             'value' => $amount,
-            'duedate' => date('Y-m-d', time() + (self::due_days() * DAYSECS)),
             'description' => self::describe_item($component, $itemid),
             'externalreference' => $reference,
             'returnurl' => self::use_callback()
@@ -138,7 +138,34 @@ class payment_processor {
             'splitwalletid' => credentials::platform_wallet($environment),
             'splitpercent' => $feepercent,
             'splitbase' => $feebase,
-        ]);
+        ];
+
+        // Assinatura ou cobranca avulsa? Quem sabe e o marketplace - o gateway
+        // nao tem como saber o que e uma "oferta recorrente". Sem ele
+        // instalado, ou para item que nao e assinatura, recurrence_for()
+        // devolve null e nada muda em relacao ao que existia.
+        $recorrencia = class_exists('\local_marketplace\api')
+            ? \local_marketplace\api::recurrence_for($component, $itemid)
+            : null;
+
+        if ($recorrencia) {
+            $response = $client->create_subscription($comum + [
+                'nextduedate' => date('Y-m-d', time() + (self::due_days() * DAYSECS)),
+                'cycle' => self::cycle_for($recorrencia->days),
+                'maxpayments' => $recorrencia->maxcycles,
+            ]);
+
+            // A resposta de /subscriptions NAO traz invoiceUrl: ela descreve a
+            // assinatura, e nao uma cobranca. A primeira cobranca ja existe, e
+            // e para ela que o aluno precisa ir agora.
+            $record->subscriptionid = (string) ($response['id'] ?? '');
+            $cobrancas = $client->subscription_payments($record->subscriptionid);
+            $response = reset($cobrancas) ?: [];
+        } else {
+            $response = $client->create_payment($comum + [
+                'duedate' => date('Y-m-d', time() + (self::due_days() * DAYSECS)),
+            ]);
+        }
 
         $invoiceurl = (string) ($response['invoiceUrl'] ?? '');
         if ($invoiceurl === '') {
@@ -168,10 +195,13 @@ class payment_processor {
      * @param string $asaaspaymentid
      * @return bool Verdadeiro quando a entrega aconteceu agora.
      */
-    public static function process_notification(string $asaaspaymentid): bool {
+    public static function process_notification(string $asaaspaymentid, string $subscriptionid = ''): bool {
         global $DB;
 
         $record = $DB->get_record(self::TABLE, ['asaaspaymentid' => $asaaspaymentid]);
+        if (!$record && $subscriptionid !== '') {
+            $record = self::adopt_subscription_cycle($asaaspaymentid, $subscriptionid);
+        }
         if (!$record) {
             return false;
         }
@@ -259,6 +289,133 @@ class payment_processor {
         );
 
         return true;
+    }
+
+    /**
+     * Cria a linha do ciclo seguinte de uma assinatura.
+     *
+     * O ciclo 1 nasce no checkout, com o aluno na tela. Do ciclo 2 em diante
+     * quem cria a cobranca e o Asaas, sozinho, e o webhook chega falando de
+     * algo que o Moodle nunca viu. Sem isto, process_notification() nao
+     * encontraria a linha e devolveria false - o aluno pagaria a mensalidade e
+     * o acesso nao seria estendido.
+     *
+     * O contexto e COPIADO da linha anterior da mesma assinatura: componente,
+     * item, aluno, conta e os termos da comissao. Os termos vem da linha, e
+     * nao de uma nova resolucao, pelo mesmo motivo de sempre (ADR-0007) -
+     * mudar a comissao hoje nao pode reescrever o que foi contratado.
+     *
+     * O subscriptionid vem do payload do webhook, e isso e seguro: ele serve
+     * para IDENTIFICAR de quem e a cobranca, e nada mais. Valor e status
+     * continuam vindo da API, com a chave do vendedor.
+     *
+     * @param string $asaaspaymentid Cobranca nova, criada pelo Asaas
+     * @param string $subscriptionid Assinatura a que ela pertence
+     * @return \stdClass|null Nula quando a assinatura nao e nossa
+     */
+    public static function adopt_subscription_cycle(string $asaaspaymentid, string $subscriptionid): ?\stdClass {
+        global $DB;
+
+        // A mais recente da mesma assinatura e a que tem o contexto mais atual.
+        $anterior = $DB->get_records(
+            self::TABLE,
+            ['subscriptionid' => $subscriptionid],
+            'id DESC',
+            '*',
+            0,
+            1
+        );
+        $anterior = reset($anterior);
+        if (!$anterior) {
+            return null;
+        }
+
+        // Referencia propria por ciclo: ela e UNIQUE na tabela, e reaproveitar
+        // a do ciclo anterior faria o insert falhar bem no meio da renovacao.
+        $novo = (object) [
+            'asaaspaymentid' => $asaaspaymentid,
+            'subscriptionid' => $subscriptionid,
+            'externalreference' => 'mdl-' . (int) $anterior->userid . '-' . (int) $anterior->itemid
+                . '-' . random_string(12),
+            'customerid' => $anterior->customerid,
+            'component' => $anterior->component,
+            'paymentarea' => $anterior->paymentarea,
+            'itemid' => $anterior->itemid,
+            'userid' => $anterior->userid,
+            'accountid' => $anterior->accountid,
+            'amount' => $anterior->amount,
+            'currency' => $anterior->currency,
+            'feeamount' => 0,
+            'feepercent' => $anterior->feepercent,
+            'feebase' => $anterior->feebase,
+            'feesource' => $anterior->feesource,
+            'billingtype' => $anterior->billingtype,
+            'environment' => $anterior->environment,
+            'status' => 'PENDING',
+            'paymentid' => null,
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ];
+        $novo->id = $DB->insert_record(self::TABLE, $novo);
+
+        return $novo;
+    }
+
+    /**
+     * Ciclos que o Asaas aceita, em dias.
+     *
+     * @var array<string,int>
+     */
+    const CYCLES = [
+        'WEEKLY' => 7,
+        'BIWEEKLY' => 14,
+        'MONTHLY' => 30,
+        'BIMONTHLY' => 60,
+        'QUARTERLY' => 90,
+        'SEMIANNUALLY' => 180,
+        'YEARLY' => 365,
+    ];
+
+    /**
+     * Traduz um intervalo em dias para o ciclo nomeado do Asaas.
+     *
+     * A traducao e LOSSY, e nao ha como nao ser: o marketplace guarda dias
+     * porque o acesso e contado em dias, e o Asaas so aceita nomes. Uma
+     * assinatura de 45 dias vira BIMONTHLY, e o vendedor precisa saber disso -
+     * por isso escolhemos o ciclo mais PROXIMO, e nao o teto ou o piso, que
+     * dariam erro sistematico para um dos lados.
+     *
+     * O acesso continua sendo contado pelo accessdays do direito. Divergencia
+     * entre cobrar a cada 60 dias e liberar 45 e problema de configuracao da
+     * oferta, e aparece no relatorio - nao e este metodo que a esconde.
+     *
+     * @param int $days
+     * @return string
+     */
+    public static function cycle_for(int $days): string {
+        if ($days <= 0) {
+            return 'MONTHLY';
+        }
+
+        // EMPATE VAI PARA O CICLO MAIOR, e isso e decisao e nao acaso: 45 dias
+        // fica a 15 de MONTHLY e a 15 de BIMONTHLY. Cobrar a cada 30 quando o
+        // contrato diz 45 tira do aluno dinheiro que ele nao combinou; cobrar a
+        // cada 60 da a ele quinze dias que o vendedor absorve. Entre errar
+        // contra o aluno e errar contra a plataforma, erramos contra nos.
+        //
+        // O <= no lugar do < e o que produz isso, porque CYCLES esta em ordem
+        // crescente - trocar por < voltaria a preferir o menor em silencio.
+        $melhor = 'MONTHLY';
+        $distancia = PHP_INT_MAX;
+        foreach (self::CYCLES as $nome => $dias) {
+            $atual = abs($dias - $days);
+            if ($atual <= $distancia) {
+                $distancia = $atual;
+                $melhor = $nome;
+            }
+        }
+
+        return $melhor;
     }
 
     /**
