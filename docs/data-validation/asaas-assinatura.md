@@ -1,8 +1,13 @@
 # Provar o ciclo da assinatura no Asaas
 
-Roteiro do débito automático: assinatura criada, ciclo cobrado, acesso cortado
-por falta de pagamento e devolvido ao pagar a atrasada — tudo sem esperar mês
-nenhum.
+Roteiro da assinatura recorrente: criada, ciclo cobrado, acesso cortado por
+falta de pagamento e devolvido ao pagar a atrasada — tudo sem esperar mês nenhum.
+
+**Não é débito automático.** O plugin cria a assinatura sem cartão, e sem cartão
+o Asaas gera as cobranças mas não debita ninguém: a primeira nasce `PENDING` e o
+aluno paga cada fatura. Débito automático exige o cartão na criação, e aí a
+primeira nasce `CONFIRMED`. Os quatro tipos aceitam assinatura, mas só o cartão
+guardado cobra sozinho — e só ele tem cartão para expirar.
 
 O irmão deste documento é [`asaas-sandbox.md`](asaas-sandbox.md), que prova o
 split da cobrança avulsa. Aqui o que se prova é o **ciclo**.
@@ -106,6 +111,36 @@ silêncio — nesse caso nasce direito novo e a revogação continua no históri
 
 O período novo conta **a partir de agora** quando o vencimento já passou: quem
 ficou dois dias sem pagar não ganha os dois dias de volta.
+
+## Os quatro tipos de cobrança, medidos
+
+Todos aceitam assinatura, todos geram as cobranças com split. O que muda é se
+existe **instrumento guardado** — e é dele que saem tanto o débito automático
+quanto o problema do cartão vencido.
+
+| Tipo | Cobra sozinho | Cartão para expirar |
+|---|---|---|
+| `PIX` | não — um Pix por ciclo | **não existe** |
+| `BOLETO` | não — um boleto por ciclo | **não existe** |
+| `CREDIT_CARD` sem cartão na criação | não — gera fatura | não existe |
+| `CREDIT_CARD` com cartão na criação | **sim**, a 1ª nasce `CONFIRMED` | **sim** |
+
+Nos três primeiros não há o que expirar nem o que trocar, e também não há débito
+automático. Só o último tem os dois.
+
+### Trocar o cartão de uma assinatura
+
+Não é preciso cancelar e recriar. O endpoint é
+**`PUT /subscriptions/{id}/creditCard`**.
+
+O `PUT /subscriptions/{id}` comum, com `creditCard` no corpo, **aceita e ignora
+em silêncio** — o cartão continua o antigo, sem erro nenhum. É o mesmo formato de
+falha do `marketplace_fee` no `preapproval` do Mercado Pago, e vale desconfiar
+dele por padrão nesta API.
+
+Pelo endpoint certo, o `subscriptionid` não muda e o split sobrevive
+(`percentual 25.0 | ACTIVE`) — então `cycles`, histórico e as linhas da nossa
+tabela continuam válidos.
 
 ## Armadilhas
 
