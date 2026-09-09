@@ -44,19 +44,35 @@ require_login();
 
 $ent = new entitlement($entid);
 
-// O direito e do aluno, e so ele cancela a propria assinatura. Sem esta
-// checagem, trocar o id na URL cancelaria a de outra pessoa.
-if ((int) $ent->get('userid') !== (int) $USER->id) {
-    throw new moodle_exception('invalidaccess', 'error');
-}
-
 $company = company::get_record(['id' => (int) $ent->get('companyid')]);
 $offer = offer::get_record(['id' => (int) $ent->get('offerid')]);
 if (!$company || !$offer) {
     throw new moodle_exception('invalidrecord', 'error');
 }
 
-$storefront = new moodle_url('/local/marketplace/offers.php', ['company' => $company->get('shortname')]);
+// O dono do direito cancela o proprio. Quem gere as vendas da EMPRESA tambem,
+// porque o aluno que quer sair costuma escrever para o responsavel em vez de
+// achar a tela - e mandar de volta para a tela e a forma mais rapida de o
+// cancelamento nao acontecer e a cobranca seguir.
+//
+// A capability e verificada no contexto da CATEGORIA da empresa, e nao no
+// sistema: quem gere uma empresa nao gere a assinatura de outra.
+$dono = (int) $ent->get('userid') === (int) $USER->id;
+$gestor = has_capability('local/marketplace:managesales', $company->get_context());
+
+if (!$dono && !$gestor) {
+    throw new moodle_exception('invalidaccess', 'error');
+}
+
+// Para onde voltar depois. O aluno volta para a vitrine, onde renova se mudar
+// de ideia; o gestor volta para a lista de assinantes, que e de onde ele veio -
+// mandar o gestor para a vitrine da empresa dele nao ajuda em nada.
+$storefront = $dono
+    ? new moodle_url('/local/marketplace/offers.php', ['company' => $company->get('shortname')])
+    : new moodle_url('/local/marketplace/report.php', [
+        'company' => $company->get('shortname'),
+        'view' => 'subscriptions',
+    ]);
 $url = new moodle_url('/local/marketplace/cancel.php', ['id' => $entid]);
 
 $PAGE->set_context(context_system::instance());
