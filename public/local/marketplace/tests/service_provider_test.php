@@ -259,4 +259,34 @@ final class service_provider_test extends \advanced_testcase {
         $todos = entitlement::get_records(['userid' => $userid, 'offerid' => (int) $offer->get('id')]);
         $this->assertCount(2, $todos, 'o revogado fica no historico, e nasce um novo');
     }
+
+    /**
+     * Cancelar pergunta aos gateways INSTALADOS, e nao aos habilitados.
+     *
+     * Habilitar governa a venda nova. Nao governa o que ja foi vendido: uma
+     * assinatura criada enquanto o gateway estava ligado continua cobrando
+     * depois que ele e desligado, porque quem cobra e o gateway.
+     *
+     * Enquanto a lista vinha de get_enabled_plugins(), desligar o Asaas
+     * deixava toda assinatura dele cobrando para sempre, e o cancelamento do
+     * aluno nao fazia nada - sem erro e sem log. Visto em 09/09/2026.
+     *
+     * @return void
+     */
+    public function test_cancelar_alcanca_gateway_desabilitado(): void {
+        $this->resetAfterTest();
+
+        // Nenhum gateway habilitado para venda nova.
+        set_config('paygw_plugins_sortorder', '');
+
+        $alcancados = \local_marketplace\api::billing_capable_gateways();
+
+        $this->assertNotEmpty($alcancados, 'desligar a venda nao pode esconder quem ja cobra');
+        $this->assertContains('asaas', $alcancados);
+        $this->assertSame(
+            [],
+            \core\plugininfo\paygw::get_enabled_plugins(),
+            'a premissa do teste: nada habilitado'
+        );
+    }
 }
