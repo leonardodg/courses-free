@@ -647,6 +647,26 @@ class api {
     }
 
     /**
+     * Gateways a quem perguntar sobre cobranca ja existente.
+     *
+     * INSTALADOS, e nao habilitados, e a diferenca vale dinheiro.
+     *
+     * Habilitar governa a venda NOVA: gateway desligado nao aparece no
+     * checkout. Nao governa o que ja foi vendido - uma assinatura criada
+     * enquanto ele estava ligado CONTINUA COBRANDO depois de desligado, porque
+     * quem cobra e o gateway, e nao o Moodle.
+     *
+     * Perguntando so aos habilitados, desligar o Asaas deixaria toda assinatura
+     * dele cobrando para sempre, e o cancelamento do aluno nao faria nada - sem
+     * erro e sem log. Visto acontecer em 09/09/2026, na prova do ciclo curto.
+     *
+     * @return string[] Nomes curtos dos gateways instalados.
+     */
+    public static function billing_capable_gateways(): array {
+        return array_keys(\core_plugin_manager::instance()->get_plugins_of_type('paygw'));
+    }
+
+    /**
      * Pede aos gateways que parem de cobrar esta assinatura.
      *
      * Cancelar no Moodle marcava so o norenew. Enquanto nao havia assinatura de
@@ -672,7 +692,7 @@ class api {
     public static function stop_recurring_billing(string $component, int $itemid, int $userid): array {
         $parados = [];
 
-        foreach (array_keys(\core\plugininfo\paygw::get_enabled_plugins()) as $name) {
+        foreach (self::billing_capable_gateways() as $name) {
             $classname = '\paygw_' . $name . '\gateway';
             try {
                 $parou = \component_class_callback(
