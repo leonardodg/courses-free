@@ -312,15 +312,28 @@ Cancelar no Moodle **para de cobrar no gateway**, via
 seria tirar dinheiro de quem pediu para sair. O núcleo continua sem saber nome de
 gateway: pergunta a cada um habilitado.
 
+**O ciclo foi provado inteiro em 09/09/2026**, no sandbox, sem esperar semana
+nenhuma: o Asaas gera quatro cobrancas de uma vez, entao paga-se uma por vez.
+Assinatura criada, ciclo 1 pago pelo webhook, avisos nos dois marcos, acesso
+cortado por falta de pagamento e devolvido ao pagar a atrasada. Roteiro em
+`docs/data-validation/asaas-assinatura.md`.
+
+A prova achou um bug do NUCLEO, e nao do gateway: pagar a atrasada criava um
+segundo direito em vez de reviver o primeiro, porque o `deliver_order()` so
+procurava direito ativo e quem vence fica `expired`. O `cycles` voltava a 1 - e
+com ele o `maxcycles` nunca terminaria. Corrigido para procurar ativo OU vencido;
+`cancelled` fica de fora, porque revogar e decisao de negocio.
+
 Duas armadilhas registradas: `percentualValue` incide sobre o **líquido**, então
 comissão sobre o bruto vira `fixedValue` e **congela** o valor de todos os ciclos
 — mudar o preço da oferta exige recriar a assinatura. E o intervalo em dias vira
 ciclo nomeado, tradução lossy: **empate vai para o ciclo maior**, porque errar
 cobrando mais cedo tira do aluno dinheiro que ele não combinou.
 
-**Lacuna conhecida:** o `paygw_mercadopago` não tem tarefa de reconciliação, e o
-`paygw_asaas` tem. A linha nasce antes da chamada à API, o que é certo, mas
-checkout abandonado deixa `pending` órfão sem ninguém para fechar.
+**Os dois gateways têm reconciliação** desde 08/09/2026, de hora em hora. A do
+Mercado Pago consulta por `external_reference`, e não por id de pagamento: lá a
+cobrança nasce com id, aqui nasce a *preferência*, e o pagamento só existe
+quando o aluno paga.
 
 **Fase 3** tem a fundação no ar; falta apontar um domínio real.
 **Fase 5** está bloqueada por decisão de negócio do usuário.
