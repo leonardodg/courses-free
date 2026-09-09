@@ -160,7 +160,7 @@ class payment_processor {
             // e para ela que o aluno precisa ir agora.
             $record->subscriptionid = (string) ($response['id'] ?? '');
             $cobrancas = $client->subscription_payments($record->subscriptionid);
-            $response = reset($cobrancas) ?: [];
+            $response = self::earliest_charge($cobrancas);
         } else {
             $response = $client->create_payment($comum + [
                 'duedate' => date('Y-m-d', time() + (self::due_days() * DAYSECS)),
@@ -359,6 +359,35 @@ class payment_processor {
         $novo->id = $DB->insert_record(self::TABLE, $novo);
 
         return $novo;
+    }
+
+    /**
+     * A cobranca que o aluno tem que pagar AGORA.
+     *
+     * O Asaas nao gera uma cobranca por vez: uma assinatura semanal nasce com
+     * CINCO cobrancas pendentes de uma vez, e a lista volta da mais distante
+     * para a mais proxima. Pegar a primeira do array mandava o aluno para a
+     * fatura que vence daqui a um mes - ele pagaria, o webhook entregaria o
+     * acesso, e a cobranca de hoje ficaria vencida atras dele.
+     *
+     * Ordena por vencimento e devolve a mais proxima. Empate no vencimento cai
+     * na ordem que veio, e tanto faz: mesmas data e valor.
+     *
+     * @param array $cobrancas Resposta de subscription_payments()
+     * @return array A cobranca mais proxima, ou vazio quando nao ha nenhuma
+     */
+    public static function earliest_charge(array $cobrancas): array {
+        $melhor = [];
+        foreach ($cobrancas as $cobranca) {
+            if (!is_array($cobranca) || empty($cobranca['dueDate'])) {
+                continue;
+            }
+            if (!$melhor || $cobranca['dueDate'] < $melhor['dueDate']) {
+                $melhor = $cobranca;
+            }
+        }
+
+        return $melhor;
     }
 
     /**

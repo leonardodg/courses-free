@@ -189,4 +189,74 @@ final class service_provider_test extends \advanced_testcase {
         $this->assertEquals(50.0, $payable->get_amount());
         $this->assertSame('BRL', $payable->get_currency());
     }
+
+    /**
+     * Pagar a mensalidade atrasada revive o direito, e nao cria um segundo.
+     *
+     * Quem deixa vencer tem o direito marcado como expired pelo cron. Enquanto
+     * o deliver_order procurava so o ATIVO, pagar a atrasada criava um segundo
+     * direito para a mesma oferta: o cycles voltava a 1 - e com ele o maxcycles
+     * nunca terminaria -, a tela listava a oferta duas vezes, e todo
+     * get_record que espera um so quebrava.
+     *
+     * Visto acontecer em 09/09/2026, na prova do ciclo curto de assinatura no
+     * sandbox do Asaas.
+     *
+     * @return void
+     */
+    public function test_pagar_atrasada_revive_em_vez_de_duplicar(): void {
+        $offer = $this->make_offer(offer::ACCESS_RECURRING, 7);
+        $userid = (int) $this->user->id;
+
+        service_provider::deliver_order('offer', (int) $offer->get('id'), 1, $userid);
+
+        // O aluno nao paga: o cron marca vencido.
+        $ativos = entitlement::get_active_for_user($userid);
+        $ent = reset($ativos);
+        $ent->set('timeend', time() - DAYSECS);
+        $ent->set('status', entitlement::STATUS_EXPIRED);
+        $ent->update();
+
+        service_provider::deliver_order('offer', (int) $offer->get('id'), 2, $userid);
+
+        $todos = entitlement::get_records(['userid' => $userid, 'offerid' => (int) $offer->get('id')]);
+        $this->assertCount(1, $todos, 'pagar a atrasada nao pode criar um segundo direito');
+
+        $revivido = reset($todos);
+        $this->assertSame(entitlement::STATUS_ACTIVE, $revivido->get('status'));
+        $this->assertSame(2, (int) $revivido->get('cycles'), 'o ciclo continua contando de onde parou');
+        $this->assertGreaterThan(time(), (int) $revivido->get('timeend'));
+
+        // Quem ficou um dia sem pagar nao ganha o dia de volta: o novo periodo
+        // conta de agora, e nao do vencimento que ja passou.
+        $this->assertLessThanOrEqual(
+            time() + (7 * DAYSECS) + 60,
+            (int) $revivido->get('timeend'),
+            'o periodo novo conta a partir de agora, e nao do vencimento vencido'
+        );
+    }
+
+    /**
+     * Direito revogado nao volta sozinho com um pagamento novo.
+     *
+     * Revogar e decisao de negocio - estorno, abuso - tomada em
+     * entitlement::revoke(). Reviver em silencio apagaria essa decisao; o
+     * pagamento novo cria direito novo, e a revogacao fica no historico.
+     *
+     * @return void
+     */
+    public function test_direito_revogado_nao_revive(): void {
+        $offer = $this->make_offer(offer::ACCESS_RECURRING, 7);
+        $userid = (int) $this->user->id;
+
+        service_provider::deliver_order('offer', (int) $offer->get('id'), 1, $userid);
+        $ativos = entitlement::get_active_for_user($userid);
+        $ent = reset($ativos);
+        $ent->revoke();
+
+        service_provider::deliver_order('offer', (int) $offer->get('id'), 2, $userid);
+
+        $todos = entitlement::get_records(['userid' => $userid, 'offerid' => (int) $offer->get('id')]);
+        $this->assertCount(2, $todos, 'o revogado fica no historico, e nasce um novo');
+    }
 }

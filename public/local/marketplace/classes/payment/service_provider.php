@@ -114,9 +114,28 @@ class service_provider implements \core_payment\local\callback\service_provider 
     public static function deliver_order(string $paymentarea, int $itemid, int $paymentid, int $userid): bool {
         $offer = new offer($itemid);
 
+        // ATIVO OU VENCIDO, e nao so ativo.
+        //
+        // Quem deixa a mensalidade vencer tem o direito marcado como expired
+        // pelo cron. Procurando so o ativo, pagar a atrasada criava um SEGUNDO
+        // direito para a mesma oferta em vez de reviver o primeiro: o cycles
+        // voltava a 1 - e com ele o maxcycles passava a nunca terminar -, a
+        // tela listava a oferta duas vezes, e todo get_record que espera um so
+        // quebrava. Visto acontecer em 09/09/2026, na prova do ciclo curto.
+        //
+        // CANCELLED fica de fora de proposito: revogar e decisao de negocio,
+        // tomada em entitlement::revoke(), e um pagamento novo nao pode
+        // desfaze-la em silencio. Nesse caso nasce direito novo, e a revogacao
+        // continua no historico.
+        //
+        // O extend() ja sabe o resto: soma ao vencimento ATUAL quando ele esta
+        // no futuro, e a partir de AGORA quando ja passou - quem ficou dois
+        // dias sem pagar nao ganha os dois dias de volta.
         $existing = null;
-        foreach (entitlement::get_active_for_user($userid, (int) $offer->get('companyid')) as $ent) {
-            if ((int) $ent->get('offerid') === $itemid) {
+        $candidatos = entitlement::get_records(['userid' => $userid, 'offerid' => $itemid], 'id', 'DESC');
+        foreach ($candidatos as $ent) {
+            $status = $ent->get('status');
+            if ($status === entitlement::STATUS_ACTIVE || $status === entitlement::STATUS_EXPIRED) {
                 $existing = $ent;
                 break;
             }
@@ -131,6 +150,10 @@ class service_provider implements \core_payment\local\callback\service_provider 
             // estender: o numero serve ao relatorio e ao limite de cobrancas,
             // e nao a data de validade.
             $existing->set('cycles', (int) $existing->get('cycles') + 1);
+            // Quem paga volta a ter acesso. O extend() ja reativa quando ha
+            // prazo a somar; vitalicio nao passa por ele, e sem esta linha um
+            // direito vitalicio marcado como vencido ficaria pago e inativo.
+            $existing->set('status', entitlement::STATUS_ACTIVE);
             $existing->update();
         } else {
             $ent = new entitlement();

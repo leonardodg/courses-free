@@ -418,4 +418,35 @@ final class payment_processor_test extends \advanced_testcase {
         $this->assertNull(payment_processor::adopt_subscription_cycle('pay_x', 'sub_de_outro'));
         $this->assertSame(0, $DB->count_records(payment_processor::TABLE));
     }
+
+    /**
+     * A cobranca escolhida e a que vence primeiro, e nao a primeira da lista.
+     *
+     * Medido no sandbox em 09/09/2026: uma assinatura semanal nasce com CINCO
+     * cobrancas pendentes, e a lista volta da mais distante para a mais
+     * proxima. Pegar a primeira do array mandava o aluno pagar a fatura de
+     * daqui a um mes, deixando a de hoje vencer atras dele.
+     *
+     * @return void
+     */
+    public function test_escolhe_a_cobranca_que_vence_primeiro(): void {
+        $cobrancas = [
+            ['id' => 'pay_d', 'dueDate' => '2026-10-07'],
+            ['id' => 'pay_c', 'dueDate' => '2026-09-30'],
+            ['id' => 'pay_a', 'dueDate' => '2026-09-09'],
+            ['id' => 'pay_b', 'dueDate' => '2026-09-16'],
+        ];
+
+        $this->assertSame('pay_a', payment_processor::earliest_charge($cobrancas)['id']);
+    }
+
+    /**
+     * Sem cobrancas, devolve vazio - e o start_payment vira erro proprio.
+     *
+     * @return void
+     */
+    public function test_sem_cobrancas_nao_ha_o_que_escolher(): void {
+        $this->assertSame([], payment_processor::earliest_charge([]));
+        $this->assertSame([], payment_processor::earliest_charge([['id' => 'sem_data']]));
+    }
 }

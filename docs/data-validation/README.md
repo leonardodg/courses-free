@@ -6,6 +6,7 @@ Como se verifica que o sistema funciona — e o que ainda não foi visto funcion
 |---|---|
 | [`painel-de-testes.md`](painel-de-testes.md) | caminhos de gestão, CLI, cartões de teste e o que falta provar |
 | [`asaas-sandbox.md`](asaas-sandbox.md) | provar o **split** no Asaas: contas, webhook, script e passo a passo com `curl` |
+| [`asaas-assinatura.md`](asaas-assinatura.md) | provar o **ciclo** da assinatura no Asaas: cobranca automatica, corte por falta de pagamento e volta ao pagar a atrasada |
 | [`mercadopago-split.md`](mercadopago-split.md) | provar o **split** no Mercado Pago: as três contas, painel, túnel e as três rodadas |
 
 Scripts em [`scripts/`](scripts/). Credenciais **nunca** entram aqui: ficam em
