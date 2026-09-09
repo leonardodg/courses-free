@@ -149,6 +149,23 @@ guardado falha — quantas vezes o Asaas tenta e que status intermediários prod
 A política de retentativa é do painel do Asaas, e exige esperar um ciclo real
 para observar.
 
+### Pix e boleto não descontam sozinhos
+
+Medido em 09/09/2026, e a resposta vale para os dois: **cada ciclo gera um
+documento que alguém precisa pagar.** A assinatura Pix não guarda instrumento
+nenhum (`creditCard` vazio), as cinco cobranças nascem `PENDING`, e cada uma tem
+o seu QR.
+
+Não existe Pix automático nesta API: `PIX_AUTOMATIC`, `AUTOMATIC_PIX` e
+`PIX_RECURRING` são recusados como valor inválido. `DEBIT_CARD` e `TRANSFER` são
+recusados com mensagem explícita — *"a forma de pagamento não é permitida para
+assinaturas"*.
+
+Consequência prática: **não há cenário de "Pix recusado" para testar.** Recusa é
+coisa de cobrança automática, e só o cartão a tem. Um Pix simplesmente não é
+pago — a cobrança vence, e o caso cai no fluxo de aviso e corte que este roteiro
+já prova.
+
 ### Trocar o cartão de uma assinatura
 
 Não é preciso cancelar e recriar. O endpoint é

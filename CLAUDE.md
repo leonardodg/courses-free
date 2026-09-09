@@ -313,8 +313,15 @@ API", que não é o nosso fluxo, e conclui que não havia. O que faltava era med
 caminho de verdade — o aluno pagando a fatura.
 
 **Depende do que o aluno usa para pagar.** Pix e boleto não deixam instrumento
-guardado: cada ciclo é uma fatura, e não há cartão para expirar. Cartão deixa, e
-traz as duas coisas juntas — cobrança sozinha e cartão que vence.
+guardado: cada ciclo gera um documento que alguém precisa pagar, e não há cartão
+para expirar. Cartão deixa, e traz as duas coisas juntas — cobrança sozinha e
+cartão que vence.
+
+Não existe Pix automático nesta API — `PIX_AUTOMATIC` e afins são recusados como
+valor inválido, e `DEBIT_CARD`/`TRANSFER` são recusados para assinatura com
+mensagem explícita. Daí uma consequência que evita teste inútil: **não há "Pix
+recusado" a testar**, porque recusa é coisa de cobrança automática e só o cartão
+a tem. Pix não pago apenas vence.
 
 **Cartão expirado é recusado na hora da compra**, com mensagem clara
 (`invalid_creditCard`), a cobrança fica `PENDING` e nada é guardado. O caso que
