@@ -268,4 +268,71 @@ final class sale_test extends \advanced_testcase {
         $this->assertSame(commission::BASE_NET, $sale->get('feebase'));
         $this->assertSame(commission::SOURCE_COMPANY, $sale->get('feesource'));
     }
+
+    /**
+     * Estornar revoga o direito e derruba a matricula.
+     *
+     * E a diferenca entre estorno e cancelamento: cancelar para de cobrar e
+     * deixa o aluno usar o que ja pagou; estornar devolve o dinheiro daquele
+     * periodo, entao o periodo tambem volta. Sem derrubar a matricula, o aluno
+     * receberia o dinheiro e continuaria no curso ate o cron passar.
+     *
+     * @return void
+     */
+    public function test_estorno_revoga_direito_e_matricula(): void {
+        global $DB;
+
+        $paymentid = $this->make_payment('asaas');
+        api::record_sale('local_marketplace', $paymentid, (int) $this->offer->get('id'), 25.0, 'pay_x');
+
+        payment\service_provider::deliver_order(
+            payment\service_provider::PAYMENT_AREA,
+            (int) $this->offer->get('id'),
+            $paymentid,
+            (int) $this->buyer->id
+        );
+
+        $antes = entitlement::get_active_for_user((int) $this->buyer->id);
+        $this->assertCount(1, $antes, 'a venda precisa ter gerado direito');
+
+        $revogou = api::record_refund($paymentid);
+
+        $this->assertTrue($revogou);
+        $this->assertSame([], entitlement::get_active_for_user((int) $this->buyer->id));
+
+        $todos = entitlement::get_records(['userid' => (int) $this->buyer->id]);
+        $this->assertSame(entitlement::STATUS_CANCELLED, reset($todos)->get('status'));
+
+        // A venda FICA no historico: apagar esconderia o dinheiro que entrou e
+        // saiu, e o relatorio precisa dos dois lados.
+        $this->assertTrue($DB->record_exists('local_marketplace_sale', ['paymentid' => $paymentid]));
+    }
+
+    /**
+     * Estornar duas vezes nao explode, e nao revoga de novo.
+     *
+     * @return void
+     */
+    public function test_estorno_repetido_nao_revoga_de_novo(): void {
+        $paymentid = $this->make_payment('asaas');
+        api::record_sale('local_marketplace', $paymentid, (int) $this->offer->get('id'), 25.0, 'pay_y');
+        payment\service_provider::deliver_order(
+            payment\service_provider::PAYMENT_AREA,
+            (int) $this->offer->get('id'),
+            $paymentid,
+            (int) $this->buyer->id
+        );
+
+        $this->assertTrue(api::record_refund($paymentid));
+        $this->assertFalse(api::record_refund($paymentid), 'ja estava revogado');
+    }
+
+    /**
+     * Pagamento que nao e de venda do marketplace nao revoga nada.
+     *
+     * @return void
+     */
+    public function test_estorno_de_pagamento_desconhecido_nao_faz_nada(): void {
+        $this->assertFalse(api::record_refund(999999));
+    }
 }

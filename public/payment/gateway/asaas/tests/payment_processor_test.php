@@ -449,4 +449,138 @@ final class payment_processor_test extends \advanced_testcase {
         $this->assertSame([], payment_processor::earliest_charge([]));
         $this->assertSame([], payment_processor::earliest_charge([['id' => 'sem_data']]));
     }
+
+    /**
+     * Monta uma linha da tabela do gateway para os testes de estorno.
+     *
+     * @param array $extra
+     * @return \stdClass
+     */
+    protected function linha(array $extra = []): \stdClass {
+        global $DB;
+
+        $base = (object) array_merge([
+            'asaaspaymentid' => 'pay_' . random_string(8),
+            'subscriptionid' => '',
+            'externalreference' => 'mdl-1-2-' . random_string(8),
+            'customerid' => 'cus_1',
+            'component' => 'local_marketplace',
+            'paymentarea' => 'offer',
+            'itemid' => 9,
+            'userid' => 7,
+            'accountid' => 3,
+            'amount' => 100.0,
+            'currency' => 'BRL',
+            'feeamount' => 25.0,
+            'feepercent' => 25.0,
+            'feebase' => 'gross',
+            'feesource' => 'company',
+            'billingtype' => 'CREDIT_CARD',
+            'environment' => 'sandbox',
+            'status' => 'CONFIRMED',
+            'paymentid' => 1,
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ], $extra);
+        $base->id = $DB->insert_record(payment_processor::TABLE, $base);
+
+        return $base;
+    }
+
+    /**
+     * Venda avulsa paga pode ser estornada.
+     *
+     * @return void
+     */
+    public function test_venda_avulsa_paga_pode_estornar(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame('', payment_processor::refund_blocker($this->linha()));
+        $this->assertSame('', payment_processor::refund_blocker($this->linha(['status' => 'RECEIVED'])));
+    }
+
+    /**
+     * Cobranca ainda nao paga nao se estorna.
+     *
+     * O Asaas responde "e possivel estornar somente cobrancas confirmadas ou
+     * recebidas", e logo depois do pagamento leva cerca de meio minuto para
+     * liberar. Mensagem propria em vez de erro cru no meio da tela.
+     *
+     * @return void
+     */
+    public function test_cobranca_pendente_nao_estorna(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame(
+            'errorrefundnotpaid',
+            payment_processor::refund_blocker($this->linha(['status' => 'PENDING']))
+        );
+    }
+
+    /**
+     * Estorno nao se repete.
+     *
+     * @return void
+     */
+    public function test_estorno_nao_se_repete(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame(
+            'errorrefundalready',
+            payment_processor::refund_blocker($this->linha(['status' => 'REFUNDED']))
+        );
+    }
+
+    /**
+     * O primeiro ciclo de uma assinatura pode ser estornado.
+     *
+     * @return void
+     */
+    public function test_primeiro_ciclo_pode_estornar(): void {
+        $this->resetAfterTest();
+
+        $primeiro = $this->linha(['subscriptionid' => 'sub_1']);
+
+        $this->assertSame('', payment_processor::refund_blocker($primeiro));
+    }
+
+    /**
+     * Do segundo ciclo em diante nao ha estorno, so cancelamento.
+     *
+     * Medido no sandbox em 09/09/2026: estornar um ciclo do meio devolve o
+     * dinheiro daquele mes e NAO para a assinatura - as cobrancas futuras
+     * seguem pendentes, e o aluno continua sendo cobrado depois de
+     * reembolsado. E o pior desfecho possivel, e por isso o caminho nao
+     * existe.
+     *
+     * @return void
+     */
+    public function test_ciclo_do_meio_nao_estorna(): void {
+        $this->resetAfterTest();
+
+        $this->linha(['subscriptionid' => 'sub_1', 'paymentid' => 1]);
+        $segundo = $this->linha(['subscriptionid' => 'sub_1', 'paymentid' => 2]);
+
+        $this->assertSame(
+            'errorrefundnotfirstcycle',
+            payment_processor::refund_blocker($segundo)
+        );
+    }
+
+    /**
+     * Ciclo anterior que nunca foi pago nao bloqueia o estorno.
+     *
+     * Uma linha pendente e checkout abandonado, e nao mes usado. Contar ela
+     * transformaria o primeiro pagamento de verdade em "ciclo do meio".
+     *
+     * @return void
+     */
+    public function test_ciclo_anterior_nao_pago_nao_bloqueia(): void {
+        $this->resetAfterTest();
+
+        $this->linha(['subscriptionid' => 'sub_1', 'status' => 'PENDING', 'paymentid' => null]);
+        $pago = $this->linha(['subscriptionid' => 'sub_1', 'paymentid' => 5]);
+
+        $this->assertSame('', payment_processor::refund_blocker($pago));
+    }
 }

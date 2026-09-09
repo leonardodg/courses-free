@@ -206,6 +206,44 @@ class gateway extends \core_payment\gateway {
     }
 
     /**
+     * Estorna a venda correspondente a um pagamento do core.
+     *
+     * Chamado pelo local_marketplace via component_class_callback, com a mesma
+     * assinatura para todo gateway - e por isso o nucleo continua sem saber o
+     * nome de nenhum.
+     *
+     * @param int $paymentid Registro em {payments}
+     * @return bool Verdadeiro quando o gateway aceitou o estorno.
+     */
+    public static function refund(int $paymentid): bool {
+        global $DB;
+
+        $linha = $DB->get_record(payment_processor::TABLE, ['paymentid' => $paymentid]);
+        if (!$linha) {
+            return false;
+        }
+
+        return payment_processor::refund($linha);
+    }
+
+    /**
+     * Motivo pelo qual esta venda nao pode ser estornada.
+     *
+     * Serve a TELA: e com isto que o botao some, em vez de aparecer e falhar
+     * na hora do clique. Devolve vazio quando o estorno e possivel.
+     *
+     * @param int $paymentid
+     * @return string Chave de string do erro, ou vazio
+     */
+    public static function refund_blocker(int $paymentid): string {
+        global $DB;
+
+        $linha = $DB->get_record(payment_processor::TABLE, ['paymentid' => $paymentid]);
+
+        return $linha ? payment_processor::refund_blocker($linha) : 'errorrefundunknown';
+    }
+
+    /**
      * Para de cobrar a assinatura deste aluno neste item.
      *
      * Chamado pelo local_marketplace quando o aluno cancela, via
