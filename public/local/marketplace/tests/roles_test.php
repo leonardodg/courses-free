@@ -433,4 +433,50 @@ final class roles_test extends \advanced_testcase {
             'contextid' => $contextid,
         ]);
     }
+
+    /**
+     * O gerente gere vendas; o editor, nao.
+     *
+     * Ver quem assinou e leitura, e cabe na viewreport. Cancelar a assinatura
+     * de outra pessoa mexe no dinheiro e no acesso dela - por isso e
+     * capability propria, e por isso quem so monta curso nao a tem.
+     *
+     * @return void
+     */
+    public function test_gerir_vendas_e_do_gerente(): void {
+        $this->assertContains('local/marketplace:managesales', roles::ALLOW_MANAGER);
+        $this->assertNotContains('local/marketplace:managesales', roles::ALLOW_EDITOR);
+    }
+
+    /**
+     * O estorno nao vai para papel nenhum da empresa, e a ausencia e a regra.
+     *
+     * Ele devolve dinheiro de verdade e revoga acesso, e nao tem desfazer.
+     * Fica com o administrador da plataforma, que o concede por empresa quando
+     * confiar em quem vai usar. Este teste existe para a concessao ser um ato
+     * deliberado, e nao um efeito colateral de alguem acrescentar a capability
+     * a lista do gerente sem pensar.
+     *
+     * @return void
+     */
+    public function test_estorno_nao_e_de_nenhum_papel_de_empresa(): void {
+        $this->assertNotContains('local/marketplace:refundsale', roles::ALLOW_MANAGER);
+        $this->assertNotContains('local/marketplace:refundsale', roles::ALLOW_EDITOR);
+    }
+
+    /**
+     * As duas capabilities novas existem de fato no db/access.php.
+     *
+     * Declarar na lista do papel sem declarar em access.php produz um papel que
+     * aponta para capability inexistente - o Moodle nao reclama, e a permissao
+     * simplesmente nunca vale.
+     *
+     * @return void
+     */
+    public function test_as_capabilities_novas_estao_declaradas(): void {
+        $todas = array_keys(get_all_capabilities());
+
+        $this->assertContains('local/marketplace:managesales', $todas);
+        $this->assertContains('local/marketplace:refundsale', $todas);
+    }
 }

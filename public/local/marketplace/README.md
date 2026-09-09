@@ -95,7 +95,37 @@ enxergar a B. Qual deles a pessoa recebe sai do `memberrole` do vínculo.
 | Criar e editar curso, publicar oferta | sim | sim |
 | Conta de pagamento, dados da empresa, relatório | sim | **não** |
 | Atribuir papel, configurar matrícula | sim | **não** |
+| Gerir vendas e assinaturas | sim | **não** |
+| **Estornar venda** | **não** | **não** |
 | Colocar arquivo no site | **não** | **não** |
+
+### As permissões sobre dinheiro
+
+| Capability | Quem tem por padrão | O que permite |
+|---|---|---|
+| `viewreport` | gerente | **Olhar**: relatório, lista de assinantes, números |
+| `managesales` | gerente | **Agir**: cancelar a assinatura de um aluno da empresa |
+| `refundsale` | **ninguém** | Estornar: devolve o dinheiro e revoga o acesso |
+
+`viewreport` e `managesales` são separadas porque olhar e agir são coisas
+diferentes. Ver quem assinou é leitura; cancelar a assinatura de outra pessoa
+mexe no dinheiro e no acesso dela.
+
+O aluno cancela a própria assinatura pela tela dele. O gerente cancela a de
+qualquer aluno da empresa, e a checagem é no contexto da **categoria** — quem
+gere uma empresa não gere a assinatura de outra. Ele chega pelo botão na aba de
+assinantes do relatório, que só aparece para assinatura vigente que ainda cobra:
+cancelar o que já acabou não pararia cobrança nenhuma.
+
+**`refundsale` não vai para papel nenhum**, nem para o gerente. O estorno
+devolve dinheiro de verdade, revoga acesso e não tem desfazer — fica com o
+administrador da plataforma, que a concede por empresa quando confiar em quem
+vai usar. O caminho normal é o aluno procurar o responsável, e ele decidir.
+
+Há teste fixando as três coisas: `managesales` no gerente e não no editor,
+`refundsale` em nenhum dos dois, e as duas declaradas em `db/access.php` — papel
+que aponta para capability inexistente não faz o Moodle reclamar, e a permissão
+simplesmente nunca vale.
 
 Até 04/09/2026 havia um papel só, e quem apenas montava curso também alcançava a
 credencial financeira da empresa.

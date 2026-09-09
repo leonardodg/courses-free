@@ -288,8 +288,14 @@ if ($view === 'students') {
         get_string('reportstudentsince', 'local_marketplace'),
         get_string('reportaccessuntil', 'local_marketplace'),
         get_string('companystatus', 'local_marketplace'),
+        '',
     ];
     $table->attributes['class'] = 'generaltable';
+
+    // Cancelar a assinatura de um aluno exige managesales, e nao viewreport:
+    // ver quem assinou e leitura, cancelar mexe no dinheiro e no acesso de
+    // outra pessoa. Quem so acompanha numero nao ve o botao.
+    $podegerir = has_capability('local/marketplace:managesales', $company->get_context());
 
     foreach ($rows as $row) {
         $timeend = (int) $row->timeend;
@@ -327,6 +333,15 @@ if ($view === 'students') {
             userdate((int) $row->timecreated, get_string('strftimedaydate')),
             $timeend > 0 ? userdate($timeend, get_string('strftimedaydate')) : get_string('accesslifetime', 'local_marketplace'),
             $badge,
+            // So para assinatura vigente que ainda cobra: cancelar o que ja
+            // acabou, ou o que ja foi cancelado, nao para cobranca nenhuma.
+            ($podegerir && $row->status === entitlement::STATUS_ACTIVE && !$row->norenew)
+                ? html_writer::link(
+                    new moodle_url('/local/marketplace/cancel.php', ['id' => $row->id]),
+                    get_string('cancelsubscription', 'local_marketplace'),
+                    ['class' => 'btn btn-sm btn-outline-secondary']
+                )
+                : '',
         ];
     }
 

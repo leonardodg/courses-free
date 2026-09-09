@@ -87,6 +87,38 @@ $capabilities = [
         'archetypes' => [],
     ],
 
+    // Gerir as vendas e assinaturas da empresa: cancelar a assinatura de um
+    // aluno, reenviar fatura, acompanhar ciclo.
+    //
+    // Separada da viewreport de proposito, e a diferenca e AGIR versus OLHAR.
+    // Ver quem assinou e leitura; cancelar a assinatura de outra pessoa mexe
+    // no dinheiro dela e no acesso dela. Quem so acompanha numero nao precisa
+    // do segundo.
+    'local/marketplace:managesales' => [
+        'riskbitmask' => RISK_PERSONAL | RISK_DATALOSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSECAT,
+        'archetypes' => [],
+    ],
+
+    // Estornar uma venda: devolve o dinheiro no gateway e revoga o acesso.
+    //
+    // NAO VAI PARA NENHUM PAPEL POR PADRAO, nem para o gerente da empresa.
+    // Estorno e irreversivel do lado de fora - o dinheiro sai da conta do
+    // vendedor, a comissao volta da plataforma, e nao ha "desfazer". Fica com
+    // o administrador da plataforma, que a concede por empresa quando confiar
+    // em quem vai usar.
+    //
+    // O caminho normal e o aluno procurar o responsavel da empresa, e ele
+    // decidir. Se a empresa for madura para operar isto sozinha, basta
+    // atribuir esta capability ao papel dela no contexto da categoria.
+    'local/marketplace:refundsale' => [
+        'riskbitmask' => RISK_PERSONAL | RISK_DATALOSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSECAT,
+        'archetypes' => [],
+    ],
+
     // Administrar TODAS as empresas. Do dono da plataforma, nao do vendedor.
     'local/marketplace:manageall' => [
         'riskbitmask' => RISK_PERSONAL | RISK_CONFIG | RISK_DATALOSS,

@@ -80,12 +80,18 @@ class roles {
      * tentar se dar um que permita upload - nao funciona, porque o PROHIBIT
      * abaixo nao e sobreponivel, mas a capability nao tem por que estar nas
      * maos de quem so monta curso.
+     *
+     * O ESTORNO NAO ESTA AQUI, e a ausencia e deliberada. Ele devolve dinheiro
+     * de verdade e revoga acesso, e nao tem desfazer - fica com o
+     * administrador da plataforma, que concede por empresa quando confiar em
+     * quem vai usar. Ver local/marketplace:refundsale em db/access.php.
      */
     public const ALLOW_MANAGER = [
         'enrol/fee:config',
         'enrol/manual:enrol',
         'local/marketplace:managecompany',
         'local/marketplace:managepayment',
+        'local/marketplace:managesales',
         'local/marketplace:viewreport',
         'moodle/course:enrolreview',
         'moodle/role:assign',
