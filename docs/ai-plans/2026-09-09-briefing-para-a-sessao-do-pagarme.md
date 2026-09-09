@@ -21,6 +21,11 @@ quem for abri-la. Ele não é o plano: o plano se escreve depois de medir.
 > `docs/ai-plans/2026-09-09-provas-de-pagamento-e-assinatura.md` e
 > `docs/ai-plans/2026-08-27-plano-original-asaas-e-pagarme.md`.
 >
+> Antes de criar a worktree, **sincronize o `dev` com
+> `upstream/MOODLE_502_STABLE`** — este projeto acompanha o Moodle em vez de
+> forkar, e feature nascida de um `dev` atrasado encontra o merge do upstream
+> depois, com o código dela no meio do caminho.
+>
 > Use worktree própria criada com `moodev new`, TDD, PHPUnit, Behat local com
 > `--profile=chrome`, `phpcs --standard=moodle` lendo o total, e documentação em
 > `docs/data-validation/` no formato dos roteiros que já existem.
@@ -208,6 +213,17 @@ com acentos nas strings de idioma e na documentação.
 ---
 
 ## Ambiente
+
+**Passo zero: sincronize com o upstream do Moodle.** Feature que nasce de um
+`dev` atrasado encontra o merge do upstream depois, com o código dela no meio do
+caminho.
+
+```bash
+git -C dev fetch -q upstream MOODLE_502_STABLE
+git -C dev rev-list --count origin/dev..upstream/MOODLE_502_STABLE   # zero, siga
+```
+
+Mais que zero, traga antes — `docs/dev/estrutura-worktrees.md`, seção 5.
 
 ```bash
 moodev new paygw-pagarme-v2 --new-stack --from origin/dev --no-code

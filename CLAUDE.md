@@ -131,6 +131,28 @@ Moodle 5.2 usa layout `public/` — os plugins ficam em `public/local/…`,
 **Fluxo:** commit no branch de feature → PR para `dev` → merge dispara deploy
 automático para a VPS. Não há PR `dev`→`main` no caminho normal.
 
+**ANTES DE ABRIR FEATURE NOVA, SINCRONIZE COM O UPSTREAM DO MOODLE.** Não é
+sugestão: este projeto acompanha o Moodle em vez de forkar, e uma feature que
+nasce de um `dev` atrasado vai encontrar o merge do upstream depois — com o
+código dela no meio do caminho. Conflito de `upstream` resolvido dentro de uma
+feature é conflito resolvido por quem não conhece a mudança do core.
+
+```bash
+git -C dev fetch -q upstream MOODLE_502_STABLE
+git -C dev rev-list --count origin/dev..upstream/MOODLE_502_STABLE
+```
+
+Zero, siga. Mais que zero, traga antes:
+
+```bash
+cd MOODLE_502_STABLE && git pull
+cd ../dev && git merge upstream/MOODLE_502_STABLE && git push origin dev
+```
+
+Só então `moodev new`. Procedimento completo e as armadilhas em
+`docs/dev/estrutura-worktrees.md`, seção 5 — inclusive a de **não editar o
+`.gitattributes` da raiz**, que é do upstream e conflita a cada sincronização.
+
 Container local: `courses-free-moodle-1` (Apache + PHP 8.4) e `courses-free-db-1`
 (MariaDB 11.4).
 
