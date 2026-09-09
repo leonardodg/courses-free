@@ -33,8 +33,31 @@ use local_marketplace\offer;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class notify_expiring extends \core\task\scheduled_task {
-    /** @var int Quantos dias antes do vencimento avisar. */
+    /**
+     * Janela em que a renovacao e oferecida, em dias.
+     *
+     * Nao e so desta tarefa: offers.php, mysubscriptions.php e o
+     * block_marketplace leem daqui para decidir quando mostrar o botao de
+     * renovar. Precisa continuar sendo um inteiro simples por isso.
+     *
+     * @var int
+     */
     const NOTICE_DAYS = 5;
+
+    /**
+     * Marcos de aviso, em dias antes do vencimento.
+     *
+     * Dois, e nao um: o primeiro lembra, o ultimo avisa que o acesso vai
+     * parar. Um aviso so, cinco dias antes, chega e se perde na caixa de
+     * entrada de quem ia renovar mesmo.
+     *
+     * O maior tem que casar com NOTICE_DAYS - avisar fora da janela em que o
+     * botao de renovar existe mandaria o aluno para uma vitrine sem botao.
+     * Ha teste fixando isso, porque sao duas constantes e elas podem divergir.
+     *
+     * @var int[]
+     */
+    const NOTICE_MILESTONES = [5, 1];
 
     /** @var string Preferencia que guarda o ultimo aviso enviado. */
     const PREF_PREFIX = 'local_marketplace_notified_';
@@ -91,11 +114,23 @@ class notify_expiring extends \core\task\scheduled_task {
             return false;
         }
 
-        // A chave inclui o vencimento. Assim uma renovacao, que muda o timeend,
-        // volta a permitir aviso - e o cron rodando de hora em hora nao manda o
-        // mesmo e-mail dezenas de vezes.
+        $milestone = self::milestone_for((int) $record->timeend, time());
+        if (!$milestone) {
+            return false;
+        }
+
+        // O valor guardado inclui o vencimento E o marco.
+        //
+        // O vencimento sozinho nao basta desde que passaram a existir dois
+        // avisos: gravando so ele, o de cinco dias marcaria a linha e o de um
+        // dia NUNCA sairia - sem erro, sem log, sem nada. Foi por isso que
+        // esta linha mudou junto com os marcos, e nao depois.
+        //
+        // O vencimento continua na chave porque a renovacao o muda, e e o que
+        // libera os dois avisos de novo no ciclo seguinte.
         $key = self::PREF_PREFIX . (int) $record->id;
-        if (get_user_preferences($key, '', $user) === (string) (int) $record->timeend) {
+        $marca = (int) $record->timeend . ':' . $milestone;
+        if (get_user_preferences($key, '', $user) === $marca) {
             return false;
         }
 
@@ -129,25 +164,59 @@ class notify_expiring extends \core\task\scheduled_task {
             'url' => $renewurl->out(false),
         ];
 
+        // O ultimo marco fala em bloqueio, e nao em vencimento. Repetir o mesmo
+        // texto duas vezes ensinaria o aluno a ignorar os dois.
+        $ultimo = $milestone === min(self::NOTICE_MILESTONES);
+        $prefixo = $ultimo ? 'expiringlast' : 'expiring';
+
         $message = new \core\message\message();
         $message->component = 'local_marketplace';
         $message->name = 'expiring';
         $message->userfrom = \core_user::get_noreply_user();
         $message->userto = $user;
-        $message->subject = get_string('expiringsubject', 'local_marketplace', $a);
-        $message->fullmessage = get_string('expiringbody', 'local_marketplace', $a);
+        $message->subject = get_string($prefixo . 'subject', 'local_marketplace', $a);
+        $message->fullmessage = get_string($prefixo . 'body', 'local_marketplace', $a);
         $message->fullmessageformat = FORMAT_PLAIN;
-        $message->fullmessagehtml = get_string('expiringbodyhtml', 'local_marketplace', $a);
-        $message->smallmessage = get_string('expiringsubject', 'local_marketplace', $a);
+        $message->fullmessagehtml = get_string($prefixo . 'bodyhtml', 'local_marketplace', $a);
+        $message->smallmessage = get_string($prefixo . 'subject', 'local_marketplace', $a);
         $message->notification = 1;
         $message->contexturl = $renewurl->out(false);
         $message->contexturlname = get_string('renewnow', 'local_marketplace');
 
         if (message_send($message)) {
-            set_user_preference($key, (string) (int) $record->timeend, $user);
+            set_user_preference($key, $marca, $user);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Qual marco de aviso se aplica a este vencimento.
+     *
+     * Devolve o marco MAIS APERTADO que ainda cobre o tempo restante: faltando
+     * tres dias, o marco e o de cinco; faltando algumas horas, e o de um. Sem
+     * isso, o aviso final nunca chegaria - o de cinco dias continuaria valendo
+     * ate o fim e marcaria a linha como ja avisada.
+     *
+     * Independe da ordem em que os marcos foram declarados.
+     *
+     * @param int $timeend Vencimento do direito
+     * @param int $now Momento de referencia
+     * @return int Marco em dias, ou 0 quando esta fora de todas as janelas
+     */
+    public static function milestone_for(int $timeend, int $now): int {
+        $restante = $timeend - $now;
+        if ($restante <= 0) {
+            // Ja venceu: "seu acesso vai vencer" depois do fato so confunde.
+            return 0;
+        }
+
+        $cabem = array_filter(
+            self::NOTICE_MILESTONES,
+            static fn(int $dias): bool => $restante <= $dias * DAYSECS
+        );
+
+        return $cabem ? min($cabem) : 0;
     }
 }

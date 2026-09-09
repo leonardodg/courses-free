@@ -127,6 +127,16 @@ No hay cobro automático — para mantener el acceso, pagá de nuevo acá:
 
 Si preferís dejarlo, no hagas nada y el acceso simplemente termina.';
 $string['expiringbodyhtml'] = '<p>Hola:</p><p>Tu acceso a <strong>{$a->offer}</strong>, de {$a->company}, termina el <strong>{$a->date}</strong>.</p><p>No hay cobro automático — para mantener el acceso, <a href="{$a->url}">pagá de nuevo acá</a>.</p><p>Si preferís dejarlo, no hagas nada y el acceso simplemente termina.</p>';
+$string['expiringlastbody'] = 'Hola:
+
+Este es el último aviso: tu acceso a {$a->offer}, de {$a->company}, termina el {$a->date}.
+
+Después de eso los cursos quedan bloqueados hasta que pagues de nuevo. No se pierde nada — tus notas y tu progreso quedan, y el acceso vuelve apenas entre el pago:
+{$a->url}
+
+Si preferís dejarlo, no hagas nada.';
+$string['expiringlastbodyhtml'] = '<p>Hola:</p><p>Este es el <strong>último aviso</strong>: tu acceso a <strong>{$a->offer}</strong>, de {$a->company}, termina el <strong>{$a->date}</strong>.</p><p>Después de eso los cursos quedan bloqueados hasta que pagues de nuevo. No se pierde nada — tus notas y tu progreso quedan, y el acceso vuelve apenas entre el pago: <a href="{$a->url}">pagar ahora</a>.</p><p>Si preferís dejarlo, no hagas nada.</p>';
+$string['expiringlastsubject'] = 'Último aviso: {$a->offer} se bloquea en {$a->days} día(s)';
 $string['expiringsubject'] = 'Tu acceso a {$a->offer} termina en {$a->days} día(s)';
 $string['filterallcategories'] = 'Todas las categorías';
 $string['filteralltypes'] = 'Todos los tipos';

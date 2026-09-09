@@ -139,15 +139,38 @@ class enrol_marketplace_plugin extends enrol_plugin {
     public function sync_user(int $userid): array {
         global $DB;
 
+        // Curso => ate quando o acesso vale. Zero e vitalicio.
+        //
+        // O prazo vai para a MATRICULA, e nao so para o direito. Sem isso o
+        // acesso dependia inteiramente desta tarefa rodar: entre o vencimento
+        // e a proxima passada o aluno continuava entrando, e com o cron parado
+        // continuava indefinidamente - falha silenciosa, porque o sintoma e
+        // aluno acessando de graca, e disso ninguem reclama.
+        //
+        // Nao vira segunda fonte da verdade: e PROJECAO do direito, escrita
+        // sempre por aqui. O sync trabalha por diferenca, entao qualquer
+        // divergencia se conserta sozinha na passada seguinte.
         $shouldhave = [];
         foreach (entitlement::get_active_for_user($userid) as $ent) {
             $offer = new \local_marketplace\offer($ent->get('offerid'));
+            $end = (int) $ent->get('timeend');
             foreach ($offer->get_course_ids() as $courseid) {
-                $shouldhave[$courseid] = true;
+                if (!array_key_exists($courseid, $shouldhave)) {
+                    $shouldhave[$courseid] = $end;
+                    continue;
+                }
+                // Dois direitos podem liberar o mesmo curso - um combo e uma
+                // assinatura, por exemplo. Vale o mais generoso, e vitalicio
+                // ganha de qualquer data.
+                if ($shouldhave[$courseid] === 0 || $end === 0) {
+                    $shouldhave[$courseid] = 0;
+                } else {
+                    $shouldhave[$courseid] = max($shouldhave[$courseid], $end);
+                }
             }
         }
 
-        $sql = "SELECT e.courseid, ue.status, e.id AS enrolid
+        $sql = "SELECT e.courseid, ue.status, ue.timeend, e.id AS enrolid
                   FROM {user_enrolments} ue
                   JOIN {enrol} e ON e.id = ue.enrolid
                  WHERE ue.userid = :userid AND e.enrol = 'marketplace'";
@@ -155,14 +178,28 @@ class enrol_marketplace_plugin extends enrol_plugin {
 
         $enrolled = $suspended = $reactivated = 0;
 
-        foreach (array_keys($shouldhave) as $courseid) {
+        foreach ($shouldhave as $courseid => $end) {
             if (!isset($current[$courseid])) {
                 $instance = $this->get_or_create_instance($courseid);
-                $this->enrol_user($instance, $userid, null, 0, 0, ENROL_USER_ACTIVE);
+                $this->enrol_user($instance, $userid, null, 0, $end, ENROL_USER_ACTIVE);
                 $enrolled++;
-            } else if ((int) $current[$courseid]->status !== ENROL_USER_ACTIVE) {
-                $instance = $DB->get_record('enrol', ['id' => $current[$courseid]->enrolid], '*', MUST_EXIST);
-                $this->update_user_enrol($instance, $userid, ENROL_USER_ACTIVE);
+                continue;
+            }
+
+            $suspensa = (int) $current[$courseid]->status !== ENROL_USER_ACTIVE;
+            $prazomudou = (int) $current[$courseid]->timeend !== $end;
+
+            if (!$suspensa && !$prazomudou) {
+                continue;
+            }
+
+            $instance = $DB->get_record('enrol', ['id' => $current[$courseid]->enrolid], '*', MUST_EXIST);
+            $this->update_user_enrol($instance, $userid, ENROL_USER_ACTIVE, null, $end);
+
+            // So conta reativacao quando havia suspensao. Renovar estende o
+            // prazo de uma matricula que ja estava ativa, e isso nao e
+            // reativar - misturar os dois faria o log do cron mentir.
+            if ($suspensa) {
                 $reactivated++;
             }
         }
