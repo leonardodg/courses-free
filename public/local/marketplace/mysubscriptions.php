@@ -47,7 +47,12 @@ $PAGE->set_heading(get_string('mysubscriptions', 'local_marketplace'));
 echo $OUTPUT->header();
 
 // Inclui vencidos e cancelados: e historico, nao painel de controle.
-$ents = entitlement::get_records(['userid' => (int) $USER->id], 'timeend DESC');
+//
+// A direcao vai em PARAMETRO SEPARADO. O persistent monta o ORDER BY como
+// "$sort . ' ' . $order", entao 'timeend DESC' aqui produzia
+// "ORDER BY timeend DESC ASC" - SQL invalido, e a pagina inteira morria em
+// dml_read_exception para qualquer aluno, inclusive quem nunca comprou nada.
+$ents = entitlement::get_records(['userid' => (int) $USER->id], 'timeend', 'DESC');
 
 if (!$ents) {
     echo $OUTPUT->notification(get_string('nosubscriptions', 'local_marketplace'), 'info');
