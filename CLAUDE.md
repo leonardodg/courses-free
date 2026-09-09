@@ -268,8 +268,26 @@ comissão veio da empresa pela `commission_terms_for()`, e não do padrão de
 fábrica. Direito de acesso ativo por 30 dias exatos e matrícula pelo
 `enrol_marketplace`.
 
+**O ciclo da assinatura foi provado inteiro** em 08/09/2026, com duas compras
+reais da mesma oferta: a renovação **soma** ao vencimento atual (11/09 → 11/10,
+`cycles = 2`, um único direito), cada ciclo leva o seu `application_fee` de
+R$ 1,25, o aviso sai uma vez só, e o vencimento suspende **por diferença** — três
+das quatro matrículas, porque a quarta vinha de outro direito ainda vigente.
+Matrícula é suspensa, nunca apagada.
+
+Para exercitar o ciclo não se espera mês nenhum: move-se o `timeend` do direito e
+roda-se a tarefa. Roteiro em `docs/data-validation/mercadopago-split.md`.
+
 **Continua sem prova:** o vendedor pessoa jurídica no Mercado Pago, que é o caso
 convencional e nunca foi exercitado.
+
+**Assinatura com débito automático é possível — pelo Asaas, e não está
+construída.** Medido em 08/09/2026 no sandbox: `POST /subscriptions` aceita o
+`split`, guarda com `status: ACTIVE`, e ele **chega na cobrança de cada ciclo**
+(`totalValue R$ 24,75`). O oposto do `preapproval` do Mercado Pago, que engole o
+campo. Atenção ao implementar: `percentualValue` incide sobre o **líquido**, como
+nas cobranças avulsas — comissão sobre o bruto exige `fixedValue`, que congela o
+valor de todos os ciclos.
 
 **Lacuna conhecida:** o `paygw_mercadopago` não tem tarefa de reconciliação, e o
 `paygw_asaas` tem. A linha nasce antes da chamada à API, o que é certo, mas
