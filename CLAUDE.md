@@ -295,10 +295,23 @@ vitalício ganha de qualquer data.
 **Continua sem prova:** o vendedor pessoa jurídica no Mercado Pago, que é o caso
 convencional e nunca foi exercitado.
 
-**Assinatura com débito automático existe no Asaas** desde 09/09/2026, e **não
-existe no Mercado Pago**. `POST /subscriptions` aceita o `split`, guarda com
+**Assinatura recorrente existe no Asaas** desde 09/09/2026, e **não existe no
+Mercado Pago**. `POST /subscriptions` aceita o `split`, guarda com
 `status: ACTIVE`, e ele chega na cobrança de cada ciclo — o oposto do
 `preapproval` do MP, que engole o campo (ver `docs/adr/0001`).
+
+**Não é débito automático, e chamá-lo assim foi erro meu em 09/09/2026.** O
+plugin cria a assinatura **sem cartão**, e medido no sandbox: sem cartão o Asaas
+gera as cobranças e a primeira nasce `PENDING` — ninguém é debitado, o aluno paga
+cada fatura. Com cartão na criação, a primeira nasce `CONFIRMED`. O que temos é
+**assinatura com faturas pré-geradas**: o ciclo existe no gateway, o split vale
+em cada cobrança, e quem aperta o botão continua sendo o aluno.
+
+Os quatro tipos de cobrança aceitam assinatura — Pix, boleto, cartão e
+indefinido —, e os três primeiros **não têm instrumento guardado**: não há débito
+automático e também não há cartão para expirar. Só o cartão guardado tem os dois.
+Trocá-lo é `PUT /subscriptions/{id}/creditCard`; o `PUT` comum aceita e ignora em
+silêncio, e o `subscriptionid` não muda, então `cycles` e histórico sobrevivem.
 
 Como funciona: oferta `recurring` faz o gateway criar assinatura em vez de
 cobrança avulsa. Quem decide é o marketplace, por `api::recurrence_for()` — o
