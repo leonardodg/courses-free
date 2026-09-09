@@ -94,7 +94,7 @@ class notify_expiring extends \core\task\scheduled_task {
 
         $sent = 0;
         foreach ($records as $record) {
-            if ($this->notify($record)) {
+            if (self::send_notice($record)) {
                 $sent++;
             }
         }
@@ -105,17 +105,28 @@ class notify_expiring extends \core\task\scheduled_task {
     /**
      * Manda um aviso, se ainda nao foi mandado para este vencimento.
      *
+     * PUBLICA E ESTATICA porque o gerente da empresa reenvia a mesma mensagem
+     * pela tela de assinantes. Duplicar a montagem daria dois textos que
+     * divergem na primeira edicao feita so num deles - e o do gerente e
+     * justamente o que ele manda quando o aluno diz "nao recebi".
+     *
      * @param \stdClass $record
+     * @param bool $force Ignora a deduplicacao. So para reenvio manual: no cron
+     *                    ela e o que impede o mesmo e-mail sair de hora em hora.
      * @return bool
      */
-    protected function notify(\stdClass $record): bool {
+    public static function send_notice(\stdClass $record, bool $force = false): bool {
         $user = \core_user::get_user((int) $record->userid, '*', IGNORE_MISSING);
         if (!$user || !empty($user->deleted) || !empty($user->suspended)) {
             return false;
         }
 
         $milestone = self::milestone_for((int) $record->timeend, time());
-        if (!$milestone) {
+
+        // No reenvio manual o marco pode nem existir - o gerente reenvia
+        // quando o aluno pede, e nao quando o calendario manda. Cai no texto
+        // brando, que e o certo para quem ainda nao esta na ultima semana.
+        if (!$milestone && !$force) {
             return false;
         }
 
@@ -130,7 +141,7 @@ class notify_expiring extends \core\task\scheduled_task {
         // libera os dois avisos de novo no ciclo seguinte.
         $key = self::PREF_PREFIX . (int) $record->id;
         $marca = (int) $record->timeend . ':' . $milestone;
-        if (get_user_preferences($key, '', $user) === $marca) {
+        if (!$force && get_user_preferences($key, '', $user) === $marca) {
             return false;
         }
 
@@ -156,12 +167,28 @@ class notify_expiring extends \core\task\scheduled_task {
             'highlight' => $offer->get('id'),
         ]);
 
+        // A FATURA, quando ela ja existe, vale mais que a vitrine.
+        //
+        // Numa assinatura o gateway ja gerou a cobranca do ciclo seguinte - com
+        // boleto ela nasce ate com linha digitavel. Mandar o aluno para a
+        // vitrine e pedir que ele COMPRE de novo algo que ja esta cobrado.
+        //
+        // Ausencia nao e erro: sem assinatura, ou com o gateway fora do ar, o
+        // aviso continua saindo com o caminho antigo.
+        $fatura = \local_marketplace\api::pending_invoice_for(
+            'local_marketplace',
+            (int) $record->offerid,
+            (int) $record->userid
+        );
+
         $a = (object) [
             'offer' => format_string($offer->get('name')),
             'company' => format_string($company->get('name')),
             'date' => userdate((int) $record->timeend, get_string('strftimedaydate')),
             'days' => max(1, (int) ceil(((int) $record->timeend - time()) / DAYSECS)),
-            'url' => $renewurl->out(false),
+            'url' => $fatura ? $fatura['url'] : $renewurl->out(false),
+            // Linha digitavel so existe em boleto. Vazia, o texto nao a menciona.
+            'line' => $fatura ? (string) $fatura['line'] : '',
         ];
 
         // O ultimo marco fala em bloqueio, e nao em vencimento. Repetir o mesmo
@@ -175,16 +202,30 @@ class notify_expiring extends \core\task\scheduled_task {
         $message->userfrom = \core_user::get_noreply_user();
         $message->userto = $user;
         $message->subject = get_string($prefixo . 'subject', 'local_marketplace', $a);
-        $message->fullmessage = get_string($prefixo . 'body', 'local_marketplace', $a);
+        $corpo = get_string($prefixo . 'body', 'local_marketplace', $a);
+        $corpohtml = get_string($prefixo . 'bodyhtml', 'local_marketplace', $a);
+        if ($a->line !== '') {
+            $corpo .= "\n\n" . get_string('expiringline', 'local_marketplace', $a->line);
+            $corpohtml .= \html_writer::tag(
+                'p',
+                get_string('expiringline', 'local_marketplace', \html_writer::tag('code', $a->line))
+            );
+        }
+
+        $message->fullmessage = $corpo;
         $message->fullmessageformat = FORMAT_PLAIN;
-        $message->fullmessagehtml = get_string($prefixo . 'bodyhtml', 'local_marketplace', $a);
+        $message->fullmessagehtml = $corpohtml;
         $message->smallmessage = get_string($prefixo . 'subject', 'local_marketplace', $a);
         $message->notification = 1;
-        $message->contexturl = $renewurl->out(false);
+        $message->contexturl = $a->url;
         $message->contexturlname = get_string('renewnow', 'local_marketplace');
 
         if (message_send($message)) {
-            set_user_preference($key, $marca, $user);
+            // O reenvio manual NAO marca a preferencia: se marcasse, o gerente
+            // reenviando hoje calaria o aviso automatico de amanha.
+            if (!$force) {
+                set_user_preference($key, $marca, $user);
+            }
             return true;
         }
 

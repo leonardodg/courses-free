@@ -137,6 +137,7 @@ After that the courses are blocked until you pay again. Nothing is lost — your
 If you would rather stop, do nothing.';
 $string['expiringlastbodyhtml'] = '<p>Hello,</p><p>This is the <strong>last notice</strong>: your access to <strong>{$a->offer}</strong>, from {$a->company}, ends on <strong>{$a->date}</strong>.</p><p>After that the courses are blocked until you pay again. Nothing is lost — your grades and progress stay, and access comes back as soon as the payment goes through: <a href="{$a->url}">pay now</a>.</p><p>If you would rather stop, do nothing.</p>';
 $string['expiringlastsubject'] = 'Last notice: {$a->offer} is blocked in {$a->days} day(s)';
+$string['expiringline'] = 'Bank slip line to copy: {$a}';
 $string['expiringsubject'] = 'Your access to {$a->offer} ends in {$a->days} day(s)';
 $string['filterallcategories'] = 'All categories';
 $string['filteralltypes'] = 'All types';
@@ -229,6 +230,7 @@ $string['pagelogo_help'] = 'Shown at the top of your storefront. A web image —
 $string['pagesection'] = 'Storefront';
 $string['pagetitle'] = 'Storefront title';
 $string['pagetitle_help'] = 'Shown as the page heading. Leave empty to use the company name.';
+$string['payinvoice'] = 'Pay this cycle';
 $string['paymentsection'] = 'Payment method';
 $string['plan'] = 'Plan';
 $string['plancommissionbase'] = 'Commission base';
@@ -315,6 +317,9 @@ $string['reportviewcourses'] = 'Courses sold';
 $string['reportviewstudents'] = 'Students';
 $string['reportviewsubscriptions'] = 'Subscriptions';
 $string['reportviewtransactions'] = 'Transactions';
+$string['resenddone'] = 'The learner was sent the invoice again.';
+$string['resendfailed'] = 'Nothing was sent — the learner may be suspended, or the offer is no longer on sale.';
+$string['resendinvoice'] = 'Resend invoice';
 $string['sellerrole'] = 'Company seller';
 $string['sellerroledesc'] = 'Builds and publishes courses for a company. Does not reach the payment account or the member list, and cannot upload files: course videos must be hosted outside the platform.';
 $string['settings'] = 'Settings';

@@ -30,6 +30,7 @@
 require(__DIR__ . '/../../config.php');
 
 use core_payment\helper;
+use local_marketplace\api;
 use local_marketplace\company;
 use local_marketplace\entitlement;
 use local_marketplace\offer;
@@ -129,7 +130,26 @@ foreach ($ents as $ent) {
         && $offer->accepts_cycle((int) $ent->get('cycles'))
         && ($expired || $cancelled || ($end > 0 && ($end - $now) < $notice));
 
-    if ($canpay) {
+    // A FATURA em aberto, quando existe, vale mais que a vitrine: numa
+    // assinatura o gateway ja gerou a cobranca do ciclo, e com boleto ela ja tem
+    // linha digitavel. Mandar para a vitrine e pedir que o aluno compre de novo
+    // algo que ja esta cobrado.
+    $fatura = api::pending_invoice_for('local_marketplace', (int) $offer->get('id'), (int) $USER->id);
+
+    if ($fatura) {
+        $actions = html_writer::link(
+            $fatura['url'],
+            get_string('payinvoice', 'local_marketplace'),
+            ['class' => 'btn btn-sm btn-primary', 'target' => '_blank', 'rel' => 'noopener']
+        );
+        if ($fatura['line'] !== '') {
+            $actions .= html_writer::tag(
+                'div',
+                html_writer::tag('code', s($fatura['line'])),
+                ['class' => 'small text-muted mt-1']
+            );
+        }
+    } else if ($canpay) {
         $actions = html_writer::link(
             new moodle_url('/local/marketplace/offers.php', [
                 'company' => $c->get('shortname'),

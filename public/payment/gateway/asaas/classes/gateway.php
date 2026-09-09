@@ -206,6 +206,36 @@ class gateway extends \core_payment\gateway {
     }
 
     /**
+     * A fatura em aberto do proximo ciclo deste aluno neste item.
+     *
+     * Chamada pelo local_marketplace via component_class_callback, com a mesma
+     * assinatura para todo gateway. Quem nao tem assinatura nao implementa, e o
+     * callback devolve o padrao.
+     *
+     * @param string $component
+     * @param int $itemid
+     * @param int $userid
+     * @return array|null url, duedate, value e line, ou null quando nao ha
+     */
+    public static function pending_invoice(string $component, int $itemid, int $userid): ?array {
+        global $DB;
+
+        $linhas = $DB->get_records_select(
+            payment_processor::TABLE,
+            "component = :component AND itemid = :itemid AND userid = :userid
+             AND subscriptionid IS NOT NULL AND subscriptionid <> ''",
+            ['component' => $component, 'itemid' => $itemid, 'userid' => $userid],
+            'id DESC',
+            '*',
+            0,
+            1
+        );
+        $linha = reset($linhas);
+
+        return $linha ? payment_processor::pending_invoice($linha) : null;
+    }
+
+    /**
      * Estorna a venda correspondente a um pagamento do core.
      *
      * Chamado pelo local_marketplace via component_class_callback, com a mesma

@@ -298,6 +298,33 @@ class asaas_client {
     }
 
     /**
+     * Linha digitavel de um boleto.
+     *
+     * O boleto do ciclo ja nasce pronto - medido em 09/09/2026, as cobrancas de
+     * uma assinatura vem com bankSlipUrl e linha digitavel desde a criacao, sem
+     * ninguem pedir. Copiar o numero e mais rapido que abrir o PDF, e no celular
+     * e a diferenca entre pagar e adiar.
+     *
+     * Devolve vazio para qualquer coisa que nao seja boleto: o Asaas responde
+     * erro, e nao ha por que transformar isso em excecao no meio de uma lista.
+     *
+     * @param string $paymentid
+     * @return string Vazio quando nao ha linha digitavel.
+     */
+    public function identification_field(string $paymentid): string {
+        try {
+            $resposta = $this->request(
+                'GET',
+                '/payments/' . rawurlencode($paymentid) . '/identificationField'
+            );
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        return (string) ($resposta['identificationField'] ?? '');
+    }
+
+    /**
      * Estorna uma cobranca, por inteiro.
      *
      * O ASAAS REVERTE O SPLIT SOZINHO: medido no sandbox em 09/09/2026, o

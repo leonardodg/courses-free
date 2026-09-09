@@ -104,7 +104,7 @@ enxergar a B. Qual deles a pessoa recebe sai do `memberrole` do vínculo.
 | Capability | Quem tem por padrão | O que permite |
 |---|---|---|
 | `viewreport` | gerente | **Olhar**: relatório, lista de assinantes, números |
-| `managesales` | gerente | **Agir**: cancelar a assinatura de um aluno da empresa |
+| `managesales` | gerente | **Agir**: cancelar a assinatura de um aluno, e reenviar a fatura do ciclo |
 | `refundsale` | **ninguém** | Estornar: devolve o dinheiro e revoga o acesso |
 
 `viewreport` e `managesales` são separadas porque olhar e agir são coisas
@@ -116,6 +116,28 @@ qualquer aluno da empresa, e a checagem é no contexto da **categoria** — quem
 gere uma empresa não gere a assinatura de outra. Ele chega pelo botão na aba de
 assinantes do relatório, que só aparece para assinatura vigente que ainda cobra:
 cancelar o que já acabou não pararia cobrança nenhuma.
+
+### A fatura do ciclo
+
+O aviso de vencimento levava o aluno à **vitrine**. Numa assinatura isso é pedir
+que ele compre de novo algo que já está cobrado — o gateway já gerou a cobrança
+do ciclo, e com boleto ela já nasce com linha digitável.
+
+Agora o aviso leva à **fatura**, e traz a linha digitável quando existe. A mesma
+fatura aparece em *Minhas assinaturas*, com botão de pagar.
+
+O gerente reenvia a fatura pela aba de assinantes — *"não recebi o boleto"* é o
+motivo mais comum de uma mensalidade não ser paga, e até aqui a única saída dele
+era copiar o link à mão, se soubesse onde achar.
+
+O reenvio manda **a mesma mensagem** que o cron manda: dois textos separados
+divergiriam na primeira edição feita só num deles. E ele **não marca a
+preferência de aviso enviado** — se marcasse, reenviar hoje calaria o aviso
+automático de amanhã.
+
+Ausência de fatura não é erro: sem assinatura, ou com o gateway fora do ar, tudo
+volta ao caminho antigo. Nem a tela nem o e-mail podem quebrar porque o gateway
+piscou.
 
 **`refundsale` não vai para papel nenhum**, nem para o gerente. O estorno
 devolve dinheiro de verdade, revoga acesso e não tem desfazer — fica com o
