@@ -3,11 +3,13 @@
 Roteiro da assinatura recorrente: criada, ciclo cobrado, acesso cortado por
 falta de pagamento e devolvido ao pagar a atrasada — tudo sem esperar mês nenhum.
 
-**Não é débito automático.** O plugin cria a assinatura sem cartão, e sem cartão
-o Asaas gera as cobranças mas não debita ninguém: a primeira nasce `PENDING` e o
-aluno paga cada fatura. Débito automático exige o cartão na criação, e aí a
-primeira nasce `CONFIRMED`. Os quatro tipos aceitam assinatura, mas só o cartão
-guardado cobra sozinho — e só ele tem cartão para expirar.
+**Há débito automático quando o aluno paga com cartão, e quem guarda o cartão é o
+gateway** — nunca o Moodle. A assinatura nasce sem cartão; o aluno paga a
+primeira fatura na página do Asaas, e o Asaas passa a guardar aquele cartão. As
+cobranças seguintes já nascem com ele anexado.
+
+Com Pix ou boleto não há instrumento guardado: cada ciclo é uma fatura, e não há
+cartão para expirar.
 
 O irmão deste documento é [`asaas-sandbox.md`](asaas-sandbox.md), que prova o
 split da cobrança avulsa. Aqui o que se prova é o **ciclo**.
@@ -122,11 +124,30 @@ quanto o problema do cartão vencido.
 |---|---|---|
 | `PIX` | não — um Pix por ciclo | **não existe** |
 | `BOLETO` | não — um boleto por ciclo | **não existe** |
-| `CREDIT_CARD` sem cartão na criação | não — gera fatura | não existe |
-| `CREDIT_CARD` com cartão na criação | **sim**, a 1ª nasce `CONFIRMED` | **sim** |
+| `CREDIT_CARD` | **sim, depois que o aluno paga a 1ª fatura** | **sim** |
+| `UNDEFINED` | depende do que o aluno usar na 1ª | só se ele usar cartão |
 
-Nos três primeiros não há o que expirar nem o que trocar, e também não há débito
-automático. Só o último tem os dois.
+O que decide não é como a assinatura foi criada, e sim **com que instrumento o
+aluno pagou**. A assinatura nasce sem cartão; pagando com cartão, o Asaas guarda
+e os ciclos seguintes saem sozinhos. Pagando com Pix ou boleto, não há nada
+guardado e cada ciclo é uma fatura.
+
+### Cartão vencido
+
+Na **compra**, é recusado na hora: `invalid_creditCard`, *"O cartão informado
+está expirado"*. A cobrança fica `PENDING`, a assinatura `ACTIVE`, e **nada é
+guardado** — o aluno tenta de novo com outro cartão.
+
+O caso que machuca é comprar com cartão que vence **no mês seguinte**. O Asaas
+guarda, e o ciclo seguinte falha. O aluno cai no caminho manual que já existe:
+recebe os avisos de vencimento, abre a fatura e paga com outro cartão — e esse
+pagamento **atualiza o cartão guardado**, então o ciclo seguinte volta a ser
+automático.
+
+**Não medido:** o que a cobrança automática faz exatamente quando o cartão
+guardado falha — quantas vezes o Asaas tenta e que status intermediários produz.
+A política de retentativa é do painel do Asaas, e exige esperar um ciclo real
+para observar.
 
 ### Trocar o cartão de uma assinatura
 

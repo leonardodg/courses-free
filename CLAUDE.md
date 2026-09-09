@@ -300,18 +300,31 @@ Mercado Pago**. `POST /subscriptions` aceita o `split`, guarda com
 `status: ACTIVE`, e ele chega na cobrança de cada ciclo — o oposto do
 `preapproval` do MP, que engole o campo (ver `docs/adr/0001`).
 
-**Não é débito automático, e chamá-lo assim foi erro meu em 09/09/2026.** O
-plugin cria a assinatura **sem cartão**, e medido no sandbox: sem cartão o Asaas
-gera as cobranças e a primeira nasce `PENDING` — ninguém é debitado, o aluno paga
-cada fatura. Com cartão na criação, a primeira nasce `CONFIRMED`. O que temos é
-**assinatura com faturas pré-geradas**: o ciclo existe no gateway, o split vale
-em cada cobrança, e quem aperta o botão continua sendo o aluno.
+**Há débito automático, e quem guarda o cartão é o GATEWAY.** O Moodle não
+guarda dado de cartão em lugar nenhum, e não vai guardar. Medido no sandbox em
+09/09/2026, no fluxo real do plugin: a assinatura nasce sem cartão, o aluno paga
+a primeira fatura com cartão na página do Asaas, e **o Asaas passa a guardar
+aquele cartão** — a assinatura sai de "nenhum" para "final 8829", e as cobranças
+seguintes já nascem com o cartão anexado.
 
-Os quatro tipos de cobrança aceitam assinatura — Pix, boleto, cartão e
-indefinido —, e os três primeiros **não têm instrumento guardado**: não há débito
-automático e também não há cartão para expirar. Só o cartão guardado tem os dois.
-Trocá-lo é `PUT /subscriptions/{id}/creditCard`; o `PUT` comum aceita e ignora em
-silêncio, e o `subscriptionid` não muda, então `cycles` e histórico sobrevivem.
+Corrigi isto duas vezes no mesmo dia, e vale registrar o erro: primeiro chamei de
+débito automático sem medir; depois medi só "assinatura criada COM cartão via
+API", que não é o nosso fluxo, e conclui que não havia. O que faltava era medir o
+caminho de verdade — o aluno pagando a fatura.
+
+**Depende do que o aluno usa para pagar.** Pix e boleto não deixam instrumento
+guardado: cada ciclo é uma fatura, e não há cartão para expirar. Cartão deixa, e
+traz as duas coisas juntas — cobrança sozinha e cartão que vence.
+
+**Cartão expirado é recusado na hora da compra**, com mensagem clara
+(`invalid_creditCard`), a cobrança fica `PENDING` e nada é guardado. O caso que
+machuca é o outro: comprar com cartão que vence no mês seguinte. O Asaas guarda,
+e o ciclo seguinte falha - o aluno cai no caminho manual, recebe os avisos de
+vencimento e paga a fatura com outro cartão, o que **atualiza o cartão guardado**.
+
+Trocar o cartão sem esperar a falha é `PUT /subscriptions/{id}/creditCard`. O
+`PUT` comum aceita e ignora em silêncio. O `subscriptionid` não muda, então
+`cycles` e histórico sobrevivem.
 
 Como funciona: oferta `recurring` faz o gateway criar assinatura em vez de
 cobrança avulsa. Quem decide é o marketplace, por `api::recurrence_for()` — o
