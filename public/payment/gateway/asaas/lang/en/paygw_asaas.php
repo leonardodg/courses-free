@@ -58,6 +58,7 @@ $string['errornosite'] = 'Asaas requires the return URL to use <strong>the same 
 $string['errornotlinked'] = 'No Asaas account is linked for {$a}.';
 $string['errornowallet'] = 'The key is valid but the account has no wallet, so it cannot take part in a split.';
 $string['errorrefundalready'] = 'This sale has already been refunded.';
+$string['errorrefundbillingtype'] = 'Asaas only refunds card and Pix charges. A bank slip cannot be refunded — not even after a manual settlement. Return the money outside the platform and cancel the subscription here.';
 $string['errorrefundnotfirstcycle'] = 'Only the first payment of a subscription can be refunded. From the second cycle on, cancel the subscription instead — the learner used the previous months.';
 $string['errorrefundnotpaid'] = 'Only a confirmed or received charge can be refunded. Right after payment Asaas needs about half a minute before it allows a refund.';
 $string['errorrefundunknown'] = 'No Asaas charge was found for this payment.';

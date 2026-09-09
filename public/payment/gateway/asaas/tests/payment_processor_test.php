@@ -583,4 +583,46 @@ final class payment_processor_test extends \advanced_testcase {
 
         $this->assertSame('', payment_processor::refund_blocker($pago));
     }
+
+    /**
+     * Boleto nao tem estorno, nem depois de baixa manual.
+     *
+     * Medido em 09/09/2026: o Asaas recusa pela FORMA DE PAGAMENTO - "somente e
+     * possivel estornar cobrancas cuja a forma de pagamento seja cartao de
+     * credito ou Pix" -, e continua recusando com o status RECEIVED_IN_CASH.
+     *
+     * Sem esta regra o botao aparecia numa venda por boleto e o clique morria
+     * com erro cru da API, diante de quem esta resolvendo um problema de
+     * dinheiro com um aluno.
+     *
+     * @return void
+     */
+    public function test_boleto_nao_estorna(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame(
+            'errorrefundbillingtype',
+            payment_processor::refund_blocker($this->linha(['billingtype' => 'BOLETO']))
+        );
+        $this->assertSame(
+            'errorrefundbillingtype',
+            payment_processor::refund_blocker($this->linha([
+                'billingtype' => 'BOLETO',
+                'status' => 'RECEIVED_IN_CASH',
+            ])),
+            'nem baixa manual libera o estorno de boleto'
+        );
+    }
+
+    /**
+     * Cartao e Pix estornam.
+     *
+     * @return void
+     */
+    public function test_cartao_e_pix_estornam(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame('', payment_processor::refund_blocker($this->linha(['billingtype' => 'CREDIT_CARD'])));
+        $this->assertSame('', payment_processor::refund_blocker($this->linha(['billingtype' => 'PIX'])));
+    }
 }

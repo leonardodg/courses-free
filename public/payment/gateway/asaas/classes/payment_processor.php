@@ -362,6 +362,20 @@ class payment_processor {
     }
 
     /**
+     * Formas de pagamento que o Asaas aceita estornar.
+     *
+     * Boleto fica de fora porque o gateway o recusa, e nao porque escolhemos:
+     * "somente e possivel estornar cobrancas cuja a forma de pagamento seja
+     * cartao de credito ou Pix". Nem baixa manual muda isso.
+     *
+     * UNDEFINED entra: quando o aluno escolhe na fatura, a coluna guarda o que
+     * foi escolhido, e o que chega aqui ja e o tipo real.
+     *
+     * @var string[]
+     */
+    const REFUNDABLE_TYPES = ['CREDIT_CARD', 'PIX'];
+
+    /**
      * Esta venda pode ser estornada, e por que nao.
      *
      * Tres regras, e as tres vieram de medicao no sandbox em 09/09/2026, e nao
@@ -391,6 +405,18 @@ class payment_processor {
 
         if (!self::is_paid((string) $record->status)) {
             return 'errorrefundnotpaid';
+        }
+
+        // BOLETO NAO TEM ESTORNO, em circunstancia nenhuma. O Asaas recusa pela
+        // forma de pagamento: "somente e possivel estornar cobrancas cuja a
+        // forma de pagamento seja cartao de credito ou Pix" - e continua
+        // recusando mesmo depois de baixa manual. Medido em 09/09/2026.
+        //
+        // Sem esta checagem o botao aparecia numa venda por boleto e o clique
+        // morria com erro cru da API, diante de quem esta resolvendo um
+        // problema de dinheiro com um aluno.
+        if (!in_array(strtoupper((string) $record->billingtype), self::REFUNDABLE_TYPES, true)) {
+            return 'errorrefundbillingtype';
         }
 
         if (empty($record->subscriptionid)) {
