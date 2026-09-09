@@ -58,6 +58,7 @@ $string['errornosite'] = 'O Asaas exige que a URL de retorno use <strong>o mesmo
 $string['errornotlinked'] = 'Nenhuma conta Asaas vinculada em {$a}.';
 $string['errornowallet'] = 'A chave é válida, mas a conta não tem carteira e por isso não pode participar de um split.';
 $string['errorrefundalready'] = 'Esta venda já foi estornada.';
+$string['errorrefundbillingtype'] = 'O Asaas só estorna cobranças de cartão e Pix. Boleto não tem estorno — nem depois de baixa manual. Devolva o dinheiro fora da plataforma e cancele a assinatura por aqui.';
 $string['errorrefundnotfirstcycle'] = 'Só a primeira cobrança de uma assinatura pode ser estornada. Do segundo ciclo em diante, cancele a assinatura — o aluno usou os meses anteriores.';
 $string['errorrefundnotpaid'] = 'Só cobrança confirmada ou recebida pode ser estornada. Logo depois do pagamento o Asaas leva cerca de meio minuto para liberar o estorno.';
 $string['errorrefundunknown'] = 'Não foi encontrada cobrança do Asaas para este pagamento.';

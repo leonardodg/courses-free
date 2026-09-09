@@ -180,6 +180,29 @@ Pelo endpoint certo, o `subscriptionid` não muda e o split sobrevive
 (`percentual 25.0 | ACTIVE`) — então `cycles`, histórico e as linhas da nossa
 tabela continuam válidos.
 
+### Boleto e Pix, medidos
+
+**O boleto do ciclo já nasce pronto.** As cinco cobranças têm `bankSlipUrl` e
+linha digitável desde a criação, sem ninguém pedir. A ação que falta ao aluno é
+**pagar**, e não gerar.
+
+**Estorno depende da forma de pagamento**, e é o gateway que decide:
+
+| Forma | Estorno |
+|---|---|
+| Cartão | sim, quando `CONFIRMED`/`RECEIVED` |
+| Pix | sim, quando recebido |
+| **Boleto** | **nunca** — nem depois de baixa manual |
+
+O Asaas recusa boleto com *"somente é possível estornar cobranças cuja a forma de
+pagamento seja cartão de crédito ou Pix"*, e continua recusando com o status
+`RECEIVED_IN_CASH`. Devolver dinheiro de boleto é ato fora da plataforma; aqui o
+que cabe é cancelar a assinatura.
+
+Isso virou regra no `refund_blocker()`: sem ela o botão aparecia numa venda por
+boleto e o clique morria com erro cru da API, diante de quem está resolvendo um
+problema de dinheiro com um aluno.
+
 ## Armadilhas
 
 **Direito de outra oferta segura o acesso.** Na primeira tentativa o corte

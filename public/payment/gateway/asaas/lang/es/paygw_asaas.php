@@ -58,6 +58,7 @@ $string['errornosite'] = 'Asaas exige que la URL de retorno use <strong>el mismo
 $string['errornotlinked'] = 'No hay cuenta de Asaas vinculada en {$a}.';
 $string['errornowallet'] = 'La clave es válida, pero la cuenta no tiene billetera y por eso no puede participar de un split.';
 $string['errorrefundalready'] = 'Esta venta ya fue reembolsada.';
+$string['errorrefundbillingtype'] = 'Asaas solo reembolsa cobros de tarjeta y Pix. El boleto no admite reembolso — ni después de una baja manual. Devolvé el dinero fuera de la plataforma y cancelá la suscripción acá.';
 $string['errorrefundnotfirstcycle'] = 'Solo el primer cobro de una suscripción puede reembolsarse. Del segundo ciclo en adelante, cancelá la suscripción — el estudiante usó los meses anteriores.';
 $string['errorrefundnotpaid'] = 'Solo un cobro confirmado o recibido puede reembolsarse. Justo después del pago, Asaas tarda cerca de medio minuto en habilitarlo.';
 $string['errorrefundunknown'] = 'No se encontró un cobro de Asaas para este pago.';
