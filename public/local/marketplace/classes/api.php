@@ -647,6 +647,45 @@ class api {
     }
 
     /**
+     * A fatura em aberto do proximo ciclo, perguntada aos gateways.
+     *
+     * O aviso de vencimento mandava o aluno para a VITRINE, e o que ele precisa
+     * e da FATURA. Com boleto a diferenca e grande: a cobranca do ciclo ja nasce
+     * pronta e com linha digitavel, e o aluno estava sendo mandado para uma tela
+     * onde teria que comprar de novo.
+     *
+     * Devolve null quando nao ha assinatura, quando o gateway nao sabe
+     * responder, ou quando a rede falha. Quem chama trata a ausencia como
+     * "mostre o caminho antigo" - nem o e-mail nem a tela podem quebrar porque
+     * o gateway piscou.
+     *
+     * @param string $component
+     * @param int $itemid
+     * @param int $userid
+     * @return array|null url, duedate, value e line
+     */
+    public static function pending_invoice_for(string $component, int $itemid, int $userid): ?array {
+        foreach (self::billing_capable_gateways() as $name) {
+            $classname = '\paygw_' . $name . '\gateway';
+            try {
+                $fatura = \component_class_callback(
+                    $classname,
+                    'pending_invoice',
+                    [$component, $itemid, $userid],
+                    null
+                );
+            } catch (\Throwable $e) {
+                continue;
+            }
+            if (is_array($fatura) && !empty($fatura['url'])) {
+                return $fatura;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Motivo pelo qual esta venda nao pode ser estornada.
      *
      * Existe para a TELA: e com isto que o botao some, em vez de aparecer e

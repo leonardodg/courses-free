@@ -137,6 +137,7 @@ Después de eso los cursos quedan bloqueados hasta que pagues de nuevo. No se pi
 Si preferís dejarlo, no hagas nada.';
 $string['expiringlastbodyhtml'] = '<p>Hola:</p><p>Este es el <strong>último aviso</strong>: tu acceso a <strong>{$a->offer}</strong>, de {$a->company}, termina el <strong>{$a->date}</strong>.</p><p>Después de eso los cursos quedan bloqueados hasta que pagues de nuevo. No se pierde nada — tus notas y tu progreso quedan, y el acceso vuelve apenas entre el pago: <a href="{$a->url}">pagar ahora</a>.</p><p>Si preferís dejarlo, no hagas nada.</p>';
 $string['expiringlastsubject'] = 'Último aviso: {$a->offer} se bloquea en {$a->days} día(s)';
+$string['expiringline'] = 'Línea digitable del boleto, para copiar: {$a}';
 $string['expiringsubject'] = 'Tu acceso a {$a->offer} termina en {$a->days} día(s)';
 $string['filterallcategories'] = 'Todas las categorías';
 $string['filteralltypes'] = 'Todos los tipos';
@@ -229,6 +230,7 @@ $string['pagelogo_help'] = 'Aparece arriba de tu vidriera. Una imagen web — PN
 $string['pagesection'] = 'Vidriera';
 $string['pagetitle'] = 'Título de la vidriera';
 $string['pagetitle_help'] = 'Aparece como título de la página. Vacío usa el nombre de la empresa.';
+$string['payinvoice'] = 'Pagar este ciclo';
 $string['paymentsection'] = 'Medio de pago';
 $string['plan'] = 'Plan';
 $string['plancommissionbase'] = 'Base de la comisión';
@@ -315,6 +317,9 @@ $string['reportviewcourses'] = 'Cursos vendidos';
 $string['reportviewstudents'] = 'Estudiantes';
 $string['reportviewsubscriptions'] = 'Suscripciones';
 $string['reportviewtransactions'] = 'Transacciones';
+$string['resenddone'] = 'El cobro fue reenviado al estudiante.';
+$string['resendfailed'] = 'No se envió nada — el estudiante puede estar suspendido, o la oferta salió de venta.';
+$string['resendinvoice'] = 'Reenviar cobro';
 $string['sellerrole'] = 'Vendedor de la empresa';
 $string['sellerroledesc'] = 'Arma y publica cursos para una empresa. No alcanza la cuenta de pago ni la lista de miembros, y no puede subir archivos: los videos del curso deben alojarse fuera de la plataforma.';
 $string['settings'] = 'Configuración';

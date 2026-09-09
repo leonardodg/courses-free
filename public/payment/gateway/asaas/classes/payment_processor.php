@@ -486,6 +486,64 @@ class payment_processor {
     }
 
     /**
+     * A fatura em aberto do proximo ciclo, se houver.
+     *
+     * Existe porque o aviso de vencimento mandava o aluno para a VITRINE, e o
+     * que ele precisa e da FATURA. Com boleto a diferenca e grande: a cobranca
+     * do ciclo ja nasce pronta, com linha digitavel, e o aluno estava sendo
+     * mandado para uma tela onde teria que comprar de novo.
+     *
+     * As cobrancas futuras nao tem linha na nossa tabela - so as pagas viram
+     * linha, pelo webhook. Entao a lista vem do gateway, pela assinatura.
+     *
+     * Falha de rede devolve null, e nao excecao: isto alimenta uma tela e um
+     * e-mail, e nenhum dos dois pode quebrar porque o gateway piscou.
+     *
+     * @param \stdClass $record Linha com subscriptionid, accountid e environment
+     * @return array|null url, duedate, value e line (linha digitavel), ou null
+     */
+    public static function pending_invoice(\stdClass $record): ?array {
+        if (empty($record->subscriptionid)) {
+            return null;
+        }
+
+        $apikey = credentials::api_key((int) $record->accountid, $record->environment);
+        if ($apikey === '') {
+            return null;
+        }
+
+        try {
+            $client = new asaas_client($apikey, $record->environment);
+            $cobrancas = $client->subscription_payments((string) $record->subscriptionid);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        // A mais proxima entre as que ainda nao foram pagas. Vencida entra: ela
+        // e justamente a que o aluno precisa pagar para o acesso voltar.
+        $abertas = array_filter(
+            $cobrancas,
+            static fn(array $c): bool => !self::is_paid((string) ($c['status'] ?? ''))
+                && strtoupper((string) ($c['status'] ?? '')) !== 'REFUNDED'
+        );
+        $alvo = self::earliest_charge($abertas);
+        if (!$alvo) {
+            return null;
+        }
+
+        return [
+            'url' => (string) ($alvo['invoiceUrl'] ?? ''),
+            'duedate' => (string) ($alvo['dueDate'] ?? ''),
+            'value' => (float) ($alvo['value'] ?? 0),
+            // So o boleto tem; para Pix e cartao volta vazio, e a tela nao
+            // mostra o campo em vez de mostrar um espaco vago.
+            'line' => empty($alvo['bankSlipUrl'])
+                ? ''
+                : $client->identification_field((string) $alvo['id']),
+        ];
+    }
+
+    /**
      * A cobranca que o aluno tem que pagar AGORA.
      *
      * O Asaas nao gera uma cobranca por vez: uma assinatura semanal nasce com

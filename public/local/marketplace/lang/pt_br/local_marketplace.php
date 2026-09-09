@@ -137,6 +137,7 @@ Depois disso os cursos ficam bloqueados até você pagar de novo. Nada se perde 
 Se preferir parar, não faça nada.';
 $string['expiringlastbodyhtml'] = '<p>Olá,</p><p>Este é o <strong>último aviso</strong>: seu acesso a <strong>{$a->offer}</strong>, de {$a->company}, termina em <strong>{$a->date}</strong>.</p><p>Depois disso os cursos ficam bloqueados até você pagar de novo. Nada se perde — suas notas e seu progresso continuam, e o acesso volta assim que o pagamento entrar: <a href="{$a->url}">pagar agora</a>.</p><p>Se preferir parar, não faça nada.</p>';
 $string['expiringlastsubject'] = 'Último aviso: {$a->offer} será bloqueado em {$a->days} dia(s)';
+$string['expiringline'] = 'Linha digitável do boleto, para copiar: {$a}';
 $string['expiringsubject'] = 'Seu acesso a {$a->offer} termina em {$a->days} dia(s)';
 $string['filterallcategories'] = 'Todas as categorias';
 $string['filteralltypes'] = 'Todos os tipos';
@@ -229,6 +230,7 @@ $string['pagelogo_help'] = 'Aparece no topo da sua vitrine. Uma imagem web — P
 $string['pagesection'] = 'Vitrine';
 $string['pagetitle'] = 'Título da vitrine';
 $string['pagetitle_help'] = 'Aparece como título da página. Vazio usa o nome da empresa.';
+$string['payinvoice'] = 'Pagar este ciclo';
 $string['paymentsection'] = 'Meio de pagamento';
 $string['plan'] = 'Plano';
 $string['plancommissionbase'] = 'Base da comissão';
@@ -315,6 +317,9 @@ $string['reportviewcourses'] = 'Cursos vendidos';
 $string['reportviewstudents'] = 'Alunos';
 $string['reportviewsubscriptions'] = 'Assinaturas';
 $string['reportviewtransactions'] = 'Transações';
+$string['resenddone'] = 'A fatura foi reenviada ao aluno.';
+$string['resendfailed'] = 'Nada foi enviado — o aluno pode estar suspenso, ou a oferta saiu de venda.';
+$string['resendinvoice'] = 'Reenviar fatura';
 $string['sellerrole'] = 'Vendedor da empresa';
 $string['sellerroledesc'] = 'Monta e publica cursos por uma empresa. Não alcança a conta de pagamento nem a lista de membros, e não pode enviar arquivos: os vídeos do curso precisam ser hospedados fora da plataforma.';
 $string['settings'] = 'Configurações';

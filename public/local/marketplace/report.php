@@ -314,6 +314,35 @@ if ($view === 'students') {
     // outra pessoa. Quem so acompanha numero nao ve o botao.
     $podegerir = has_capability('local/marketplace:managesales', $company->get_context());
 
+    /**
+     * Botoes da linha do assinante.
+     *
+     * O reenvio existe porque "nao recebi o boleto" e o motivo mais comum de
+     * uma mensalidade nao ser paga, e ate agora a unica saida do gerente era
+     * copiar o link na mao - se ele soubesse onde achar.
+     *
+     * @param \stdClass $row Linha de entitlement::get_for_company()
+     * @return string
+     */
+    function acoes_da_assinatura(\stdClass $row): string {
+        $botoes = [];
+
+        if ($row->status === entitlement::STATUS_ACTIVE && !$row->norenew) {
+            $botoes[] = html_writer::link(
+                new moodle_url('/local/marketplace/resend.php', ['id' => $row->id]),
+                get_string('resendinvoice', 'local_marketplace'),
+                ['class' => 'btn btn-sm btn-outline-primary']
+            );
+            $botoes[] = html_writer::link(
+                new moodle_url('/local/marketplace/cancel.php', ['id' => $row->id]),
+                get_string('cancelsubscription', 'local_marketplace'),
+                ['class' => 'btn btn-sm btn-outline-secondary']
+            );
+        }
+
+        return implode(' ', $botoes);
+    }
+
     foreach ($rows as $row) {
         $timeend = (int) $row->timeend;
 
@@ -352,13 +381,7 @@ if ($view === 'students') {
             $badge,
             // So para assinatura vigente que ainda cobra: cancelar o que ja
             // acabou, ou o que ja foi cancelado, nao para cobranca nenhuma.
-            ($podegerir && $row->status === entitlement::STATUS_ACTIVE && !$row->norenew)
-                ? html_writer::link(
-                    new moodle_url('/local/marketplace/cancel.php', ['id' => $row->id]),
-                    get_string('cancelsubscription', 'local_marketplace'),
-                    ['class' => 'btn btn-sm btn-outline-secondary']
-                )
-                : '',
+            $podegerir ? acoes_da_assinatura($row) : '',
         ];
     }
 
