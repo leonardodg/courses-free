@@ -283,6 +283,26 @@ class mp_client {
     }
 
     /**
+     * Procura pagamentos por referencia externa.
+     *
+     * Existe por causa da reconciliacao, e a diferenca para o Asaas e
+     * estrutural: la a cobranca nasce com id, aqui a preferencia nasce e o
+     * PAGAMENTO so existe depois que o aluno paga. Uma linha pendente nao tem
+     * mppaymentid para consultar - so tem a referencia que nos mesmos geramos.
+     *
+     * @param string $reference external_reference gravado na linha
+     * @return array Lista de pagamentos, vazia quando ninguem pagou
+     */
+    public function search_by_reference(string $reference): array {
+        $resposta = $this->request(
+            'GET',
+            '/v1/payments/search?external_reference=' . rawurlencode($reference)
+        );
+
+        return $resposta['results'] ?? [];
+    }
+
+    /**
      * Constroi o transporte HTTP.
      *
      * Existe para ser SOBRESCRITA no teste. Enquanto o curl era instanciado

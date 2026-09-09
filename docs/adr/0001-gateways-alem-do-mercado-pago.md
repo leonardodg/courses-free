@@ -11,8 +11,8 @@ pior: o código parecia certo.
 
 Tentar provar o split no Mercado Pago esbarrou em limites do próprio produto:
 
-- `POST /preapproval` não aceita `marketplace_fee` — **não existe recorrência
-  com split**
+- `POST /preapproval` não leva `marketplace_fee` — **não existe recorrência com
+  split** (ver a correção abaixo: o mecanismo não é o que estava escrito aqui)
 - o Transparente com cartão salvo exige CVV a cada cobrança
 - o sandbox exige contas de teste dos dois lados, com regras de país
 
@@ -91,3 +91,36 @@ abstração não é a certa e este ADR precisa ser revisitado.
 
 Se o total do relatório divergir da soma dos extratos dos gateways, o
 `record_sale()` está sendo alimentado errado por alguém.
+
+## Correção de 2026-09-08 — a conclusão está certa, o mecanismo não estava
+
+O contexto acima dizia que `POST /preapproval` **não aceita** `marketplace_fee`.
+Exercitado contra a API de produção, com o token do vendedor e a aplicação da
+plataforma, o comportamento real é outro e é pior:
+
+| Requisição | Resultado |
+|---|---|
+| `preapproval` **sem** `marketplace_fee` | `201`, assinatura criada |
+| `preapproval` **com** `marketplace_fee: 1.25` | `201`, assinatura criada |
+
+As duas respostas são indistinguíveis. Um `GET` em cada uma devolve o mesmo
+conjunto de campos, e **nenhuma chave contendo "market"** — o campo é aceito na
+requisição e **descartado em silêncio**.
+
+A decisão de buscar um segundo gateway continua válida: não há recorrência com
+split no Mercado Pago. O que muda é o sintoma, e ele importa mais que a
+conclusão. "Não aceita" faz esperar um erro que segure o engano na porta. Não há
+erro: haveria assinatura ativa cobrando todo mês, com comissão zero, e ninguém
+saberia — a mesma forma exata do bug que originou este ADR, quando vendedor e
+marketplace eram a mesma conta.
+
+Por isso `preapproval` não aparece em linha nenhuma do `paygw_mercadopago`, e não
+deve aparecer: aqui assinatura é acesso com prazo mais aviso de vencimento, e
+cada ciclo é uma compra própria — que leva split, e isso foi provado em
+`../data-validation/mercadopago-split.md`.
+
+**Método:** esta afirmação sustentava sozinha a existência do segundo gateway e
+estava registrada como fato, sem evidência de ter sido exercitada. No mesmo dia
+descobriu-se que o tipo de uma conta também estava escrito como fato e nunca
+tinha sido verificado (ver ADR-0010). Afirmação que decide arquitetura precisa
+de uma chamada à API anexada, e não de uma leitura de documentação.

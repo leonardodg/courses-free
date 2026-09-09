@@ -320,6 +320,41 @@ class payment_processor {
     }
 
     /**
+     * Confere no Mercado Pago se uma transacao pendente ja foi paga.
+     *
+     * Usada pela tarefa de reconciliacao. A busca e pela external_reference,
+     * porque uma linha pendente ainda nao tem mppaymentid: a preferencia
+     * existe, o pagamento nao. Ver o docblock de task\reconcile.
+     *
+     * Nao decide nada sozinha - achando o pagamento, entrega o id para o
+     * process_notification(), que e onde vivem a idempotencia e a entrega. Duas
+     * portas para o mesmo caminho evitariam-se discordando com o tempo.
+     *
+     * @param \stdClass $record Linha com id, externalreference e accountid
+     * @return bool Verdadeiro se a entrega aconteceu agora.
+     */
+    public static function reconcile_transaction(\stdClass $record): bool {
+        $config = self::get_gateway_config((int) $record->accountid);
+        $pagamentos = (new mp_client($config['accesstoken']))
+            ->search_by_reference((string) $record->externalreference);
+
+        foreach ($pagamentos as $pagamento) {
+            $id = (string) ($pagamento['id'] ?? '');
+            if ($id === '') {
+                continue;
+            }
+            if (self::process_notification($id)) {
+                return true;
+            }
+        }
+
+        // Ninguem pagou ainda, ou o pagamento existe e nao esta aprovado. Nos
+        // dois casos nao ha o que entregar, e a linha continua pendente para a
+        // proxima passada.
+        return false;
+    }
+
+    /**
      * Descobre a qual transacao um pagamento pertence.
      *
      * @param string $mppaymentid

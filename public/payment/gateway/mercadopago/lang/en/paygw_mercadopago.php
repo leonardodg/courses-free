@@ -66,6 +66,7 @@ $string['privacy:metadata:paygw_mercadopago:timecreated'] = 'When the payment wa
 $string['privacy:metadata:paygw_mercadopago:userid'] = 'The person who paid.';
 $string['relinkaccount'] = 'Link a different account';
 $string['savebeforelinking'] = 'Save this gateway first, then come back to link the Mercado Pago account.';
+$string['taskreconcile'] = 'Reconcile pending Mercado Pago transactions';
 $string['taskrefreshtokens'] = 'Refresh Mercado Pago seller tokens';
 $string['testmode'] = 'Test mode';
 $string['testmode_desc'] = 'Issue test tokens when sellers link their account, so the whole flow runs in the Mercado Pago sandbox. Buyer, seller and the platform application must all be on the same side: a real application with a test seller is refused with "one of the parties is a test account". Changing this does not convert existing links — sellers must link again. Never leave this on in production: real payments would stop working.';

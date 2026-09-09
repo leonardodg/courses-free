@@ -253,6 +253,63 @@ O `feesource` gravado é **`company`**, e não `site`: a comissão foi resolvida
 linha da empresa pela `commission_terms_for()`, e não caiu no padrão de fábrica.
 É a diferença entre provar a cadeia e provar o fallback.
 
+### O ciclo da assinatura — 08/09/2026: renovação, aviso e corte
+
+Assinatura mensal (`catalog` + `recurring`, R$ 5,00), comprada e **renovada com
+dinheiro real**. Cada ciclo é uma compra, e cada compra leva split:
+
+| Ciclo | Pagamento | `application_fee` | Taxa MP | Líquido |
+|---|---|---|---|---|
+| 1 | `177051560827` | R$ 1,25 | R$ 0,05 | R$ 3,70 |
+| 2 | `177053889661` | R$ 1,25 | R$ 0,05 | R$ 3,70 |
+
+**A renovação soma, não recalcula.** Vencimento antes: 11/09. Depois da segunda
+compra: **11/10** — trinta dias somados ao vencimento *atual*. Se tivesse saído
+09/10, a renovação teria encurtado dois dias já pagos, que é exatamente o que o
+`offer::get_access_duration()` existe para evitar.
+
+E ficou **um** direito, com `cycles = 2` — não dois direitos. Quatro matrículas,
+as mesmas. O `deliver_order()` estende em vez de criar.
+
+**O aviso de vencimento funciona.** Com o vencimento movido para dentro da janela
+de 5 dias, o `notify_expiring` enviou uma mensagem, e só uma: a segunda execução
+mandou zero, porque a preferência de deduplicação já registrava aquele `timeend`.
+O texto é honesto sobre o modelo:
+
+> There is no automatic charge — to keep your access, pay again here:
+> `…/local/marketplace/offers.php?company=demo&highlight=6`
+
+**O corte de acesso funciona, e por diferença.** Com o direito vencido, o
+`sync_entitlements` marcou `expired` e suspendeu **três** das quatro matrículas —
+não as quatro. O `Curso Demo 1` continuou ativo porque vinha de outro direito,
+ainda vigente. O sync recalcula o que o aluno deve ter em vez de reagir ao
+evento.
+
+Matrícula é **suspensa, nunca apagada**: apagar levaria notas e progresso junto,
+e quem perde acesso por vencimento costuma voltar. A reativação foi exercitada em
+seguida — direito restaurado, `sync_user()` devolveu `3 reativadas` e os quatro
+cursos voltaram. Essa metade foi **simulada** restaurando o direito direto no
+banco, e não com um terceiro pagamento real.
+
+### Como testar o ciclo sem esperar um mês
+
+Não espere. O vencimento é um `timestamp` na linha do direito, e as duas tarefas
+que reagem ao tempo o leem de lá:
+
+```bash
+# aviso: mover o vencimento para dentro da janela de 5 dias
+php admin/cli/scheduled_task.php --execute='\local_marketplace\task\notify_expiring'
+
+# corte: mover o vencimento para o passado
+php admin/cli/scheduled_task.php --execute='\enrol_marketplace\task\sync_entitlements'
+```
+
+Uma oferta de 1 dia com cron rodando após a virada testa o mesmo código e custa
+um dia por ciclo. Serve como confirmação do agendador, não como teste principal —
+e atenção: com `accessdays = 1`, o vencimento cai dentro da janela de 5 dias no
+**instante da compra**, então o aviso de "está vencendo" dispara junto com a
+confirmação do pagamento.
+
 ### Rodada 0 — o sandbox não tem caminho
 
 Executada em 08/09/2026 e **abandonada por limitação do Mercado Pago**, não por

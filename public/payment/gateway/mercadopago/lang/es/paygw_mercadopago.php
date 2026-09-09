@@ -66,6 +66,7 @@ $string['privacy:metadata:paygw_mercadopago:timecreated'] = 'Cuándo se inició 
 $string['privacy:metadata:paygw_mercadopago:userid'] = 'La persona que pagó.';
 $string['relinkaccount'] = 'Vincular otra cuenta';
 $string['savebeforelinking'] = 'Guardá esta pasarela primero, después volvé para vincular la cuenta de Mercado Pago.';
+$string['taskreconcile'] = 'Conciliar transacciones pendientes en Mercado Pago';
 $string['taskrefreshtokens'] = 'Renovar tokens de los vendedores en Mercado Pago';
 $string['testmode'] = 'Modo de prueba';
 $string['testmode_desc'] = 'Emite tokens de prueba cuando los vendedores vinculan su cuenta, para que todo el flujo corra en el sandbox de Mercado Pago. Comprador, vendedor y la aplicación de la plataforma tienen que estar todos del mismo lado: una aplicación real con un vendedor de prueba se rechaza con "una de las partes es de prueba". Cambiar esto no convierte los vínculos existentes — los vendedores tienen que vincular de nuevo. Nunca lo dejes activado en producción: los pagos reales dejarían de funcionar.';

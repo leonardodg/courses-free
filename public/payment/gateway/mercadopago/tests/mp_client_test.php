@@ -333,4 +333,57 @@ final class mp_client_test extends \advanced_testcase {
 
         $this->assertSame([['GET', 'https://api.mercadopago.com/v1/payments/12%2F34']], fake_mp_client::$calls);
     }
+
+    /**
+     * A busca da reconciliacao vai pela referencia, e escapa o valor.
+     *
+     * E por referencia, e nao por id, porque uma linha pendente ainda nao tem
+     * id de pagamento: a preferencia existe, o pagamento so passa a existir
+     * quando o aluno paga.
+     *
+     * @return void
+     */
+    public function test_busca_por_referencia(): void {
+        fake_mp_client::$nextresponse = ['results' => [['id' => 9, 'status' => 'approved']]];
+
+        $client = new fake_mp_client('token');
+        $encontrados = $client->search_by_reference('mdl-1-2-a b');
+
+        $this->assertCount(1, $encontrados);
+        $this->assertSame(9, $encontrados[0]['id']);
+        $this->assertSame(
+            [['GET', 'https://api.mercadopago.com/v1/payments/search?external_reference=mdl-1-2-a%20b']],
+            fake_mp_client::$calls
+        );
+    }
+
+    /**
+     * Ninguem pagou ainda: lista vazia, e nao erro.
+     *
+     * A reconciliacao roda de hora em hora sobre transacoes que podem nunca ter
+     * sido pagas. Tratar ausencia como falha encheria o log de ruido e
+     * esconderia a falha de verdade.
+     *
+     * @return void
+     */
+    public function test_busca_sem_resultado_devolve_lista_vazia(): void {
+        fake_mp_client::$nextresponse = ['paging' => ['total' => 0], 'results' => []];
+
+        $client = new fake_mp_client('token');
+
+        $this->assertSame([], $client->search_by_reference('mdl-1-2-nunca-pago'));
+    }
+
+    /**
+     * Resposta sem a chave results nao quebra a reconciliacao.
+     *
+     * @return void
+     */
+    public function test_busca_sem_a_chave_results(): void {
+        fake_mp_client::$nextresponse = ['paging' => ['total' => 0]];
+
+        $client = new fake_mp_client('token');
+
+        $this->assertSame([], $client->search_by_reference('mdl-1-2-abc'));
+    }
 }

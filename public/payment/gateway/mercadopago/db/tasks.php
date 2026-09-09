@@ -36,4 +36,16 @@ $tasks = [
         'dayofweek' => '*',
         'month' => '*',
     ],
+    [
+        // De hora em hora, e nao diaria: aqui o que esta em jogo e o aluno que
+        // pagou e nao recebeu o curso porque o webhook se perdeu. Esperar ate
+        // a madrugada seria esperar demais.
+        'classname' => 'paygw_mercadopago\task\reconcile',
+        'blocking' => 0,
+        'minute' => '41',
+        'hour' => '*',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*',
+    ],
 ];
