@@ -11,8 +11,55 @@ pagamento `1`.
 | Painel da empresa | `/local/marketplace/company.php?company=demo` | Meio de pagamento, moeda, ofertas e vendedores. |
 | Nova oferta | `/local/marketplace/offer_edit.php?company=demo` | Tipo, preço, modelo de acesso e cursos liberados. |
 | Relatórios | `/local/marketplace/report.php?company=demo` | Transações, cursos vendidos e assinaturas. |
-| Minhas assinaturas | `/local/marketplace/mysubscriptions.php` | Visão do aluno: vencimento, pagamentos, renovar e cancelar. |
+| Minhas assinaturas | `/local/marketplace/mysubscriptions.php` | Visão do aluno: vencimento, pagamentos, **pagar a fatura do ciclo** e cancelar. |
+| Cancelar assinatura | `/local/marketplace/cancel.php?id=N` | `N` é o id do **direito**, não da oferta. Aceita `&undo=1` para desfazer. |
+| Reenviar fatura | `/local/marketplace/resend.php?id=N&sesskey=...` | Do gerente. Manda ao aluno a mesma mensagem do cron. |
+| Estornar venda | `/local/marketplace/refund.php?payment=N` | `N` é o id em `{payments}`. Exige `refundsale`. |
 | Categorias e cursos | `/course/index.php` | A categoria da empresa traz o painel no menu lateral. |
+
+## Quem faz o quê, e onde
+
+O que decide o que aparece é a **capability no contexto da categoria da
+empresa** — não o menu. Testar com o usuário errado dá "não aparece" e parece
+bug.
+
+| Ação | Aluno | Gerente (`managesales`) | Admin (`refundsale`) |
+|---|---|---|---|
+| Ver as próprias assinaturas | *Minhas assinaturas* | — | — |
+| Pagar a fatura do ciclo | botão em *Minhas assinaturas* | — | — |
+| Assinar / renovar | vitrine, botão *Renovar agora* | — | — |
+| Cancelar assinatura | *Minhas assinaturas* ou vitrine | aba **Assinaturas** do relatório | — |
+| Reenviar a fatura ao aluno | — | aba **Assinaturas** do relatório | — |
+| Ver as vendas | — | aba **Transações** do relatório | — |
+| **Estornar venda** | — | **não** | aba **Transações** do relatório |
+
+O botão de **renovar** só aparece dentro dos 5 dias antes do vencimento
+(`NOTICE_DAYS`), e só para oferta `recurring`. O de **cancelar**, no relatório,
+só para assinatura vigente que ainda cobra. O de **estornar** some quando o
+gateway diz que não dá — boleto nunca, ciclo do meio de assinatura nunca,
+cobrança não paga nunca.
+
+## Roteiro para repetir os testes
+
+Sem esperar mês nenhum. O vencimento é um `timestamp` na linha do direito.
+
+```bash
+# 1. avisos: mover o vencimento para dentro de cada marco e rodar a tarefa
+#    (3 dias -> aviso brando; 12 horas -> ultimo aviso, com outro texto)
+moodev cli scheduled_task.php --execute='\local_marketplace\task\notify_expiring'
+
+# 2. corte de acesso: vencimento no passado
+moodev cli scheduled_task.php --execute='\enrol_marketplace\task\sync_entitlements'
+
+# 3. reconciliacao, quando o webhook se perder
+moodev cli scheduled_task.php --execute='\paygw_asaas\task\reconcile'
+moodev cli scheduled_task.php --execute='\paygw_mercadopago\task\reconcile'
+```
+
+Para mexer no vencimento sem tela, o caminho é o mesmo dos roteiros de
+`asaas-assinatura.md`: alterar `timeend` em `local_marketplace_entitlement` e
+rodar a tarefa. **Isole a assinatura** antes de testar o corte — direito de
+outra oferta cobrindo o mesmo curso segura o acesso, e o sync suspende zero.
 
 ## Pagamento
 
@@ -21,7 +68,9 @@ pagamento `1`.
 | Aplicação Mercado Pago | `/admin/settings.php?section=paymentgatewaymercadopago` | Client ID, secret, país, comissão e modo de teste. Nível site. |
 | Vínculo do vendedor | `/payment/manage_gateway.php?accountid=1&gateway=mercadopago` | Vincular, trocar e desvincular. Mostra a moeda detectada. |
 | Contas de pagamento | `/payment/accounts.php` | Lista do core. Só mostra contas no contexto do sistema — a da empresa vive na categoria e **não aparece aqui**. |
-| Gateways habilitados | `/admin/settings.php?section=managepaymentgateways` | Liga e desliga o Mercado Pago no site. |
+| Gateways habilitados | `/admin/settings.php?section=managepaymentgateways` | Liga e desliga cada gateway. **Desligar não para assinatura já criada** — quem cobra é o gateway. |
+| Aplicação Asaas | `/admin/settings.php?section=paymentgatewayasaas` | Ambiente, carteira da plataforma, token do webhook, forma de cobrança e campo do CPF. |
+| Vínculo do vendedor Asaas | `/payment/manage_gateway.php?accountid=N&gateway=asaas` | Colar a chave do vendedor. A chave declara o ambiente pelo prefixo. |
 
 ## Administração
 
@@ -75,13 +124,21 @@ sem isso o pagador fica sem identidade e o Mercado Pago recusa a compra.
 
 ## O que falta
 
+### Provado em 08 e 09/09/2026
+
+- **Split no Mercado Pago** — R$ 5,00 → `application_fee` R$ 1,25, com o valor no extrato das duas contas. Ver `mercadopago-split.md`.
+- **Vendedor pessoa física** — não é preciso CNPJ para vender. Ver `docs/adr/0010`.
+- **Compra pela vitrine** — webhook chegando sozinho, `feesource = company`, direito e matrícula.
+- **Expiração de direito** — o ciclo inteiro, sem esperar mês: aviso, corte e volta ao pagar. Ver `asaas-assinatura.md`.
+- **Assinatura recorrente no Asaas** — split em cada ciclo, cancelamento, estorno e reenvio de fatura.
+
 ### Sem prova
 
 O código existe, ninguém viu funcionar.
 
-- **Split de 25%** — vendedor e marketplace foram a mesma conta no teste, então o `marketplace_fee` não transferiu nada. Precisa de uma segunda conta real.
-- **Pix e boleto** — Pix exige chave registrada na conta do vendedor. São os caminhos assíncronos, onde o webhook é a única fonte da verdade.
-- **Expiração de direito** — ofertas com prazo nunca chegaram ao vencimento num teste.
+- **Vendedor pessoa jurídica no Mercado Pago** — o caso convencional, e o único que sobrou. Sem risco aparente: o MP aceitou a conta mais restrita.
+- **Retentativa de cartão guardado** — quantas vezes o Asaas tenta quando o cartão vence no meio da assinatura, e que status intermediários produz. Exige esperar um ciclo real.
+- **Pix e boleto liquidando de verdade** — o sandbox do Asaas não liquida nenhum dos dois; a prova foi feita com cartão fictício.
 
 ### Falta construir
 
