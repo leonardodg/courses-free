@@ -106,6 +106,14 @@ require_sesskey();
 $ent->set('norenew', 1);
 $ent->update();
 
+// Marcar a coluna nao para de cobrar. Onde o gateway criou assinatura de
+// verdade - o Asaas cria -, quem cancela precisa dizer isso a ele, senao o
+// aluno que pediu para sair continua sendo debitado todo mes.
+//
+// Vem DEPOIS do update: se a chamada externa cair, o cancelamento no Moodle
+// ja valeu. O contrario deixaria o aluno preso a uma tela que falha.
+api::stop_recurring_billing('local_marketplace', (int) $ent->get('offerid'), (int) $ent->get('userid'));
+
 redirect(
     $storefront,
     get_string(

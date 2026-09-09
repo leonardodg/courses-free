@@ -414,4 +414,138 @@ final class asaas_client_test extends \advanced_testcase {
 
         $this->assertEqualsWithDelta(5.0, $split[0]['fixedValue'], 0.0001);
     }
+
+    /**
+     * A assinatura leva o split, e ele vale para todo ciclo.
+     *
+     * Medido no sandbox em 08/09/2026: o Asaas guarda o split na assinatura com
+     * status ACTIVE e a cobranca do ciclo nasce com o valor calculado. E o
+     * oposto do preapproval do Mercado Pago, que aceita o campo da comissao e o
+     * descarta calado - ver docs/adr/0001.
+     *
+     * @return void
+     */
+    public function test_assinatura_leva_split(): void {
+        $client = new fake_asaas_client('$aact_hmlg_x', asaas_client::ENV_SANDBOX);
+        $client->nextresponse = ['id' => 'sub_1', 'status' => 'ACTIVE'];
+
+        $client->create_subscription([
+            'customer' => 'cus_1',
+            'billingtype' => 'PIX',
+            'value' => 100.0,
+            'nextduedate' => '2026-10-01',
+            'cycle' => 'MONTHLY',
+            'externalreference' => 'mdl-1-2-abc',
+            'splitwalletid' => 'w-plataforma',
+            'splitpercent' => 25.0,
+            'splitbase' => 'net',
+        ]);
+
+        $this->assertSame([['POST', '/subscriptions']], $client->calls);
+        $this->assertSame('MONTHLY', $client->lastbody['cycle']);
+        $this->assertSame('2026-10-01', $client->lastbody['nextDueDate']);
+        $this->assertSame(25.0, $client->lastbody['split'][0]['percentualValue']);
+    }
+
+    /**
+     * Sem limite de ciclos, a chave nao vai.
+     *
+     * Zero e "sem limite" no marketplace. Mandar maxPayments = 0 seria uma
+     * assinatura que nao cobra nunca.
+     *
+     * @return void
+     */
+    public function test_assinatura_sem_limite_nao_manda_maxpayments(): void {
+        $client = new fake_asaas_client('$aact_hmlg_x', asaas_client::ENV_SANDBOX);
+        $client->nextresponse = ['id' => 'sub_1'];
+
+        $client->create_subscription([
+            'customer' => 'cus_1',
+            'billingtype' => 'PIX',
+            'value' => 100.0,
+            'nextduedate' => '2026-10-01',
+            'cycle' => 'MONTHLY',
+            'externalreference' => 'r',
+            'maxpayments' => 0,
+            'splitwalletid' => 'w',
+            'splitpercent' => 25.0,
+            'splitbase' => 'gross',
+        ]);
+
+        $this->assertArrayNotHasKey('maxPayments', $client->lastbody);
+    }
+
+    /**
+     * Com limite, a chave vai.
+     *
+     * @return void
+     */
+    public function test_assinatura_com_limite_manda_maxpayments(): void {
+        $client = new fake_asaas_client('$aact_hmlg_x', asaas_client::ENV_SANDBOX);
+        $client->nextresponse = ['id' => 'sub_1'];
+
+        $client->create_subscription([
+            'customer' => 'cus_1',
+            'billingtype' => 'PIX',
+            'value' => 100.0,
+            'nextduedate' => '2026-10-01',
+            'cycle' => 'MONTHLY',
+            'externalreference' => 'r',
+            'maxpayments' => 12,
+            'splitwalletid' => 'w',
+            'splitpercent' => 25.0,
+            'splitbase' => 'gross',
+        ]);
+
+        $this->assertSame(12, $client->lastbody['maxPayments']);
+    }
+
+    /**
+     * Cancelar assinatura usa DELETE de verdade.
+     *
+     * O request() so conhecia GET e POST, entao um DELETE sairia como POST -
+     * criaria coisa nenhuma, devolveria erro, e o aluno que cancelou seguiria
+     * sendo cobrado.
+     *
+     * @return void
+     */
+    public function test_cancelar_assinatura_usa_delete(): void {
+        $client = new fake_asaas_client('$aact_hmlg_x', asaas_client::ENV_SANDBOX);
+        $client->nextresponse = ['deleted' => true, 'id' => 'sub_1'];
+
+        $client->cancel_subscription('sub_1');
+
+        $this->assertSame([['DELETE', '/subscriptions/sub_1']], $client->calls);
+    }
+
+    /**
+     * As cobrancas de uma assinatura saem da chave data.
+     *
+     * A resposta de /subscriptions nao traz invoiceUrl - ela descreve a
+     * assinatura. A primeira cobranca ja existe, e e para ela que o aluno vai.
+     *
+     * @return void
+     */
+    public function test_cobrancas_da_assinatura(): void {
+        $client = new fake_asaas_client('$aact_hmlg_x', asaas_client::ENV_SANDBOX);
+        $client->nextresponse = ['data' => [['id' => 'pay_1', 'invoiceUrl' => 'https://x.test/f']]];
+
+        $cobrancas = $client->subscription_payments('sub_1');
+
+        $this->assertCount(1, $cobrancas);
+        $this->assertSame('pay_1', $cobrancas[0]['id']);
+        $this->assertSame([['GET', '/subscriptions/sub_1/payments']], $client->calls);
+    }
+
+    /**
+     * Sem cobrancas, lista vazia e nao erro.
+     *
+     * @return void
+     */
+    public function test_assinatura_sem_cobrancas(): void {
+        $client = new fake_asaas_client('$aact_hmlg_x', asaas_client::ENV_SANDBOX);
+        $client->nextresponse = ['data' => []];
+
+        $this->assertSame([], $client->subscription_payments('sub_1'));
+    }
 }

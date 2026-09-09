@@ -56,5 +56,28 @@ function xmldb_paygw_asaas_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026090110, 'paygw', 'asaas');
     }
 
+    if ($oldversion < 2026090910) {
+        // A assinatura que gerou a cobranca.
+        //
+        // Cada ciclo continua sendo uma LINHA propria - cada um e um pagamento
+        // com a sua comissao, e juntar tudo numa linha so faria o relatorio
+        // perder de vista quanto entrou em cada mes. Este campo e o que liga as
+        // linhas, e o que permite ao webhook do ciclo 2 em diante descobrir de
+        // quem e uma cobranca que nunca vimos.
+        $table = new xmldb_table('paygw_asaas');
+
+        $field = new xmldb_field('subscriptionid', XMLDB_TYPE_CHAR, '64', null, null, null, null, 'asaaspaymentid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $index = new xmldb_index('subscriptionid', XMLDB_INDEX_NOTUNIQUE, ['subscriptionid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        upgrade_plugin_savepoint(true, 2026090910, 'paygw', 'asaas');
+    }
+
     return true;
 }

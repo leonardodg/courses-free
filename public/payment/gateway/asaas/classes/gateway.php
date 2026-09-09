@@ -204,4 +204,54 @@ class gateway extends \core_payment\gateway {
     public static function environment_label(string $environment): string {
         return get_string('environment' . $environment, 'paygw_asaas');
     }
+
+    /**
+     * Para de cobrar a assinatura deste aluno neste item.
+     *
+     * Chamado pelo local_marketplace quando o aluno cancela, via
+     * component_class_callback - por isso a assinatura e a mesma para todo
+     * gateway, e por isso o nucleo continua sem saber o nome de nenhum.
+     *
+     * Cancelar para de COBRAR e nada mais. O acesso ja pago vale ate o fim do
+     * ciclo: quem cancela no dia 3 nao perde os 27 dias que comprou, e revogar
+     * direito e decisao de negocio que vive no entitlement::revoke().
+     *
+     * @param string $component
+     * @param int $itemid
+     * @param int $userid
+     * @return bool Verdadeiro se havia assinatura ativa e ela foi cancelada.
+     */
+    public static function cancel_recurring(string $component, int $itemid, int $userid): bool {
+        global $DB;
+
+        $linhas = $DB->get_records_select(
+            payment_processor::TABLE,
+            "component = :component AND itemid = :itemid AND userid = :userid
+             AND subscriptionid IS NOT NULL AND subscriptionid <> ''",
+            ['component' => $component, 'itemid' => $itemid, 'userid' => $userid],
+            'id DESC'
+        );
+
+        $cancelou = false;
+        $jafeitas = [];
+
+        foreach ($linhas as $linha) {
+            // Uma assinatura tem varias linhas, uma por ciclo. Cancelar a mesma
+            // duas vezes devolveria erro do Asaas por nada.
+            if (isset($jafeitas[$linha->subscriptionid])) {
+                continue;
+            }
+            $jafeitas[$linha->subscriptionid] = true;
+
+            $apikey = credentials::api_key((int) $linha->accountid, $linha->environment);
+            if ($apikey === '') {
+                continue;
+            }
+
+            (new asaas_client($apikey, $linha->environment))->cancel_subscription($linha->subscriptionid);
+            $cancelou = true;
+        }
+
+        return $cancelou;
+    }
 }

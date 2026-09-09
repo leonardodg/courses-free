@@ -9,6 +9,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="asaaspaymentid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Id da cobranca no Asaas, ex.: pay_lumzx8nkxdrrf4rh. Vazio ate a API responder."/>
         <FIELD NAME="externalreference" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="Nosso identificador, mandado no externalReference. E por ele que uma cobranca orfa e reencontrada."/>
+        <FIELD NAME="subscriptionid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Assinatura do Asaas que gerou esta cobranca, ex.: sub_ofeimt1sxi8zjh9y. Vazio na cobranca avulsa. Cada ciclo vira uma LINHA propria, porque cada um e um pagamento com a sua comissao - o que liga as linhas do mesmo aluno e este campo."/>
         <FIELD NAME="customerid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Cliente do Asaas correspondente ao aluno, na conta do vendedor."/>
         <FIELD NAME="component" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="paymentarea" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
@@ -35,6 +36,7 @@
       <INDEXES>
         <INDEX NAME="externalreference" UNIQUE="true" FIELDS="externalreference"/>
         <INDEX NAME="asaaspaymentid" UNIQUE="false" FIELDS="asaaspaymentid"/>
+        <INDEX NAME="subscriptionid" UNIQUE="false" FIELDS="subscriptionid" COMMENT="O webhook do ciclo 2 em diante chega com uma cobranca que nunca vimos: o caminho de volta e por aqui."/>
         <INDEX NAME="status-timecreated" UNIQUE="false" FIELDS="status, timecreated" COMMENT="A tarefa de conciliacao varre as pendentes antigas."/>
       </INDEXES>
     </TABLE>

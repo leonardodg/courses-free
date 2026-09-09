@@ -217,6 +217,101 @@ class asaas_client {
     }
 
     /**
+     * Cria uma assinatura, que cobra sozinha a cada ciclo.
+     *
+     * O SPLIT VALE PARA TODA COBRANCA GERADA, e nao so para a primeira - foi
+     * medido no sandbox em 08/09/2026: a assinatura guarda o split com
+     * status ACTIVE, e a cobranca do ciclo nasce com o valor calculado
+     * (percentualValue 25 -> totalValue R$ 24,75). E o oposto do preapproval
+     * do Mercado Pago, que aceita o campo da comissao e o descarta calado -
+     * ver docs/adr/0001.
+     *
+     * ATENCAO A BASE. Com base liquida vai percentualValue, e o Asaas o aplica
+     * sobre o netValue de CADA ciclo - entao a comissao acompanha a taxa do
+     * meio de pagamento sozinha. Com base bruta vai fixedValue, calculado por
+     * nos, e ele CONGELA: mudar o preco da oferta depois nao muda o valor da
+     * comissao das assinaturas que ja existem. Isso e coerente com o ADR-0007,
+     * que fotografa os termos na venda, mas precisa estar consciente - o jeito
+     * de mudar e cancelar e recriar a assinatura.
+     *
+     * @param array $params customer, billingtype, value, nextduedate, cycle,
+     *                      description, externalreference, maxpayments,
+     *                      returnurl, splitwalletid, splitpercent, splitbase
+     * @return array Resposta crua da API.
+     */
+    public function create_subscription(array $params): array {
+        $body = [
+            'customer' => $params['customer'],
+            'billingType' => $params['billingtype'],
+            'value' => round((float) $params['value'], 2),
+            'nextDueDate' => $params['nextduedate'],
+            'cycle' => $params['cycle'],
+            'externalReference' => $params['externalreference'],
+        ];
+
+        if (!empty($params['description'])) {
+            $body['description'] = \core_text::substr((string) $params['description'], 0, 500);
+        }
+
+        // Zero e "sem limite" no marketplace, e a chave simplesmente nao vai:
+        // mandar maxPayments = 0 seria uma assinatura que nao cobra nunca.
+        if (!empty($params['maxpayments'])) {
+            $body['maxPayments'] = (int) $params['maxpayments'];
+        }
+
+        if (!empty($params['returnurl'])) {
+            $body['callback'] = [
+                'successUrl' => (string) $params['returnurl'],
+                'autoRedirect' => true,
+            ];
+        }
+
+        $body['split'] = self::build_split(
+            (string) ($params['splitwalletid'] ?? ''),
+            (float) ($params['splitpercent'] ?? 0),
+            (float) $body['value'],
+            (string) ($params['splitbase'] ?? 'gross')
+        );
+        if (!$body['split']) {
+            unset($body['split']);
+        }
+
+        return $this->request('POST', '/subscriptions', $body);
+    }
+
+    /**
+     * Cobrancas que uma assinatura ja gerou.
+     *
+     * A primeira nasce junto com a assinatura, e e para ela que o aluno e
+     * mandado no checkout - a resposta de /subscriptions nao traz invoiceUrl.
+     *
+     * @param string $subscriptionid
+     * @return array Lista de cobrancas, da mais antiga para a mais nova.
+     */
+    public function subscription_payments(string $subscriptionid): array {
+        $resposta = $this->request(
+            'GET',
+            '/subscriptions/' . rawurlencode($subscriptionid) . '/payments'
+        );
+
+        return $resposta['data'] ?? [];
+    }
+
+    /**
+     * Cancela uma assinatura.
+     *
+     * Cancelar para de COBRAR; nao revoga o acesso ja pago, que vale ate o fim
+     * do ciclo. Revogar direito e decisao de negocio, e vive no
+     * entitlement::revoke().
+     *
+     * @param string $subscriptionid
+     * @return array
+     */
+    public function cancel_subscription(string $subscriptionid): array {
+        return $this->request('DELETE', '/subscriptions/' . rawurlencode($subscriptionid));
+    }
+
+    /**
      * Monta o array de split.
      *
      * Estatico e puro para poder ser testado sem rede - e o pedaco do corpo
@@ -373,6 +468,12 @@ class asaas_client {
 
         if ($method === 'GET') {
             $response = $curl->get($url, [], $options);
+        } else if ($method === 'DELETE') {
+            // DELETE de verdade, e nao POST com outro nome. Cancelar assinatura
+            // e o unico caminho que para de COBRAR o aluno; mandar POST em
+            // /subscriptions/{id} criaria coisa nenhuma e devolveria erro, e o
+            // aluno seguiria sendo cobrado depois de cancelar.
+            $response = $curl->delete($url, [], $options);
         } else {
             $response = $curl->post($url, json_encode($body ?? []), $options);
         }
