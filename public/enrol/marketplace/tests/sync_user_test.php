@@ -344,4 +344,111 @@ final class sync_user_test extends \advanced_testcase {
             'enrol' => 'marketplace',
         ]));
     }
+
+    /**
+     * Prazo da matrícula do aluno num curso.
+     *
+     * @param int $courseid
+     * @return int|null null quando não há matrícula pelo marketplace.
+     */
+    protected function timeend_in(int $courseid): ?int {
+        global $DB;
+
+        $sql = "SELECT ue.timeend
+                  FROM {user_enrolments} ue
+                  JOIN {enrol} e ON e.id = ue.enrolid
+                 WHERE ue.userid = :userid AND e.courseid = :courseid AND e.enrol = 'marketplace'";
+        $fim = $DB->get_field_sql($sql, ['userid' => $this->user->id, 'courseid' => $courseid]);
+
+        return $fim === false ? null : (int) $fim;
+    }
+
+    /**
+     * A matrícula herda o prazo do direito.
+     *
+     * Sem isto o acesso dependia inteiramente da tarefa horária rodar: entre o
+     * vencimento e a próxima passada o aluno continuava entrando, e com o cron
+     * parado continuava indefinidamente. Falha silenciosa - o sintoma é aluno
+     * acessando de graça, e disso ninguém reclama.
+     *
+     * @return void
+     */
+    public function test_a_matricula_herda_o_prazo_do_direito(): void {
+        $fim = time() + (30 * DAYSECS);
+        [$offer, $courseids] = $this->make_offer();
+        $this->grant($offer, $fim);
+
+        $this->plugin->sync_user((int) $this->user->id);
+
+        $this->assertSame($fim, $this->timeend_in($courseids[0]));
+    }
+
+    /**
+     * Direito vitalício deixa a matrícula sem prazo.
+     *
+     * Zero e "sem data" sao a mesma coisa no user_enrolments, e precisam
+     * continuar sendo: uma data qualquer aqui faria o acesso vitalicio expirar.
+     *
+     * @return void
+     */
+    public function test_direito_vitalicio_deixa_a_matricula_sem_prazo(): void {
+        [$offer, $courseids] = $this->make_offer();
+        $this->grant($offer, 0);
+
+        $this->plugin->sync_user((int) $this->user->id);
+
+        $this->assertSame(0, $this->timeend_in($courseids[0]));
+    }
+
+    /**
+     * Renovar estende o prazo, e isso não é reativação.
+     *
+     * O contador do cron separa as duas coisas de propósito: estender o prazo
+     * de uma matrícula que já estava ativa não é trazer alguém de volta, e
+     * misturar faria o log mentir sobre quantos alunos recuperaram acesso.
+     *
+     * @return void
+     */
+    public function test_renovar_estende_o_prazo_sem_contar_reativacao(): void {
+        $primeiro = time() + (30 * DAYSECS);
+        [$offer, $courseids] = $this->make_offer();
+        $direito = $this->grant($offer, $primeiro);
+
+        $this->plugin->sync_user((int) $this->user->id);
+        $this->assertSame($primeiro, $this->timeend_in($courseids[0]));
+
+        $segundo = $primeiro + (30 * DAYSECS);
+        $direito->set('timeend', $segundo);
+        $direito->update();
+
+        [$matriculadas, $suspensas, $reativadas] = $this->plugin->sync_user((int) $this->user->id);
+
+        $this->assertSame($segundo, $this->timeend_in($courseids[0]));
+        $this->assertSame(0, $reativadas, 'estender prazo nao e reativar');
+        $this->assertSame(0, $matriculadas);
+        $this->assertSame(0, $suspensas);
+    }
+
+    /**
+     * Dois direitos sobre o mesmo curso: vale o mais generoso.
+     *
+     * Acontece com combo mais assinatura. O vitalício tem que ganhar de
+     * qualquer data, senão comprar uma assinatura mensal encurtaria um acesso
+     * vitalício já pago.
+     *
+     * @return void
+     */
+    public function test_vitalicio_ganha_de_prazo_no_mesmo_curso(): void {
+        [$mensal, $courseids] = $this->make_offer();
+        $this->grant($mensal, time() + (30 * DAYSECS));
+
+        // Segunda oferta, apontando para o MESMO curso.
+        [$vitalicio] = $this->make_offer(0);
+        $vitalicio->add_course($courseids[0]);
+        $this->grant($vitalicio, 0);
+
+        $this->plugin->sync_user((int) $this->user->id);
+
+        $this->assertSame(0, $this->timeend_in($courseids[0]));
+    }
 }

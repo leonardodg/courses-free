@@ -278,6 +278,20 @@ Matrícula é suspensa, nunca apagada.
 Para exercitar o ciclo não se espera mês nenhum: move-se o `timeend` do direito e
 roda-se a tarefa. Roteiro em `docs/data-validation/mercadopago-split.md`.
 
+**São dois avisos, e a matrícula tem prazo** desde 08/09/2026. O
+`notify_expiring` dispara em `NOTICE_MILESTONES = [5, 1]` dias: o primeiro
+lembra, o último diz que vai bloquear, com texto próprio. A deduplicação guarda
+`vencimento:marco` — guardar só o vencimento faria o primeiro aviso marcar a
+linha e o último nunca sair, em silêncio.
+
+O `sync_user()` passou a escrever o `timeend` do direito **na matrícula**. Antes,
+o acesso dependia inteiramente da tarefa horária: com o cron parado, o aluno
+entrava indefinidamente, e o sintoma — aluno acessando de graça — é o tipo de
+falha de que ninguém reclama. Não é segunda fonte da verdade: é projeção do
+direito, escrita sempre pelo mesmo lugar, e o sync por diferença conserta
+qualquer divergência. Dois direitos sobre o mesmo curso valem o mais generoso, e
+vitalício ganha de qualquer data.
+
 **Continua sem prova:** o vendedor pessoa jurídica no Mercado Pago, que é o caso
 convencional e nunca foi exercitado.
 

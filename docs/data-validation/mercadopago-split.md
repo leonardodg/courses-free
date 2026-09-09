@@ -271,13 +271,21 @@ compra: **11/10** — trinta dias somados ao vencimento *atual*. Se tivesse saí
 E ficou **um** direito, com `cycles = 2` — não dois direitos. Quatro matrículas,
 as mesmas. O `deliver_order()` estende em vez de criar.
 
-**O aviso de vencimento funciona.** Com o vencimento movido para dentro da janela
-de 5 dias, o `notify_expiring` enviou uma mensagem, e só uma: a segunda execução
-mandou zero, porque a preferência de deduplicação já registrava aquele `timeend`.
-O texto é honesto sobre o modelo:
+**O aviso de vencimento funciona, em dois marcos.** A 3 dias do vencimento saiu o
+lembrete; a 12 horas saiu o último aviso, com texto próprio. A terceira execução
+mandou zero. O texto do primeiro é honesto sobre o modelo:
 
 > There is no automatic charge — to keep your access, pay again here:
 > `…/local/marketplace/offers.php?company=demo&highlight=6`
+
+E o do segundo muda de tom, porque repetir a mesma mensagem ensinaria o aluno a
+ignorar as duas:
+
+> Last notice: Assinatura mensal is blocked in 1 day(s)
+
+A deduplicação guarda `vencimento:marco` — `1788963212:1`. Guardar só o
+vencimento, como era antes de 08/09/2026, faria o primeiro aviso marcar a linha
+e o último **nunca sair**: sem erro, sem log, sem nada.
 
 **O corte de acesso funciona, e por diferença.** Com o direito vencido, o
 `sync_entitlements` marcou `expired` e suspendeu **três** das quatro matrículas —
