@@ -647,6 +647,122 @@ class api {
     }
 
     /**
+     * Motivo pelo qual esta venda nao pode ser estornada.
+     *
+     * Existe para a TELA: e com isto que o botao some, em vez de aparecer e
+     * falhar no clique de quem esta resolvendo um problema. Quem decide e o
+     * gateway, porque as regras sao dele - assinatura no meio do ciclo,
+     * cobranca ainda nao liquidada, estorno ja feito.
+     *
+     * @param int $paymentid Registro em {payments}
+     * @return string Chave de string do impedimento, ou vazio quando pode
+     */
+    public static function refund_blocker(int $paymentid): string {
+        global $DB;
+
+        $pagamento = $DB->get_record('payments', ['id' => $paymentid]);
+        if (!$pagamento) {
+            return 'errorrefundunknown';
+        }
+
+        $classname = '\paygw_' . $pagamento->gateway . '\gateway';
+
+        // Gateway que nao implementa estorno responde o padrao, e o padrao e
+        // "nao da" - melhor esconder o botao do que oferecer o que nao existe.
+        return (string) \component_class_callback($classname, 'refund_blocker', [$paymentid], 'errorrefundunknown');
+    }
+
+    /**
+     * Estorna uma venda no gateway que a cobrou, e revoga o acesso.
+     *
+     * O gateway que cobrou e descoberto pela coluna do {payments}, e nao
+     * escolhido aqui: o nucleo continua sem saber o nome de nenhum. Quem nao
+     * implementa cancel_recurring/refund simplesmente nao responde, e o
+     * callback devolve o padrao.
+     *
+     * A REVOGACAO SO ACONTECE SE O DINHEIRO VOLTOU. Revogar antes deixaria o
+     * aluno sem curso e sem reembolso caso a chamada externa falhasse - o pior
+     * dos dois lados. Por isso a ordem e gateway primeiro, direito depois.
+     *
+     * @param int $paymentid Registro em {payments}
+     * @return bool Verdadeiro quando o dinheiro voltou e o acesso caiu.
+     */
+    public static function refund_sale(int $paymentid): bool {
+        global $DB;
+
+        $pagamento = $DB->get_record('payments', ['id' => $paymentid], '*', MUST_EXIST);
+        $classname = '\paygw_' . $pagamento->gateway . '\gateway';
+
+        $estornou = \component_class_callback($classname, 'refund', [$paymentid], false);
+        if (!$estornou) {
+            return false;
+        }
+
+        self::record_refund($paymentid);
+
+        return true;
+    }
+
+    /**
+     * Registra que uma venda foi estornada, e revoga o acesso.
+     *
+     * ESTORNO REVOGA, e essa e a diferenca em relacao ao cancelamento. Cancelar
+     * para de cobrar e deixa o aluno usar o que ja pagou; estornar devolve o
+     * dinheiro daquele periodo, entao o periodo tambem volta.
+     *
+     * Ate 09/09/2026 este projeto tratava revogacao como ato exclusivamente
+     * manual - "revogar acesso e decisao de negocio, nunca por automacao", como
+     * ainda diz o webhook do Asaas. Continua valendo para o que chega de fora:
+     * um PAYMENT_REFUNDED disparado no painel do gateway NAO revoga nada aqui,
+     * porque ninguem da plataforma decidiu. O que revoga e o estorno feito POR
+     * AQUI, por quem tem a capability - a decisao existe, e e humana.
+     *
+     * A venda fica no historico. Apagar a linha esconderia o dinheiro que
+     * entrou e saiu, e o relatorio precisa dos dois lados.
+     *
+     * @param int $paymentid Registro em {payments}
+     * @return bool Verdadeiro se algum direito foi revogado agora.
+     */
+    public static function record_refund(int $paymentid): bool {
+        global $DB;
+
+        $venda = $DB->get_record('local_marketplace_sale', ['paymentid' => $paymentid]);
+        if (!$venda) {
+            return false;
+        }
+
+        $pagamento = $DB->get_record('payments', ['id' => $paymentid]);
+        if (!$pagamento) {
+            return false;
+        }
+
+        $revogou = false;
+        $direitos = entitlement::get_records([
+            'userid' => (int) $pagamento->userid,
+            'offerid' => (int) $venda->offerid,
+        ]);
+
+        foreach ($direitos as $direito) {
+            if ($direito->get('status') === entitlement::STATUS_CANCELLED) {
+                continue;
+            }
+            $direito->revoke();
+            $revogou = true;
+        }
+
+        // Sem o direito, a matricula tem que cair junto - senao o aluno recebe
+        // o dinheiro de volta e continua no curso ate o cron passar.
+        if ($revogou) {
+            $plugin = enrol_get_plugin('marketplace');
+            if ($plugin) {
+                $plugin->sync_user((int) $pagamento->userid);
+            }
+        }
+
+        return $revogou;
+    }
+
+    /**
      * Gateways a quem perguntar sobre cobranca ja existente.
      *
      * INSTALADOS, e nao habilitados, e a diferenca vale dinheiro.

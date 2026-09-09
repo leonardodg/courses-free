@@ -122,6 +122,40 @@ devolve dinheiro de verdade, revoga acesso e não tem desfazer — fica com o
 administrador da plataforma, que a concede por empresa quando confiar em quem
 vai usar. O caminho normal é o aluno procurar o responsável, e ele decidir.
 
+### O estorno, e por que ele é diferente do cancelamento
+
+| | Cancelar | Estornar |
+|---|---|---|
+| Quem faz | aluno ou gerente (`managesales`) | só quem tem `refundsale` |
+| Dinheiro | fica | volta, com a comissão junto |
+| Acesso | vale até o fim do ciclo pago | **cai na hora** |
+| Assinatura | para de cobrar | para de cobrar **e** devolve |
+
+**Estorno é sempre total.** Medido no sandbox em 09/09/2026: pedir estorno
+parcial devolveu sucesso, deixou a cobrança em `CONFIRMED` e manteve o split
+vivo com a comissão cheia — a plataforma ficaria com os 25% de uma venda
+parcialmente devolvida.
+
+**Numa assinatura, só o primeiro ciclo.** Estornar um ciclo do meio devolve o
+dinheiro daquele mês e **não para a assinatura**: as cobranças futuras seguem
+pendentes, e o aluno continua sendo cobrado depois de reembolsado. Do segundo
+ciclo em diante o caminho é cancelar — ele usou os meses anteriores.
+
+E quando o estorno acontece no primeiro ciclo, **o cancelamento vai junto, na
+mesma operação**. O gateway não cancela sozinho, e deixar isso a cargo de quem
+clica seria confiar em memória humana para não continuar cobrando alguém já
+reembolsado.
+
+A ordem é gateway primeiro, direito depois: revogar antes deixaria o aluno sem
+curso e sem reembolso se a chamada externa falhasse.
+
+**A venda fica no histórico.** Apagar a linha esconderia o dinheiro que entrou e
+saiu, e o relatório precisa dos dois lados.
+
+Um `PAYMENT_REFUNDED` disparado no painel do gateway **não revoga nada aqui** —
+ninguém da plataforma decidiu. O que revoga é o estorno feito por esta tela, por
+quem tem a capability.
+
 Há teste fixando as três coisas: `managesales` no gerente e não no editor,
 `refundsale` em nenhum dos dois, e as duas declaradas em `db/access.php` — papel
 que aponta para capability inexistente não faz o Moodle reclamar, e a permissão

@@ -162,8 +162,14 @@ if ($view === 'transactions') {
         get_string('reportcommissionterms', 'local_marketplace'),
         get_string('reportgateway', 'local_marketplace'),
         get_string('reportexternalid', 'local_marketplace'),
+        '',
     ];
     $table->attributes['class'] = 'generaltable';
+
+    // Estornar devolve dinheiro de verdade e revoga o acesso, e nao tem
+    // desfazer. Nao vai para papel nenhum por padrao - nem o gerente tem, a
+    // menos que o administrador da plataforma conceda.
+    $podeestornar = has_capability('local/marketplace:refundsale', $company->get_context());
 
     foreach ($sales as $s) {
         $o = offer::get_record(['id' => (int) $s->offerid]);
@@ -185,6 +191,17 @@ if ($view === 'transactions') {
                 ),
             s($s->gateway),
             $s->externalid ? s($s->externalid) : '-',
+            // O botao some quando o gateway diz que nao da: assinatura no meio
+            // do ciclo, cobranca ainda nao paga, ou estorno ja feito. Melhor
+            // nao existir do que aparecer e falhar no clique de quem esta
+            // resolvendo um problema.
+            $podeestornar && \local_marketplace\api::refund_blocker((int) $s->paymentid) === ''
+                ? html_writer::link(
+                    new moodle_url('/local/marketplace/refund.php', ['payment' => (int) $s->paymentid]),
+                    get_string('refundsale', 'local_marketplace'),
+                    ['class' => 'btn btn-sm btn-outline-danger']
+                )
+                : '',
         ];
     }
     echo html_writer::div(html_writer::table($table), 'table-responsive');

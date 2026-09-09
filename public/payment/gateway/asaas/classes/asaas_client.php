@@ -298,6 +298,35 @@ class asaas_client {
     }
 
     /**
+     * Estorna uma cobranca, por inteiro.
+     *
+     * O ASAAS REVERTE O SPLIT SOZINHO: medido no sandbox em 09/09/2026, o
+     * estorno total leva a cobranca a REFUNDED e o split a CANCELLED, com
+     * motivo PAYMENT_REFUNDED. A comissao da plataforma volta junto, e nao ha
+     * acerto a fazer entre as contas.
+     *
+     * NAO EXISTE ESTORNO PARCIAL aqui, e a ausencia e deliberada. Pedir 40 de
+     * uma cobranca de 100 devolveu resposta de sucesso, deixou o status em
+     * CONFIRMED e manteve o split VIVO com o valor cheio - a plataforma
+     * ficaria com a comissao inteira de uma venda parcialmente devolvida. Se um
+     * dia isso for preciso, precisa ser medido de novo antes.
+     *
+     * A cobranca precisa estar CONFIRMED ou RECEIVED. Logo depois do pagamento
+     * o proprio Asaas recusa com "tente novamente em alguns instantes" - leva
+     * cerca de meio minuto para liberar.
+     *
+     * @param string $paymentid
+     * @return array Resposta crua da API.
+     */
+    public function refund_payment(string $paymentid): array {
+        return $this->request(
+            'POST',
+            '/payments/' . rawurlencode($paymentid) . '/refund',
+            ['description' => 'Estorno solicitado pela plataforma']
+        );
+    }
+
+    /**
      * Cancela uma assinatura.
      *
      * Cancelar para de COBRAR; nao revoga o acesso ja pago, que vale ate o fim

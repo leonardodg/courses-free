@@ -362,6 +362,104 @@ class payment_processor {
     }
 
     /**
+     * Esta venda pode ser estornada, e por que nao.
+     *
+     * Tres regras, e as tres vieram de medicao no sandbox em 09/09/2026, e nao
+     * de preferencia.
+     *
+     * SO O QUE FOI PAGO. O Asaas responde "e possivel estornar somente
+     * cobrancas confirmadas ou recebidas" - pedir estorno de pendente e erro
+     * cru no meio da tela de quem esta resolvendo um problema.
+     *
+     * SO O PRIMEIRO CICLO DE UMA ASSINATURA. Estornar um ciclo do meio devolve
+     * o dinheiro daquele mes e NAO PARA a assinatura: as cobrancas futuras
+     * seguem pendentes, e o aluno continua sendo cobrado depois de reembolsado.
+     * Do segundo ciclo em diante o caminho e cancelar, e nao estornar - o aluno
+     * usou os meses anteriores.
+     *
+     * NUNCA DUAS VEZES. Estorno ja feito nao se repete.
+     *
+     * @param \stdClass $record Linha da tabela do gateway
+     * @return string Vazio quando pode; a chave do erro quando nao pode
+     */
+    public static function refund_blocker(\stdClass $record): string {
+        global $DB;
+
+        if (strtoupper((string) $record->status) === 'REFUNDED') {
+            return 'errorrefundalready';
+        }
+
+        if (!self::is_paid((string) $record->status)) {
+            return 'errorrefundnotpaid';
+        }
+
+        if (empty($record->subscriptionid)) {
+            return '';
+        }
+
+        // Ciclo do meio: existe outra cobranca PAGA da mesma assinatura antes
+        // desta. Comparar por id basta - as linhas nascem em ordem.
+        $anteriores = $DB->get_records_select(
+            self::TABLE,
+            'subscriptionid = :sub AND id < :id AND paymentid IS NOT NULL',
+            ['sub' => $record->subscriptionid, 'id' => (int) $record->id],
+            '',
+            'id',
+            0,
+            1
+        );
+
+        return $anteriores ? 'errorrefundnotfirstcycle' : '';
+    }
+
+    /**
+     * Estorna uma venda: devolve o dinheiro e para de cobrar.
+     *
+     * O CANCELAMENTO DA ASSINATURA ANDA JUNTO, e nao e cortesia. O Asaas
+     * estorna a cobranca e mantem a assinatura ATIVA, com as cobrancas futuras
+     * pendentes - deixar isso a cargo de quem clica seria confiar em memoria
+     * humana para nao continuar cobrando alguem que ja foi reembolsado.
+     *
+     * A ordem importa: cancela primeiro, estorna depois. Se o estorno falhar,
+     * sobra uma assinatura cancelada com um mes pago, que e ruim mas e
+     * reversivel; a ordem inversa deixaria dinheiro devolvido e a cobranca
+     * seguindo.
+     *
+     * Nao revoga o acesso aqui: quem faz isso e o marketplace, porque o direito
+     * e dele. O gateway devolve o dinheiro e avisa.
+     *
+     * @param \stdClass $record Linha da tabela do gateway
+     * @return bool Verdadeiro quando o estorno foi aceito pelo gateway.
+     */
+    public static function refund(\stdClass $record): bool {
+        global $DB;
+
+        $bloqueio = self::refund_blocker($record);
+        if ($bloqueio !== '') {
+            throw new moodle_exception($bloqueio, 'paygw_asaas');
+        }
+
+        $apikey = credentials::api_key((int) $record->accountid, $record->environment);
+        if ($apikey === '') {
+            throw new moodle_exception('errornotlinked', 'paygw_asaas', '', $record->environment);
+        }
+
+        $client = new asaas_client($apikey, $record->environment);
+
+        if (!empty($record->subscriptionid)) {
+            $client->cancel_subscription((string) $record->subscriptionid);
+        }
+
+        $resposta = $client->refund_payment((string) $record->asaaspaymentid);
+
+        $record->status = (string) ($resposta['status'] ?? 'REFUNDED');
+        $record->timemodified = time();
+        $DB->update_record(self::TABLE, $record);
+
+        return strtoupper((string) $record->status) === 'REFUNDED';
+    }
+
+    /**
      * A cobranca que o aluno tem que pagar AGORA.
      *
      * O Asaas nao gera uma cobranca por vez: uma assinatura semanal nasce com
