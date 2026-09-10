@@ -1,0 +1,57 @@
+name: Claude AI Peer Review (Moodle 5.2)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: claude-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  claude-code-review:
+    name: Claude AI Peer Review (Moodle 5.2)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: "--max-turns 3"
+          prompt: |
+            Você é um Moodle Core Peer Reviewer validando um Pull Request para o **Moodle 5.2**.
+            Siga as diretrizes de desenvolvimento oficiais do Moodle (https://moodledev.io/general/development/process/peer-review):
+
+            1. **Segurança (Moodle Security Guidelines)**:
+               - Verifique uso rigoroso de `$DB->get_records()` e sanitização SQL.
+               - Verifique chamadas a `required_param()` e `optional_param()` com o PARAM_* correto.
+               - Verifique permissões via `require_capability()`.
+               - Prevenção de XSS e uso correto de `format_text()`, `format_string()`, e `s()`.
+
+            2. **Arquitetura & Compatibilidade Moodle 5.2**:
+               - Compatibilidade estrita com PHP 8.3 e PHP 8.4 (evite código depreciado).
+               - Uso correto de Hooks da API de plugins do Moodle (evite eventos legados obsoletos).
+               - Conformidade com a Moodle DB API.
+
+            3. **Acessibilidade e Frontend**:
+               - Padrões de renderização via Mustache templates e Renderers.
+               - Conformidade com Moodle Design System / Bootstrap.
+
+            Forneça comentários diretamente nas linhas com problemas identificados e resuma a avaliação final com status de aprovação ou solicitações de alteração.
