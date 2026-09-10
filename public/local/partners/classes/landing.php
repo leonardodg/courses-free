@@ -126,9 +126,10 @@ class landing {
      * diferentes, e separa-los faria o canonical de um lado divergir do @id do
      * outro.
      *
+     * @param string $superficie
      * @return string
      */
-    public static function head_html(): string {
-        return seo::head_html();
+    public static function head_html(string $superficie = seo::SURFACE_LANDING): string {
+        return seo::head_html($superficie);
     }
 }

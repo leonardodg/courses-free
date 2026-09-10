@@ -246,12 +246,14 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 | Cenario behat sobre a home cai no login | O site do behat nasce sem Dashboard, e o `index.php` do core redireciona anonimo. Ponha `enablemyhome`, `forcelogin` e `theme` no cenario |
 | "A regra de CSS nao pegou" | A revisao muda a cada purge e a aba reusa a anterior. Confira o `styles.php/...` que a pagina carregou de verdade |
 | Metade branca na tela de entrar | O `#page` do layout de login sai `#fff` do Boost, e vence tudo dentro dele. Pintar a coluna nao resolve |
+| A raiz redireciona anonimo para o login, e mexer no `forcelogin` nao resolve | `enablemyhome` desligado. O `index.php:79` do core manda o anonimo para o login porque o destino calculado esta desabilitado - o comentario do proprio core diz "forcelogin may be off". Derruba canonica, hreflang e sitemap juntos |
+| Titulo da pagina ignora o `set_title()` do plugin | O `head.mustache` resolve `page_title` ANTES de `standard_head_html`. O hook de `<head>` e tarde: use o `before_http_headers` |
 
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **372 testes** (114 no núcleo, 48 no Asaas, 47 no
-`format_ldg`, **37 no `mod_ldgvideo`**, **68 no `local_partners`**, **24 no MP**,
+webhook, matrícula. **386 testes** (114 no núcleo, 48 no Asaas, 47 no
+`format_ldg`, **37 no `mod_ldgvideo`**, **82 no `local_partners`**, **24 no MP**,
 e 34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
 `theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
 

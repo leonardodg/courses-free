@@ -38,19 +38,12 @@ require(__DIR__ . '/../../config.php');
 use local_partners\landing;
 use local_partners\seo;
 
-$paginas = [];
-
-if (landing::is_enabled()) {
-    // A landing entra pelo endereco CANONICO, e nao pelos dois: anunciar a raiz
-    // e a URL propria ao mesmo tempo e pedir ao buscador que escolha, e ele
-    // escolhe sozinho, normalmente a errada.
-    $paginas[] = ['url' => seo::canonical_url(), 'priority' => '1.0', 'changefreq' => 'weekly'];
-    $paginas[] = [
-        'url' => (new moodle_url('/local/partners/apply.php'))->out(false),
-        'priority' => '0.8',
-        'changefreq' => 'monthly',
-    ];
-}
+// Quem monta as entradas e a classe seo, para ter teste: script de saida direta
+// so se prova abrindo o navegador. Cada pagina entra pelo endereco CANONICO de
+// cada idioma, e nao pelas duas URLs que servem o mesmo conteudo - anunciar a
+// raiz e a URL propria ao mesmo tempo e pedir ao buscador que escolha, e ele
+// escolhe sozinho, normalmente a errada.
+$paginas = landing::is_enabled() ? seo::sitemap_entries() : [];
 
 // Cabecalho antes de qualquer saida. O sitemap muda quando o site muda, e nao a
 // cada requisicao - meia hora de cache poupa o servidor sem atrasar nada que
@@ -58,29 +51,24 @@ if (landing::is_enabled()) {
 header('Content-Type: application/xml; charset=utf-8');
 header('Cache-Control: public, max-age=1800');
 
-$idiomas = array_keys(get_string_manager()->get_list_of_translations());
-
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
 echo '        xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
 
+// CADA idioma tem a propria entrada, e todas repetem o cluster inteiro. O
+// formato antigo listava uma entrada so com os alternates dentro, o que parece
+// economico e esta errado: sem link de retorno em cada URL anunciada, o
+// buscador descarta o cluster e as versoes por idioma nao sao indexadas.
 foreach ($paginas as $pagina) {
     echo "  <url>\n";
     echo '    <loc>' . htmlspecialchars($pagina['url'], ENT_XML1) . "</loc>\n";
 
-    // As versoes por idioma vao DENTRO da entrada, e nao como URLs separadas:
-    // e a mesma pagina em outro idioma, e o buscador precisa saber disso para
-    // nao tratar as tres como conteudo duplicado.
-    foreach ($idiomas as $lang) {
-        $alternativa = new moodle_url($pagina['url'], ['lang' => $lang]);
-
+    foreach ($pagina['alternates'] as $hreflang => $alternativa) {
         echo '    <xhtml:link rel="alternate" hreflang="'
-            . htmlspecialchars(str_replace('_', '-', $lang), ENT_XML1)
-            . '" href="' . htmlspecialchars($alternativa->out(false), ENT_XML1) . '"/>' . "\n";
+            . htmlspecialchars($hreflang, ENT_XML1)
+            . '" href="' . htmlspecialchars($alternativa, ENT_XML1) . '"/>' . "\n";
     }
 
-    echo '    <xhtml:link rel="alternate" hreflang="x-default" href="'
-        . htmlspecialchars($pagina['url'], ENT_XML1) . '"/>' . "\n";
     echo '    <changefreq>' . $pagina['changefreq'] . "</changefreq>\n";
     echo '    <priority>' . $pagina['priority'] . "</priority>\n";
     echo "  </url>\n";

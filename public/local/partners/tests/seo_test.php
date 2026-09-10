@@ -326,4 +326,274 @@ final class seo_test extends \advanced_testcase {
         $this->assertStringContainsString('googletagmanager.com/gtag/js?id=G-ABC123XYZ', $saida);
         $this->assertStringContainsString('anonymize_ip', $saida);
     }
+
+    /**
+     * Cada versao de idioma aponta a canonica para ELA MESMA.
+     *
+     * E a regra que sustenta o hreflang inteiro. Quando /?lang=pt_br declara
+     * canonica para /, as duas afirmacoes se contradizem e a canonica vence: o
+     * buscador consolida tudo na versao sem parametro e DESCARTA o cluster, de
+     * modo que a versao em portugues nunca e indexada.
+     *
+     * @return void
+     */
+    public function test_cada_idioma_se_autocanonicaliza(): void {
+        $this->resetAfterTest();
+
+        set_config('enablelanding', 1, 'local_partners');
+        set_config('frontpagemode', 'landing', 'local_partners');
+
+        // Sem idioma na requisicao, a canonica e a URL limpa: e o x-default.
+        $this->assertStringNotContainsString('lang=', seo::canonical_url());
+
+        // Com idioma, a canonica carrega o idioma - e nao a URL limpa.
+        $this->assertStringContainsString('lang=pt_br', seo::canonical_url(seo::SURFACE_LANDING, 'pt_br'));
+    }
+
+    /**
+     * O alternate de cada idioma e exatamente a canonica daquele idioma.
+     *
+     * Se as duas divergirem em um caractere, o cluster nao fecha: o buscador
+     * procura o link de retorno na URL anunciada e nao acha.
+     *
+     * @return void
+     */
+    public function test_o_alternate_aponta_para_a_canonica_daquele_idioma(): void {
+        $this->resetAfterTest();
+
+        $html = seo::head_html();
+
+        foreach (array_keys(get_string_manager()->get_list_of_translations()) as $lang) {
+            $this->assertStringContainsString(
+                'href="' . s(seo::canonical_url(seo::SURFACE_LANDING, $lang)) . '"',
+                $html,
+                "o alternate de {$lang} precisa ser a canonica daquele idioma"
+            );
+        }
+    }
+
+    /**
+     * O x-default e a URL SEM parametro de idioma.
+     *
+     * @return void
+     */
+    public function test_o_x_default_e_a_url_sem_idioma(): void {
+        $this->resetAfterTest();
+
+        $this->assertStringContainsString(
+            'hreflang="x-default" href="' . s(seo::base_url()) . '"',
+            seo::head_html()
+        );
+    }
+
+    /**
+     * O titulo traz a marca, e o Moodle nao anexa o nome do site por cima.
+     *
+     * A marca entra na string de idioma para poder acompanhar o idioma. Deixar
+     * o core anexar o nome curto amarraria a marca a um valor unico no banco, e
+     * o titulo em portugues sairia com o sufixo em ingles.
+     *
+     * @return void
+     */
+    public function test_o_titulo_traz_a_marca_do_idioma(): void {
+        $this->resetAfterTest();
+
+        // O titulo servido e o do idioma corrente.
+        $this->assertStringContainsString(
+            get_string('brandname', 'local_partners'),
+            seo::page_title()
+        );
+
+        // A marca precisa existir em CADA pacote, e diferente em cada um: e o
+        // motivo de ela vir da string de idioma em vez do nome do site, que e
+        // um valor unico no banco.
+        //
+        // Lemos o arquivo do pacote, e nao o get_string: o site de teste so tem
+        // o ingles instalado como TRADUCAO, entao tanto o force_current_language
+        // quanto o get_string com idioma explicito caem no ingles - e o teste
+        // passaria sem provar nada.
+        $marcas = [];
+
+        foreach (['en', 'pt_br', 'es'] as $lang) {
+            $string = [];
+            include(__DIR__ . "/../lang/{$lang}/local_partners.php");
+
+            $this->assertArrayHasKey('brandname', $string, "o pacote {$lang} precisa definir a marca");
+            $marcas[$lang] = $string['brandname'];
+        }
+
+        $this->assertSame('LDG Technology', $marcas['en']);
+        $this->assertSame('LDG Tecnologia', $marcas['pt_br']);
+        $this->assertSame('LDG Tecnología', $marcas['es']);
+    }
+
+    /**
+     * A pagina de candidatura tem canonica propria, e nao a da landing.
+     *
+     * Ela esta no sitemap e no llms.txt como pagina principal: sem canonica
+     * propria, ou some do indice ou compete com a landing.
+     *
+     * @return void
+     */
+    public function test_o_apply_tem_canonica_propria(): void {
+        $this->resetAfterTest();
+
+        set_config('enablelanding', 1, 'local_partners');
+        set_config('frontpagemode', 'landing', 'local_partners');
+
+        $this->assertStringContainsString('/local/partners/apply.php', seo::canonical_url(seo::SURFACE_APPLY));
+        $this->assertStringNotContainsString('/local/partners/apply.php', seo::canonical_url());
+    }
+
+    /**
+     * A candidatura declara os proprios metadados, e nao os da landing.
+     *
+     * @return void
+     */
+    public function test_o_apply_declara_os_proprios_metadados(): void {
+        $this->resetAfterTest();
+
+        $html = seo::head_html(seo::SURFACE_APPLY);
+
+        $this->assertStringContainsString(
+            '<link rel="canonical" href="' . s(seo::canonical_url(seo::SURFACE_APPLY)) . '">',
+            $html
+        );
+        $this->assertStringContainsString('<meta name="description"', $html);
+        $this->assertStringContainsString('hreflang="x-default"', $html);
+    }
+
+    /**
+     * O og:title e o titulo da pagina, e nao o nome do site.
+     *
+     * O nome do site continua no og:site_name, que e o campo dele. O og:title e
+     * o que o WhatsApp, o LinkedIn e o assistente de IA mostram como manchete:
+     * repetir a marca ali gasta a manchete sem dizer o que a pagina resolve.
+     *
+     * @return void
+     */
+    public function test_o_og_title_e_o_titulo_da_pagina(): void {
+        $this->resetAfterTest();
+
+        $this->assertStringContainsString(
+            '<meta property="og:title" content="' . s(seo::page_title()) . '">',
+            seo::head_html()
+        );
+    }
+
+    /**
+     * Nome com "&" no schema sai como "&", e nao como entidade HTML.
+     *
+     * Dentro de <script type="application/ld+json"> o parser NAO decodifica
+     * entidade: um format_string() escapado publica o nome da empresa
+     * corrompido, e nenhum validador reclama.
+     *
+     * @return void
+     */
+    public function test_o_nome_no_schema_nao_carrega_entidade_html(): void {
+        global $SITE, $DB;
+
+        $this->resetAfterTest();
+
+        $DB->set_field('course', 'fullname', 'LDG Courses & Technology', ['id' => $SITE->id]);
+        $SITE = $DB->get_record('course', ['id' => $SITE->id]);
+
+        $organizacao = $this->no('Organization');
+
+        $this->assertSame('LDG Courses & Technology', $organizacao['name']);
+
+        // E no atributo o escape sai UMA vez, e nao duas. Escapado nos dois
+        // lugares, o "&" vira "&amp;amp;" e o compartilhamento mostra a
+        // entidade em vez do nome.
+        $html = seo::head_html();
+
+        $this->assertStringContainsString('content="LDG Courses &amp; Technology"', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html);
+    }
+
+    /**
+     * O og:locale nao inventa territorio para idioma que nao tem.
+     *
+     * O Open Graph pede lingua_TERRITORIO, e e tentador completar: "en_US" para
+     * satisfazer o formato, ou o locale do langconfig, que devolve en_AU. Os
+     * dois declaram um territorio que ninguem configurou - o pacote base do
+     * Moodle e ingles GLOBAL, e o site em ingles nao e americano nem
+     * australiano.
+     *
+     * @return void
+     */
+    public function test_o_og_locale_nao_inventa_territorio(): void {
+        $this->resetAfterTest();
+
+        $html = seo::head_html();
+
+        // O idioma corrente do site de teste e o ingles global: sai 'en', seco.
+        $this->assertStringContainsString('<meta property="og:locale" content="en">', $html);
+
+        // E o territorio aparece quando ele existe no CODIGO do idioma.
+        $this->assertSame('pt_BR', self::locale_visivel('pt_br'));
+        $this->assertSame('es_AR', self::locale_visivel('es_ar'));
+        $this->assertSame('es', self::locale_visivel('es'));
+    }
+
+    /**
+     * O locale que a classe publicaria para um idioma.
+     *
+     * @param string $lang
+     * @return string
+     */
+    private static function locale_visivel(string $lang): string {
+        $metodo = new \ReflectionMethod(seo::class, 'locale_for');
+
+        return $metodo->invoke(null, $lang);
+    }
+
+    /**
+     * A landing pede o hero antes, e a candidatura nao pede.
+     *
+     * Imagem de fundo o preload scanner nao enxerga: ela so baixa depois do
+     * CSSOM, e e a candidata a maior elemento visivel. Na candidatura o hero
+     * nao existe, e preload de recurso que a pagina nao usa e banda jogada
+     * fora, com aviso no console.
+     *
+     * @return void
+     */
+    public function test_so_a_landing_faz_preload_do_hero(): void {
+        $this->resetAfterTest();
+
+        $this->assertStringContainsString(
+            '<link rel="preload" as="image"',
+            seo::head_html()
+        );
+        $this->assertStringNotContainsString(
+            '<link rel="preload" as="image"',
+            seo::head_html(seo::SURFACE_APPLY)
+        );
+    }
+
+    /**
+     * O sitemap tem uma entrada por idioma, e nao uma entrada so.
+     *
+     * O protocolo exige que CADA URL do cluster tenha a propria entrada, com o
+     * conjunto completo de alternates - inclusive a que aponta para ela mesma.
+     * Uma entrada so nao tem link de retorno, e o cluster e descartado.
+     *
+     * @return void
+     */
+    public function test_o_sitemap_tem_uma_entrada_por_idioma(): void {
+        $this->resetAfterTest();
+
+        set_config('enablelanding', 1, 'local_partners');
+
+        $idiomas = count(get_string_manager()->get_list_of_translations());
+        $entradas = seo::sitemap_entries();
+
+        // Duas paginas publicas, cada uma com a URL limpa mais uma por idioma.
+        $this->assertCount(2 * ($idiomas + 1), $entradas);
+
+        // Toda entrada carrega o cluster inteiro, para servir de link de retorno.
+        foreach ($entradas as $entrada) {
+            $this->assertCount($idiomas + 1, $entrada['alternates']);
+        }
+    }
 }

@@ -15,27 +15,23 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Captacao de empresas parceiras: landing publica e fila de candidaturas.
+ * Callbacks de biblioteca do local_partners.
  *
  * @package    local_partners
  * @copyright  2026 LeoDG <callme@leodg.dev>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component = 'local_partners';
-// O bump nao e so pelo passo de banco: styles.css de plugin nao e invalidado
-// pelo purge_caches, e so a versao nova faz o CSS editado chegar a tela.
-$plugin->version   = 2026091033;
-$plugin->requires  = 2026042000; // Moodle 5.2.
-$plugin->supported = [502, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
-
-// Depende do nucleo para ler os planos e, na aprovacao, para provisionar a
-// empresa. NAO declara o theme_ldg: a dependencia entre os dois e do TEMA para
-// ca, e e opcional - o tema testa class_exists e segue sem a landing.
-$plugin->dependencies = [
-    'local_marketplace' => 2026083110,
-];
+/**
+ * Os checks que aparecem em Relatorios -> Status do sistema.
+ *
+ * O manager descobre esta funcao por nome, em lib.php - ver
+ * core\check\manager::get_status_checks().
+ *
+ * @return array
+ */
+function local_partners_status_checks(): array {
+    return [
+        new \local_partners\check\landingreachable(),
+    ];
+}

@@ -40,7 +40,8 @@ $PAGE->set_pagelayout('embedded');
 // Ver o comentario em index.php: o layout 'standard' limita a largura, e o
 // cadastro e uma tela de duas colunas.
 $PAGE->add_body_class('ldgp-page');
-$PAGE->set_title(get_string('applytitle', 'local_partners'));
+// Ver o comentario em index.php sobre o segundo parametro.
+$PAGE->set_title(\local_partners\seo::page_title(\local_partners\seo::SURFACE_APPLY), false);
 $PAGE->set_heading('');
 
 if (!landing::is_enabled()) {

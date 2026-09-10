@@ -7,7 +7,23 @@ dá para fazer ainda, com o motivo.
 > valores em *Administração do site → Plugins → Plugins locais → Captação de
 > parceiros*.
 
-## Antes de tudo: o site precisa se declarar indexável
+## Antes de tudo: a raiz precisa responder 200
+
+```bash
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://courses.leodg.dev/
+```
+
+`303` apontando para `/login/index.php` significa que **o Painel está
+desligado** — *Administração do site → Aparência → Navegação → Painel ativado*.
+Com `enablemyhome` vazio, o `index.php` do core manda todo anônimo para o login
+e **o `forcelogin` não tem nada a ver com isso**; procurar nas configurações de
+login não acha nada, porque não está lá. O porquê, com o trecho do core, está em
+[`../dev/seo-canonical-e-hreflang.md`](../dev/seo-canonical-e-hreflang.md).
+
+Enquanto a raiz redirecionar, nada mais nesta página adianta: a canônica, os
+`hreflang` e a entrada principal do sitemap apontam todos para lá.
+
+## Depois: o site precisa se declarar indexável
 
 *Administração do site → Segurança → Políticas do site → **Permitir indexação
 por buscadores***.
@@ -134,8 +150,11 @@ Auto Minify e Brotli ligados no painel.
 
 ## 5. Palavras-chave
 
-Não existe `<meta name="keywords">`, e não vai existir: **o Google ignora essa
-tag desde 2009**, e ela só serve para o concorrente ler a sua estratégia.
+**O Google ignora `<meta name="keywords">` desde 2009**, e nós não escrevemos
+nenhuma. A que aparece no código-fonte é do **core do Moodle**, que emite
+`<meta name="keywords" content="moodle, {título da página}" />` em toda página
+(`lib/classes/output/core_renderer.php:204`). Não é nossa, não carrega estratégia
+nenhuma, e não vale brigar com o core para removê-la.
 
 O que carrega a palavra-chave, e onde ela está:
 

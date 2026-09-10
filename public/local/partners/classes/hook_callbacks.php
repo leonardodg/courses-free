@@ -16,6 +16,7 @@
 
 namespace local_partners;
 
+use core\hook\output\before_http_headers;
 use core\hook\output\before_standard_head_html_generation;
 use moodle_url;
 
@@ -57,28 +58,123 @@ class hook_callbacks {
             return;
         }
 
-        // So a raiz e a URL propria da landing recebem as tags. Poluir o resto
-        // do site com og:type=website da landing faria toda pagina compartilhada
+        // So as paginas publicas de captacao recebem as tags. Poluir o resto do
+        // site com og:type=website da landing faria toda pagina compartilhada
         // parecer a mesma coisa.
-        $path = $PAGE->url->get_path();
-        $root = (new moodle_url('/'))->get_path();
+        $superficie = self::surface_for($PAGE->url->get_path());
 
-        $allowed = [
-            rtrim($root, '/'),
-            rtrim($root, '/') . '/index.php',
-            (new moodle_url('/local/partners/index.php'))->get_path(),
-        ];
+        if ($superficie !== null) {
+            $hook->add_html(landing::head_html($superficie));
 
-        if (!in_array(rtrim($path, '/') ?: '', $allowed, true) && !in_array($path, $allowed, true)) {
             return;
         }
 
-        // A consulta de configuracao fica por ultimo, depois de todas as
-        // saidas baratas.
-        if (!landing::replaces_frontpage() && $path !== (new moodle_url('/local/partners/index.php'))->get_path()) {
+        // O catalogo do LMS leva SO a description, e nada mais.
+        //
+        // Nao leva canonical: a pagina aceita categoryid e paginacao, e
+        // canonical montada sem olhar para os parametros consolidaria
+        // categorias distintas numa URL so. Nao leva og:*: o catalogo nao e
+        // uma pagina de campanha, e o og:type=website da landing faria todo
+        // link compartilhado parecer a mesma coisa.
+        if (self::is_course_index($PAGE->url->get_path()) && landing::replaces_frontpage()) {
+            $hook->add_html(
+                '<meta name="description" content="'
+                . s(get_string('catalogmetadescription', 'local_partners')) . '">' . "\n"
+            );
+        }
+    }
+
+    /**
+     * O caminho e a listagem de cursos do core?
+     *
+     * @param string $path
+     * @return bool
+     */
+    protected static function is_course_index(string $path): bool {
+        // SO a raiz do catalogo. As paginas de categoria compartilham o mesmo
+        // caminho, e uma description generica repetida em todas elas e pior que
+        // nenhuma: o buscador reporta description duplicada, e o trecho que ele
+        // escreveria a partir do conteudo da categoria seria mais util.
+        if (optional_param('categoryid', 0, PARAM_INT) !== 0) {
+            return false;
+        }
+
+        $path = rtrim($path, '/') ?: '';
+        $catalogo = rtrim((new moodle_url('/course/index.php'))->get_path(), '/');
+
+        return $path === $catalogo || $path === dirname($catalogo);
+    }
+
+    /**
+     * Qual superficie publica mora neste caminho, se alguma.
+     *
+     * @param string $path
+     * @return string|null
+     */
+    protected static function surface_for(string $path): ?string {
+        $path = rtrim($path, '/') ?: '';
+        $raiz = rtrim((new moodle_url('/'))->get_path(), '/');
+        $indice = (new moodle_url('/local/partners/index.php'))->get_path();
+        $candidatura = (new moodle_url('/local/partners/apply.php'))->get_path();
+
+        if ($path === rtrim($candidatura, '/')) {
+            return seo::SURFACE_APPLY;
+        }
+
+        if ($path === rtrim($indice, '/')) {
+            return seo::SURFACE_LANDING;
+        }
+
+        // A raiz so e a landing quando o administrador escolheu isso. A consulta
+        // de configuracao fica por ultimo, depois de todas as comparacoes de
+        // string, que sao baratas.
+        if (($path === $raiz || $path === $raiz . '/index.php') && landing::replaces_frontpage()) {
+            return seo::SURFACE_LANDING;
+        }
+
+        return null;
+    }
+
+    /**
+     * Poe o titulo da landing na home do site.
+     *
+     * ESTE CALLBACK NAO PODE VIRAR UM before_standard_head_html_generation.
+     * O template do tema resolve `page_title` ANTES de `standard_head_html`
+     * (theme/boost/templates/head.mustache), entao um set_title() feito de
+     * dentro do hook de <head> nao tem efeito nenhum - e sem erro, sem aviso,
+     * so o titulo default do Moodle na pagina. O before_http_headers dispara no
+     * inicio do core_renderer::header(), antes de qualquer template.
+     *
+     * So a HOME precisa disto: as paginas proprias do plugin chamam
+     * set_title() elas mesmas, porque tem um index.php onde chamar.
+     *
+     * @param before_http_headers $hook
+     * @return void
+     */
+    public static function before_http_headers(before_http_headers $hook): void {
+        global $CFG, $PAGE;
+
+        if (isloggedin() && !isguestuser()) {
             return;
         }
 
-        $hook->add_html(landing::head_html());
+        if (!empty($CFG->marketplacecompany)) {
+            return;
+        }
+
+        if (!$PAGE->has_set_url() || !landing::replaces_frontpage()) {
+            return;
+        }
+
+        $path = rtrim($PAGE->url->get_path(), '/');
+        $raiz = rtrim((new moodle_url('/'))->get_path(), '/');
+
+        if ($path !== $raiz && $path !== $raiz . '/index.php') {
+            return;
+        }
+
+        // O false e obrigatorio: a marca ja esta na string de idioma, e deixar o
+        // core anexar o nome do site poria uma segunda marca no mesmo titulo.
+        $PAGE->set_title(seo::page_title(), false);
     }
 }
