@@ -1,0 +1,232 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+namespace local_partners;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use local_marketplace\plan;
+
+/**
+ * Descoberta da landing por buscador.
+ *
+ * O que estes testes protegem: dado estruturado errado e pior que dado
+ * estruturado ausente. Um preco desatualizado no schema aparece no resultado de
+ * busca depois de ja ter mudado na pagina, e quem clica chega achando que foi
+ * enganado; uma pergunta no schema que nao esta na tela e recusada pelos
+ * validadores.
+ *
+ * @package    local_partners
+ * @copyright  2026 LeoDG <callme@leodg.dev>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+#[CoversClass(\local_partners\seo::class)]
+final class seo_test extends \advanced_testcase {
+    /**
+     * O grafo JSON-LD que a pagina publica.
+     *
+     * @return array
+     */
+    private function grafo(): array {
+        $html = seo::head_html();
+
+        $achou = preg_match(
+            '~<script type="application/ld\+json">(.*?)</script>~s',
+            $html,
+            $captura
+        );
+
+        $this->assertSame(1, $achou, 'a pagina deveria publicar um bloco JSON-LD');
+
+        $dados = json_decode($captura[1], true);
+
+        $this->assertNotNull($dados, 'o bloco JSON-LD precisa ser JSON valido: ' . json_last_error_msg());
+
+        return $dados;
+    }
+
+    /**
+     * Um no do grafo, pelo tipo.
+     *
+     * @param string $tipo
+     * @return array|null
+     */
+    private function no(string $tipo): ?array {
+        foreach ($this->grafo()['@graph'] as $no) {
+            if (($no['@type'] ?? '') === $tipo) {
+                return $no;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * O bloco JSON-LD e JSON valido, com contexto e grafo.
+     *
+     * @return void
+     */
+    public function test_o_json_ld_e_valido(): void {
+        $this->resetAfterTest();
+
+        $grafo = $this->grafo();
+
+        $this->assertSame('https://schema.org', $grafo['@context']);
+        $this->assertNotEmpty($grafo['@graph']);
+    }
+
+    /**
+     * As barras saem escapadas, e isso nao e preciosismo.
+     *
+     * Com as barras escapadas, um "</script>" que venha de dado nao consegue
+     * fechar o bloco e virar HTML. E o mesmo motivo pelo qual nao se concatena
+     * dado dentro de script.
+     *
+     * @return void
+     */
+    public function test_o_bloco_nao_pode_ser_fechado_por_dado(): void {
+        $this->resetAfterTest();
+
+        $html = seo::head_html();
+        $inicio = strpos($html, '<script type="application/ld+json">');
+        $fim = strpos($html, '</script>', $inicio);
+        $corpo = substr($html, $inicio, $fim - $inicio);
+
+        $this->assertStringNotContainsString('</', $corpo);
+    }
+
+    /**
+     * O FAQ do schema e o MESMO que a pagina mostra.
+     *
+     * @return void
+     */
+    public function test_o_faq_do_schema_e_o_mesmo_da_tela(): void {
+        $this->resetAfterTest();
+
+        $natela = array_column(\local_partners\output\landing_page::faq_items(), 'question');
+        $noschema = array_column($this->no('FAQPage')['mainEntity'], 'name');
+
+        $this->assertSame($natela, $noschema);
+        $this->assertCount(4, $noschema);
+    }
+
+    /**
+     * O preco do schema vem do banco, com a moeda do plano.
+     *
+     * @return void
+     */
+    public function test_o_preco_do_schema_vem_do_banco(): void {
+        $this->resetAfterTest();
+
+        $pro = plan::get_record_by_shortname('pro');
+        $this->assertNotFalse($pro, 'o seed da instalacao deveria ter criado o plano pro');
+
+        $ofertas = [];
+        foreach ($this->no('Service')['offers'] as $oferta) {
+            $ofertas[$oferta['name']] = $oferta;
+        }
+
+        $esperado = number_format((float) $pro->get('monthlyfee'), 2, '.', '');
+
+        $this->assertSame($esperado, $ofertas[format_string($pro->get('name'))]['price']);
+        $this->assertSame($pro->get('currency'), $ofertas[format_string($pro->get('name'))]['priceCurrency']);
+    }
+
+    /**
+     * Sem plano publico nao ha oferta nenhuma no schema.
+     *
+     * Anunciar servico sem preco e o tipo de dado que o validador aceita e o
+     * leitor humano nao perdoa.
+     *
+     * @return void
+     */
+    public function test_sem_plano_publico_nao_ha_oferta(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $DB->set_field('local_marketplace_plan', 'ispublic', 0, []);
+
+        $this->assertNull($this->no('Service'));
+    }
+
+    /**
+     * Campo de marca vazio NAO entra no schema.
+     *
+     * E a regra que separa dado estruturado de alegacao com carimbo: o que
+     * ninguem preencheu simplesmente nao e publicado.
+     *
+     * @return void
+     */
+    public function test_campo_de_marca_vazio_nao_entra(): void {
+        $this->resetAfterTest();
+
+        $org = $this->no('Organization');
+
+        $this->assertArrayNotHasKey('legalName', $org);
+        $this->assertArrayNotHasKey('taxID', $org);
+        $this->assertArrayNotHasKey('address', $org);
+        // O que o site SABE continua saindo.
+        $this->assertNotEmpty($org['name']);
+        $this->assertNotEmpty($org['url']);
+    }
+
+    /**
+     * O hreflang sai em BCP 47, e nao no formato do Moodle.
+     *
+     * O Moodle diz 'pt_br'; o padrao quer 'pt-BR'. Publicar o formato do Moodle
+     * faz o buscador ignorar a tag inteira, sem avisar ninguem.
+     *
+     * @return void
+     */
+    public function test_hreflang_sai_em_bcp47(): void {
+        $this->resetAfterTest();
+
+        $html = seo::head_html();
+
+        $this->assertStringContainsString('hreflang="x-default"', $html);
+        $this->assertStringNotContainsString('hreflang="pt_br"', $html);
+    }
+
+    /**
+     * O canonical acompanha onde a landing realmente mora.
+     *
+     * Duas URLs com o mesmo conteudo e sem canonical fazem o buscador escolher
+     * uma por conta propria, e normalmente a errada.
+     *
+     * @return void
+     */
+    public function test_o_canonical_acompanha_a_home(): void {
+        $this->resetAfterTest();
+
+        set_config('enablelanding', 1, 'local_partners');
+
+        set_config('frontpagemode', 'default', 'local_partners');
+        $this->assertStringContainsString('/local/partners/index.php', seo::canonical_url());
+
+        set_config('frontpagemode', 'landing', 'local_partners');
+        $this->assertStringNotContainsString('/local/partners/index.php', seo::canonical_url());
+    }
+
+    /**
+     * A pagina se declara indexavel.
+     *
+     * @return void
+     */
+    public function test_a_pagina_pede_para_ser_indexada(): void {
+        $this->resetAfterTest();
+
+        $this->assertStringContainsString('content="index, follow', seo::head_html());
+    }
+}

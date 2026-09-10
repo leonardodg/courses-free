@@ -82,32 +82,16 @@ class landing {
     }
 
     /**
-     * Meta tags de compartilhamento da landing.
+     * O que a landing acrescenta ao <head>.
      *
-     * Tudo passa por s() e format_string(): sao textos de configuracao indo
-     * para dentro de atributo HTML.
+     * Delega para a classe seo, que trata indexacao, compartilhamento, idioma e
+     * dados estruturados juntos - sao a mesma decisao vista de angulos
+     * diferentes, e separa-los faria o canonical de um lado divergir do @id do
+     * outro.
      *
      * @return string
      */
     public static function head_html(): string {
-        global $SITE;
-
-        $title = format_string($SITE->fullname);
-        $description = get_string('metadescription', 'local_partners');
-        $url = (new moodle_url('/'))->out(false);
-        $image = (new moodle_url('/local/partners/pix/hero.jpg'))->out(false);
-
-        $tags = [
-            '<meta name="description" content="' . s($description) . '">',
-            '<link rel="canonical" href="' . s($url) . '">',
-            '<meta property="og:type" content="website">',
-            '<meta property="og:title" content="' . s($title) . '">',
-            '<meta property="og:description" content="' . s($description) . '">',
-            '<meta property="og:url" content="' . s($url) . '">',
-            '<meta property="og:image" content="' . s($image) . '">',
-            '<meta name="twitter:card" content="summary_large_image">',
-        ];
-
-        return implode("\n", $tags) . "\n";
+        return seo::head_html();
     }
 }

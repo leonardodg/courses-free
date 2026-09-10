@@ -193,6 +193,19 @@ class landing_page implements renderable, templatable {
     }
 
     /**
+     * As perguntas frequentes, para quem precisa delas fora do template.
+     *
+     * O bloco JSON-LD da pagina precisa das MESMAS perguntas que aparecem na
+     * tela: schema com pergunta que o visitante nao encontra e recusado pelos
+     * validadores, e com razao. Uma lista so, dois consumidores.
+     *
+     * @return array
+     */
+    public static function faq_items(): array {
+        return (new self())->faq();
+    }
+
+    /**
      * Perguntas frequentes.
      *
      * @return array
