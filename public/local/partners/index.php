@@ -33,6 +33,10 @@ use local_partners\landing;
 $PAGE->set_context(\core\context\system::instance());
 $PAGE->set_url(new moodle_url('/local/partners/index.php'));
 $PAGE->set_pagelayout('standard');
+// A classe libera a largura no styles.css. O layout 'standard' limita a
+// .main-inner a largura de leitura, o que corta o hero pela metade - medido em
+// 720px dentro de um viewport de 1440.
+$PAGE->add_body_class('ldgp-page');
 $PAGE->set_title(get_string('landingtitle', 'local_partners'));
 $PAGE->set_heading('');
 

@@ -44,7 +44,10 @@
 @import "ldg/course";
 @import "ldg/login";
 @import "ldg/navmenu";
-@import "ldg/landing";
+// A landing do local_partners NAO tem import aqui, e a excecao e deliberada: o
+// estilo dela mora em local/partners/styles.css. O requisito e que a pagina
+// renderize igual sob theme_boost e theme_moove, e estilo de tema so vale no
+// tema. Ver o README do local_partners.
 // O estilo do format_ldg mora aqui, e nao no plugin: o formato entrega marcacao
 // e quem pinta e o tema. Ver o README do format_ldg.
 @import "ldg/format";

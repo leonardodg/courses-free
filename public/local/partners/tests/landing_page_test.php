@@ -241,4 +241,27 @@ final class landing_page_test extends \advanced_testcase {
         $this->assertStringContainsString('ldgp', $html);
         $this->assertStringNotContainsString('[[', $html);
     }
+
+    /**
+     * O docblock do template nao vaza para a tela.
+     *
+     * Um comentario de mustache termina no PRIMEIRO fecha-chaves duplo. Citar
+     * uma tag dentro do comentario - escrever o nome de um bloco entre chaves
+     * para explicar de onde vem o dado - encerra o comentario ali, e todo o
+     * resto do texto vai para a pagina publica como paragrafo.
+     *
+     * Aconteceu, e nenhum teste pegou: o contexto estava certo, o phpunit
+     * passava, e o defeito so apareceu na captura de tela. Este teste e a rede.
+     *
+     * @return void
+     */
+    public function test_o_comentario_do_template_nao_vaza_para_a_tela(): void {
+        $this->resetAfterTest();
+
+        $html = $this->html();
+
+        foreach (['@template', 'Context variables', 'Example context'] as $marca) {
+            $this->assertStringNotContainsString($marca, $html, 'o docblock do template escapou para a pagina');
+        }
+    }
 }

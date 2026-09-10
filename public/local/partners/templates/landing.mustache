@@ -24,24 +24,40 @@
     landing_page. Uma tabela de precos escrita aqui envelheceria no primeiro
     reajuste, e o visitante veria um numero que o sistema nao pratica.
 
+    Os id= das secoes NAO sao escritos aqui: saem do export "sections", a mesma
+    lista que alimenta a barra de secoes. Escrever a lista duas vezes e como uma
+    ancora passa a apontar para lugar nenhum sem ninguem notar.
+
+    NAO escreva chave dupla de mustache dentro deste comentario. O comentario
+    termina no PRIMEIRO fecha-chaves, entao uma tag citada aqui encerra o bloco
+    e joga o resto do texto na tela do visitante. Ja aconteceu.
+
+    O estilo mora em local/partners/styles.css, e nao no tema: a pagina precisa
+    renderizar igual sob theme_boost e theme_moove.
+
     Context variables required for this template:
     * applyurl - URL do formulario de candidatura
     * heroimage - URL da imagem do hero
+    * colormode - 'dark' ou 'light', ja resolvido no servidor
+    * sections - array de { id, label }, na ordem da pagina
     * plans - array de planos: name, description, isfree, monthlyfee,
               commissionpct, isbyos, hosting, tiers, hastiers
     * hasplans - boolean
-    * steps - array de { number, title, text }
+    * steps - array de { number, title, text, chip }
     * faq - array de { id, question, answer }
-    * sections - array de { id, label } - a MESMA lista que a barra de secoes
-                 usa; os id= abaixo saem dela, e nao de texto escrito aqui
-    * colormode - 'dark' ou 'light', ja resolvido no servidor
 
     Example context (json):
     {
         "applyurl": "/local/partners/apply.php",
         "heroimage": "/local/partners/pix/hero.jpg",
         "colormode": "dark",
-        "sections": [{"id": "ldgp-pricing", "label": "Plans"}],
+        "sections": [
+            {"id": "ldgp-features", "label": "Features"},
+            {"id": "ldgp-pricing", "label": "Plans"},
+            {"id": "ldgp-how", "label": "How it works"},
+            {"id": "ldgp-faq", "label": "FAQ"},
+            {"id": "ldgp-apply", "label": "Apply"}
+        ],
         "hasplans": true,
         "plans": [
             {
@@ -56,104 +72,214 @@
                 "tiers": [{"label": "Up to R$ 49.90", "resolution": "720p"}]
             }
         ],
-        "steps": [{"number": 1, "title": "Apply", "text": "Fill the form."}],
-        "faq": [{"id": "f1", "question": "How much?", "answer": "9.9%."}]
+        "steps": [{"number": 1, "title": "Apply", "text": "Fill the form.", "chip": "1 min"}],
+        "faq": [{"id": "ldgfaq1", "question": "How much?", "answer": "9.9%."}]
     }
 }}
-<div class="ldgp ldgp--landing ldg-landing">
+<div class="ldgp ldgp--landing" data-bs-theme="{{colormode}}">
 
-    <section class="ldg-landing-hero" style="background-image: url('{{heroimage}}');">
-        <div class="ldg-landing-inner">
-            <h1>{{#str}}herotitle, local_partners{{/str}}</h1>
-            <p class="ldg-landing-lead">{{#str}}herolead, local_partners{{/str}}</p>
-            <a href="{{applyurl}}" class="btn btn-primary btn-lg">{{#str}}heroctatext, local_partners{{/str}}</a>
+    {{! O visitante anonimo que escolheu claro guardou a escolha no navegador, e
+        o servidor nao tem como saber disso. Este script corrige o atributo
+        ANTES da pintura: um bloco js do Moodle sairia no fim do body e passaria
+        pelo RequireJS, que e assincrono - daria pisca garantido. O try/catch nao
+        e enfeite, o localStorage lanca em navegacao privada. }}
+    <script>
+        (function() {
+            try {
+                var m = localStorage.getItem('local_partners-colormode');
+                if (m === 'light' || m === 'dark') {
+                    document.currentScript.parentElement.setAttribute('data-bs-theme', m);
+                }
+            } catch (e) {
+                // Sem armazenamento local, vale o que o servidor decidiu.
+            }
+        }());
+    </script>
+
+    <section class="ldgp-hero">
+        <div class="ldgp-inner">
+            <p class="ldgp-pill">
+                <span class="ldgp-dot"></span>
+                <span>{{#str}}heropill, local_partners{{/str}}</span>
+            </p>
+
+            <h1 class="ldgp-herotitle">
+                {{#str}}herotitle, local_partners{{/str}}
+                <span class="ldgp-gradient">{{#str}}herotitleaccent, local_partners{{/str}}</span>
+            </h1>
+
+            <p class="ldgp-herolead">{{#str}}herolead, local_partners{{/str}}</p>
+
+            <div class="ldgp-heroactions">
+                <a href="{{applyurl}}" class="ldgp-btn ldgp-btn--primary">
+                    {{#str}}heroctatext, local_partners{{/str}}
+                    {{> local_partners/icons/arrowright }}
+                </a>
+                <a href="#ldgp-pricing" class="ldgp-btn ldgp-btn--ghost">
+                    {{#str}}heroctasecondary, local_partners{{/str}}
+                </a>
+            </div>
+
+            <ul class="ldgp-herostats">
+                <li>{{> local_partners/icons/check }}<span>{{#str}}herostat1, local_partners{{/str}}</span></li>
+                <li>{{> local_partners/icons/check }}<span>{{#str}}herostat2, local_partners{{/str}}</span></li>
+                <li>{{> local_partners/icons/check }}<span>{{#str}}herostat3, local_partners{{/str}}</span></li>
+            </ul>
+
+            {{! Imagem decorativa: o alt vazio e proposital, ela nao carrega
+                informacao que o texto ao lado ja nao de. }}
+            <img src="{{heroimage}}" alt="" class="ldgp-herofigure" loading="lazy">
         </div>
     </section>
 
-    <section class="ldg-landing-value" id="ldgp-features">
-        <div class="ldg-landing-inner">
-            <h2>{{#str}}valuetitle, local_partners{{/str}}</h2>
-            <div class="ldg-landing-grid">
-                <div class="ldg-landing-card">
-                    <h3>{{#str}}value1title, local_partners{{/str}}</h3>
-                    <p>{{#str}}value1text, local_partners{{/str}}</p>
-                </div>
-                <div class="ldg-landing-card">
-                    <h3>{{#str}}value2title, local_partners{{/str}}</h3>
-                    <p>{{#str}}value2text, local_partners{{/str}}</p>
-                </div>
-                <div class="ldg-landing-card">
-                    <h3>{{#str}}value3title, local_partners{{/str}}</h3>
-                    <p>{{#str}}value3text, local_partners{{/str}}</p>
-                </div>
+    <section class="ldgp-section" id="ldgp-features">
+        <div class="ldgp-inner">
+            <div class="ldgp-sectionhead">
+                <p class="ldgp-eyebrow">{{#str}}valueeyebrow, local_partners{{/str}}</p>
+                <h2 class="ldgp-sectiontitle">{{#str}}valuetitle, local_partners{{/str}}</h2>
+                <p class="ldgp-sectionlead">{{#str}}valuelead, local_partners{{/str}}</p>
+            </div>
+
+            <div class="ldgp-grid ldgp-grid--pillars">
+                <article class="ldgp-pillar">
+                    <div>
+                        <span class="ldgp-icontile">{{> local_partners/icons/coin }}</span>
+                        <h3>{{#str}}value1title, local_partners{{/str}}</h3>
+                        <p>{{#str}}value1text, local_partners{{/str}}</p>
+                    </div>
+                    <p class="ldgp-pillarnote">{{#str}}value1note, local_partners{{/str}}</p>
+                </article>
+
+                <article class="ldgp-pillar">
+                    <div>
+                        <span class="ldgp-icontile">{{> local_partners/icons/server }}</span>
+                        <h3>{{#str}}value2title, local_partners{{/str}}</h3>
+                        <p>{{#str}}value2text, local_partners{{/str}}</p>
+                    </div>
+                    <p class="ldgp-pillarnote">{{#str}}value2note, local_partners{{/str}}</p>
+                </article>
+
+                <article class="ldgp-pillar">
+                    <div>
+                        <span class="ldgp-icontile">{{> local_partners/icons/shield }}</span>
+                        <h3>{{#str}}value3title, local_partners{{/str}}</h3>
+                        <p>{{#str}}value3text, local_partners{{/str}}</p>
+                    </div>
+                    <p class="ldgp-pillarnote">{{#str}}value3note, local_partners{{/str}}</p>
+                </article>
+
+                <article class="ldgp-pillar">
+                    <div>
+                        <span class="ldgp-icontile">{{> local_partners/icons/globe }}</span>
+                        <h3>{{#str}}value4title, local_partners{{/str}}</h3>
+                        <p>{{#str}}value4text, local_partners{{/str}}</p>
+                    </div>
+                    <p class="ldgp-pillarnote">{{#str}}value4note, local_partners{{/str}}</p>
+                </article>
             </div>
         </div>
     </section>
 
     {{#hasplans}}
-        <section class="ldg-landing-plans" id="ldgp-pricing">
-            <div class="ldg-landing-inner">
-                <h2>{{#str}}planstitle, local_partners{{/str}}</h2>
-                <p class="ldg-landing-lead">{{#str}}planslead, local_partners{{/str}}</p>
+        <section class="ldgp-section ldgp-section--alt" id="ldgp-pricing">
+            <div class="ldgp-inner">
+                <div class="ldgp-sectionhead ldgp-sectionhead--center">
+                    <p class="ldgp-eyebrow">{{#str}}planseyebrow, local_partners{{/str}}</p>
+                    <h2 class="ldgp-sectiontitle">{{#str}}planstitle, local_partners{{/str}}</h2>
+                    <p class="ldgp-sectionlead">{{#str}}planslead, local_partners{{/str}}</p>
+                </div>
 
-                <div class="ldg-landing-grid">
+                <div class="ldgp-grid ldgp-grid--plans">
                     {{#plans}}
-                        <div class="ldg-landing-plan{{#isfree}} ldg-landing-plan-featured{{/isfree}}">
-                            <h3>{{name}}</h3>
+                        <div class="ldgp-plan{{#isfree}} ldgp-plan--featured{{/isfree}}">
+                            {{#isfree}}
+                                <span class="ldgp-planbadge">{{#str}}planbadgepopular, local_partners{{/str}}</span>
+                            {{/isfree}}
 
-                            <p class="ldg-landing-price">
-                                {{#isfree}}{{#str}}planfree, local_partners{{/str}}{{/isfree}}
-                                {{^isfree}}{{monthlyfee}}{{/isfree}}
+                            <div class="ldgp-planhead">
+                                <h3>{{name}}</h3>
+                                <span class="ldgp-tag{{^isbyos}} ldgp-tag--primary{{/isbyos}}">{{hosting}}</span>
+                            </div>
+
+                            <p class="ldgp-plandesc">{{description}}</p>
+
+                            <p class="ldgp-price">
+                                {{#isfree}}
+                                    <span class="ldgp-pricevalue">{{#str}}planfree, local_partners{{/str}}</span>
+                                {{/isfree}}
+                                {{^isfree}}
+                                    <span class="ldgp-pricevalue">{{monthlyfee}}</span>
+                                    <span class="ldgp-priceunit">{{#str}}permonth, local_partners{{/str}}</span>
+                                {{/isfree}}
                             </p>
 
-                            <p class="ldg-landing-commission">
+                            <p class="ldgp-commission{{#isfree}} ldgp-commission--free{{/isfree}}">
                                 {{#str}}plancommission, local_partners, {{commissionpct}}{{/str}}
                             </p>
 
-                            <p class="ldg-landing-plandesc">{{description}}</p>
-                            <p class="ldg-landing-hosting">{{hosting}}</p>
-
                             {{#hastiers}}
-                                <ul class="ldg-landing-tiers">
-                                    {{#tiers}}
-                                        <li><span>{{label}}</span> <strong>{{resolution}}</strong></li>
-                                    {{/tiers}}
-                                </ul>
+                                <div class="ldgp-tiers">
+                                    <p class="ldgp-tierslabel">{{#str}}tierslabel, local_partners{{/str}}</p>
+                                    <ul class="ldgp-tierlist">
+                                        {{#tiers}}
+                                            <li><span>{{label}}</span> <strong>{{resolution}}</strong></li>
+                                        {{/tiers}}
+                                    </ul>
+                                </div>
                             {{/hastiers}}
 
-                            <a href="{{applyurl}}" class="btn btn-outline-primary">
-                                {{#str}}planctatext, local_partners{{/str}}
-                            </a>
+                            {{^hastiers}}
+                                <p class="ldgp-hosting">
+                                    {{> local_partners/icons/bolt }}
+                                    <span>{{hosting}}</span>
+                                </p>
+                            {{/hastiers}}
+
+                            <div class="ldgp-planfoot">
+                                <a href="{{applyurl}}" class="ldgp-btn ldgp-btn--block{{#isfree}} ldgp-btn--primary{{/isfree}}{{^isfree}} ldgp-btn--ghost{{/isfree}}">
+                                    {{#str}}planctatext, local_partners{{/str}}
+                                </a>
+                            </div>
                         </div>
                     {{/plans}}
                 </div>
 
-                <p class="ldg-landing-note">{{#str}}plansnote, local_partners{{/str}}</p>
+                <p class="ldgp-note">{{#str}}plansnote, local_partners{{/str}}</p>
             </div>
         </section>
     {{/hasplans}}
 
-    <section class="ldg-landing-how" id="ldgp-how">
-        <div class="ldg-landing-inner">
-            <h2>{{#str}}howtitle, local_partners{{/str}}</h2>
-            <ol class="ldg-landing-steps">
+    <section class="ldgp-section" id="ldgp-how">
+        <div class="ldgp-inner">
+            <div class="ldgp-sectionhead">
+                <p class="ldgp-eyebrow">{{#str}}howeyebrow, local_partners{{/str}}</p>
+                <h2 class="ldgp-sectiontitle">{{#str}}howtitle, local_partners{{/str}}</h2>
+                <p class="ldgp-sectionlead">{{#str}}howlead, local_partners{{/str}}</p>
+            </div>
+
+            <div class="ldgp-grid ldgp-grid--steps">
                 {{#steps}}
-                    <li>
-                        <span class="ldg-landing-stepnumber">{{number}}</span>
-                        <div>
+                    <div class="ldgp-step">
+                        <div class="ldgp-stephead">
+                            <span class="ldgp-stepnumber">{{number}}</span>
                             <h3>{{title}}</h3>
-                            <p>{{text}}</p>
                         </div>
-                    </li>
+                        <p>{{text}}</p>
+                    </div>
                 {{/steps}}
-            </ol>
+            </div>
         </div>
     </section>
 
-    <section class="ldg-landing-faq" id="ldgp-faq">
-        <div class="ldg-landing-inner">
-            <h2>{{#str}}faqtitle, local_partners{{/str}}</h2>
-            <div class="accordion" id="ldg-landing-faq">
+    <section class="ldgp-section ldgp-section--alt ldgp-faq" id="ldgp-faq">
+        <div class="ldgp-inner">
+            <div class="ldgp-sectionhead ldgp-sectionhead--center">
+                <p class="ldgp-eyebrow">{{#str}}faqeyebrow, local_partners{{/str}}</p>
+                <h2 class="ldgp-sectiontitle">{{#str}}faqtitle, local_partners{{/str}}</h2>
+                <p class="ldgp-sectionlead">{{#str}}faqlead, local_partners{{/str}}</p>
+            </div>
+
+            <div class="accordion" id="ldgp-faq-accordion">
                 {{#faq}}
                     <div class="accordion-item">
                         <h3 class="accordion-header" id="{{id}}-header">
@@ -164,7 +290,7 @@
                             </button>
                         </h3>
                         <div id="{{id}}" class="accordion-collapse collapse"
-                             aria-labelledby="{{id}}-header" data-bs-parent="#ldg-landing-faq">
+                             aria-labelledby="{{id}}-header" data-bs-parent="#ldgp-faq-accordion">
                             <div class="accordion-body">{{answer}}</div>
                         </div>
                     </div>
@@ -173,11 +299,22 @@
         </div>
     </section>
 
-    <section class="ldg-landing-cta" id="ldgp-apply">
-        <div class="ldg-landing-inner">
-            <h2>{{#str}}ctatitle, local_partners{{/str}}</h2>
-            <p class="ldg-landing-lead">{{#str}}ctalead, local_partners{{/str}}</p>
-            <a href="{{applyurl}}" class="btn btn-primary btn-lg">{{#str}}heroctatext, local_partners{{/str}}</a>
+    <section class="ldgp-section ldgp-cta" id="ldgp-apply">
+        <div class="ldgp-inner">
+            <h2 class="ldgp-ctatitle">{{#str}}ctatitle, local_partners{{/str}}</h2>
+            <p class="ldgp-ctalead">{{#str}}ctalead, local_partners{{/str}}</p>
+
+            <div class="ldgp-ctaactions">
+                <a href="{{applyurl}}" class="ldgp-btn ldgp-btn--primary">
+                    {{#str}}heroctatext, local_partners{{/str}}
+                    {{> local_partners/icons/arrowright }}
+                </a>
+                <a href="#ldgp-faq" class="ldgp-btn ldgp-btn--ghost">
+                    {{#str}}ctasecondary, local_partners{{/str}}
+                </a>
+            </div>
+
+            <p class="ldgp-ctanote">{{#str}}ctanote, local_partners{{/str}}</p>
         </div>
     </section>
 

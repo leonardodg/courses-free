@@ -35,6 +35,9 @@ use local_partners\landing;
 $PAGE->set_context(\core\context\system::instance());
 $PAGE->set_url(new moodle_url('/local/partners/apply.php'));
 $PAGE->set_pagelayout('standard');
+// Ver o comentario em index.php: o layout 'standard' limita a largura, e o
+// cadastro e uma tela de duas colunas.
+$PAGE->add_body_class('ldgp-page');
 $PAGE->set_title(get_string('applytitle', 'local_partners'));
 $PAGE->set_heading('');
 

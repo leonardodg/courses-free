@@ -99,6 +99,14 @@ annotation. `final class X_test extends \advanced_testcase`.
 `templatable`, feche com um teste que chama `render_from_template()` e afirma que
 não lança — é o único que vê chave de mustache errada.
 
+> **Nunca escreva uma tag de mustache dentro de um comentário de mustache.** O
+> comentário `{{! … }}` termina no **primeiro** `}}`, e não no que fecha o bloco.
+> Citar uma tag no docblock para explicar de onde vem o dado encerra o
+> comentário ali, e todo o resto do texto — incluindo o *Example context* — sai
+> como parágrafo na página. Aconteceu na landing: o contexto estava certo, o
+> PHPUnit passava, e o defeito só apareceu na captura de tela. A rede é um teste
+> que afirma que `@template` e `Example context` não aparecem no HTML.
+
 ## Behat: o que é específico de UI
 
 O guia de como rodar está em [`behat.md`](behat.md). Aqui, só o que morde:
