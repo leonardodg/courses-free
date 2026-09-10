@@ -542,26 +542,22 @@ class seo {
     /**
      * O locale de um idioma, no formato que o Open Graph espera.
      *
-     * O TERRITORIO SAI DO PACOTE DE IDIOMA, e nao de um mapa nosso. O Open
-     * Graph quer lingua_TERRITORIO, e o 'en' do Moodle nao tem territorio no
-     * codigo - escrever "en_US" aqui seria declarar um territorio que ninguem
-     * configurou, so para satisfazer o formato. O langconfig de cada pacote ja
-     * declara o seu ('en_AU.UTF-8', 'pt_BR.UTF-8', 'es_ES.UTF-8'), e essa e a
-     * resposta que o proprio site da quando perguntam onde ele fala.
+     * O TERRITORIO SAI DO CODIGO DO IDIOMA, e so quando ele existe de verdade:
+     * 'pt_br' vira pt_BR porque o pacote E do Brasil, e 'en' continua 'en'
+     * porque o pacote base do Moodle e ingles GLOBAL.
+     *
+     * O Open Graph pede lingua_TERRITORIO, e e tentador completar o que falta -
+     * "en_US" para satisfazer o formato, ou o locale do langconfig, que devolve
+     * en_AU para o pacote base. Os dois DECLARAM UM TERRITORIO QUE NINGUEM
+     * CONFIGUROU, e o site em ingles nao e americano nem australiano: e global.
+     * Vale aqui a mesma regra do resto desta classe - campo que ninguem
+     * preencheu nao sai preenchido por nos. Sem territorio reconhecido, o
+     * consumidor cai no padrao dele, que e melhor que uma alegacao falsa.
      *
      * @param string $lang
      * @return string
      */
     protected static function locale_for(string $lang): string {
-        $locale = (string) get_string_manager()->get_string('locale', 'langconfig', null, $lang);
-        $locale = explode('.', $locale)[0];
-
-        if (preg_match('/^[a-z]{2,3}_[A-Za-z]{2,}$/', $locale)) {
-            return $locale;
-        }
-
-        // Pacote sem locale utilizavel: cai no formato do hreflang, que ao
-        // menos declara a lingua certa.
         return str_replace('-', '_', self::hreflang($lang));
     }
 

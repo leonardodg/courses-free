@@ -105,25 +105,32 @@ A regra: `seo::site_name()` devolve o nome **sem escape**, e quem escapa é o `s
 do atributo — uma vez só. No JSON-LD ninguém escapa, porque `json_encode()` já
 cuida do que precisa (e o `JSON_HEX_TAG` impede que um dado feche o `<script>`).
 
-## `og:locale`: o território sai do pacote, não do código
+## `og:locale`: território só quando ele existe
 
-O Open Graph quer `língua_TERRITÓRIO`, e o `en` do Moodle não tem território no
-código. Escrever `en_US` no PHP seria declarar um território que ninguém
-configurou, só para satisfazer o formato — e é o tipo de invenção que o resto
-desta classe recusa.
+O Open Graph pede `língua_TERRITÓRIO`, e há duas maneiras tentadoras de completar
+o que falta. As duas estão erradas, e custaram uma ida e volta:
 
-O território sai do `langconfig` de cada pacote instalado, que é a resposta que o
-próprio site dá quando perguntam onde ele fala:
-
-| Pacote | `locale` declarado | `og:locale` |
+| Caminho | O que declara | Por que não |
 |---|---|---|
-| en | `en_AU.UTF-8` | `en_AU` |
-| pt_br | `pt_BR.UTF-8` | `pt_BR` |
-| es | `es_ES.UTF-8` | `es_ES` |
+| `en_US` fixo no código | inglês americano | ninguém configurou território nenhum |
+| `locale` do `langconfig` | `en_AU` | é a convenção do pacote base do Moodle, não uma escolha do site |
 
-O `en_AU` é a convenção do pacote base do Moodle. Se a versão em inglês do site
-não é australiana, o lugar de corrigir é o `locale` do pacote — não um mapa no
-nosso código.
+**O pacote `en` do Moodle é inglês global.** O site em inglês não é americano nem
+australiano, e declarar qualquer um dos dois é alegação falsa — a mesma regra que
+faz `seo::brand()` omitir endereço e telefone em vez de preencher com
+placeholder.
+
+O território sai do **código do idioma**, e só quando existe ali:
+
+| Idioma | `og:locale` |
+|---|---|
+| `en` | `en` |
+| `es` | `es` |
+| `pt_br` | `pt_BR` |
+| `es_ar` | `es_AR` |
+
+Sem território reconhecido, o consumidor cai no padrão dele — que é melhor que
+uma alegação falsa.
 
 ## O hero: preload em vez de virar `<img>`
 

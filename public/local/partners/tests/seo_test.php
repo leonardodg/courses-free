@@ -512,24 +512,40 @@ final class seo_test extends \advanced_testcase {
     }
 
     /**
-     * O locale do Open Graph traz territorio, e ele vem do pacote de idioma.
+     * O og:locale nao inventa territorio para idioma que nao tem.
      *
-     * O formato do hreflang ('en') nao serve para o Open Graph, que quer
-     * lingua_TERRITORIO. E o territorio nao pode ser inventado no codigo: sai
-     * do langconfig do proprio pacote.
+     * O Open Graph pede lingua_TERRITORIO, e e tentador completar: "en_US" para
+     * satisfazer o formato, ou o locale do langconfig, que devolve en_AU. Os
+     * dois declaram um territorio que ninguem configurou - o pacote base do
+     * Moodle e ingles GLOBAL, e o site em ingles nao e americano nem
+     * australiano.
      *
      * @return void
      */
-    public function test_o_og_locale_traz_o_territorio_do_pacote(): void {
+    public function test_o_og_locale_nao_inventa_territorio(): void {
         $this->resetAfterTest();
 
         $html = seo::head_html();
 
-        $this->assertMatchesRegularExpression(
-            '~<meta property="og:locale" content="[a-z]{2,3}_[A-Za-z]{2,}">~',
-            $html,
-            'o og:locale precisa de lingua_TERRITORIO, e nao so da lingua'
-        );
+        // O idioma corrente do site de teste e o ingles global: sai 'en', seco.
+        $this->assertStringContainsString('<meta property="og:locale" content="en">', $html);
+
+        // E o territorio aparece quando ele existe no CODIGO do idioma.
+        $this->assertSame('pt_BR', self::locale_visivel('pt_br'));
+        $this->assertSame('es_AR', self::locale_visivel('es_ar'));
+        $this->assertSame('es', self::locale_visivel('es'));
+    }
+
+    /**
+     * O locale que a classe publicaria para um idioma.
+     *
+     * @param string $lang
+     * @return string
+     */
+    private static function locale_visivel(string $lang): string {
+        $metodo = new \ReflectionMethod(seo::class, 'locale_for');
+
+        return $metodo->invoke(null, $lang);
     }
 
     /**
