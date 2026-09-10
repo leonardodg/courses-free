@@ -79,3 +79,20 @@
 
 </body>
 </html>
+{{!
+    O loader do Boost, que e quem inicializa os componentes JS do Bootstrap.
+
+    SEM ELE O DROPDOWN NAO ABRE. O data-bs-toggle e so um atributo: quem liga o
+    comportamento a ele e este modulo. Como a raiz do dominio nao passa pelo
+    layout do Boost - este template desenha a pagina inteira -, o bloco precisa
+    estar aqui, do mesmo jeito que embedded.mustache, drawers.mustache e
+    columns1.mustache o trazem. Faltando, a landing servida em /
+    perde o seletor de idioma e o alternador de tema, enquanto a MESMA pagina em
+    /local/partners/index.php funciona - porque aquela usa o layout 'embedded'.
+}}
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader'], function() {
+  M.util.js_complete('theme_boost/loader');
+});
+{{/js}}

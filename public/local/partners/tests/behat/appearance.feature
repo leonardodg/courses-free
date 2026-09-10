@@ -100,6 +100,34 @@ Feature: A landing e o cadastro na tela
     And the page should not scroll sideways
     And the ".ldgp-bar" element should span the full viewport width
 
+  # O SELETOR DE IDIOMA PRECISA ABRIR NA RAIZ, e nao so na URL do plugin.
+  #
+  # Ele e um dropdown do Bootstrap: o data-bs-toggle e so um atributo, e quem
+  # liga comportamento a ele e o modulo theme_boost/loader. Esse modulo e
+  # carregado por CADA TEMPLATE de layout do Boost, e o theme_ldg/landing -
+  # escrito do zero para a raiz nao duplicar o cromo - nao trazia o bloco. O
+  # resultado: a MESMA pagina com o menu vivo em /local/partners/index.php, que
+  # usa o layout 'embedded', e morto em /, que usa o template do tema.
+  #
+  # O cenario pergunta ao RequireJS se o modulo EXECUTOU, e nao se a tag esta no
+  # HTML: e a diferenca entre "o script foi pedido" e "o componente responde".
+  #
+  # Clicar no proprio seletor seria mais direto e nao esta ao alcance - o menu
+  # so e renderizado com mais de um idioma instalado, e o site do behat tem so o
+  # ingles. As duas paginas entram no cenario porque o defeito era a DIVERGENCIA
+  # entre elas: a mesma landing, viva numa URL e morta na outra.
+  Scenario: A pagina inicial carrega os componentes JS do Bootstrap
+    Given the following config values are set as admin:
+      | theme        | ldg |
+      | forcelogin   | 0   |
+      | enablemyhome | 1   |
+    And the following config values are set as admin:
+      | frontpagemode | landing | local_partners |
+    When I visit "/local/partners/index.php"
+    Then the page should have the Bootstrap components loaded
+    When I am on site homepage
+    Then the page should have the Bootstrap components loaded
+
   # O "Apply" e o botao primario da barra. Enquanto tambem era ancora, a mesma
   # acao aparecia duas vezes a dois centimetros de distancia.
   Scenario: A candidatura aparece uma vez so na barra
