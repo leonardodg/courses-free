@@ -124,11 +124,25 @@ morre com um erro que parece problema de ambiente.
 (`lib/tests/behat/behat_general.php`):
 
 ```gherkin
-When I change viewport size to "mobile"
+When I change viewport size to "mobile" without runtime scaling
 When I change viewport size to "1440x900"
 ```
 
 Aceita `mobile`, `tablet`, `small`, `medium`, `large` ou `<largura>x<altura>`.
+
+> **O `without runtime scaling` não é detalhe.** Por padrão o Moodle **escala** o
+> conteúdo depois de redimensionar, e os 425px do `mobile` passam a se comportar
+> como uns 600. Uma asserção sobre celular medida assim afirma outra coisa — um
+> cenário desta base chegou a passar dizendo o que não era.
+
+**Com `cachejs` ligado, o Moodle serve o AMD compilado.** Módulo novo sem
+`amd/build/` simplesmente não roda: botão que não faz nada, sem erro no console e
+sem pista. `npx grunt amd` gera, e os arquivos vão versionados, como no
+`theme_ldg`.
+
+**O `grunt` não roda dentro do container.** O node de lá é v20 e o Moodle 5.2
+exige v22. Rode no **host**, de dentro do diretório do componente — o grunt
+detecta o componente pelo diretório e lint só o que interessa.
 
 **`evaluate_script` avalia uma expressão, não um bloco.** Envolva numa IIFE:
 
@@ -218,11 +232,28 @@ qualquer tema derivado do Boost, inclusive o Boost puro, **que não tem alternad
 nenhum**. O `theme_ldg` escreve o atributo no `<body>`; o `theme_moove` usa a
 classe `body.moove-darkmode`. Os dois compartilham a preferência `dark-mode-on`.
 
+**Utilitário do Bootstrap é `!important`.** `.d-flex`, `.d-none`, `.text-center`
+e companhia vêm com `!important` por desenho. Uma grade declarada por cima de um
+`.d-flex` é ignorada — e o `getComputedStyle` mostra as duas coisas ao mesmo
+tempo, `grid-template-columns` definido e `display: flex`, o que faz o diagnóstico
+parecer impossível. Ou se trabalha **com** o flex (`flex-basis` nos filhos), ou
+se usa `!important` com justificativa.
+
 > **`purge_caches` não invalida CSS de plugin.** Em 03/09/2026 a revisão do tema
 > ficou parada antes e depois do purge, e o que fez o CSS novo aparecer foi o
 > **bump de `version.php`**. Editou `styles.css`? Suba a versão do plugin — e
 > lembre que cada `upgrade.php` bloqueia o site inteiro com "Site is being
 > upgraded" enquanto roda. Agrupe os bumps.
+
+E mais duas do mesmo cache, que custaram diagnóstico errado em 10/09/2026:
+
+**A primeira medição depois de um purge mede a página errada.** O primeiro acesso
+recompila a CSS de todos os temas, e a sonda encontra a página a meio caminho.
+Descarte a primeira leitura.
+
+**Revisão de CSS em cache engana entre temas.** Pedir
+`styles.php/boost/<revisão do ldg>/all` devolve um artefato antigo, e a conclusão
+foi "a regra não chegou ao Boost" quando ela tinha chegado. Use `-1` para forçar.
 
 ## Formulário: estilizar sem perder o que o moodleform dá de graça
 
