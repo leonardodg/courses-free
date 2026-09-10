@@ -512,6 +512,50 @@ final class seo_test extends \advanced_testcase {
     }
 
     /**
+     * O locale do Open Graph traz territorio, e ele vem do pacote de idioma.
+     *
+     * O formato do hreflang ('en') nao serve para o Open Graph, que quer
+     * lingua_TERRITORIO. E o territorio nao pode ser inventado no codigo: sai
+     * do langconfig do proprio pacote.
+     *
+     * @return void
+     */
+    public function test_o_og_locale_traz_o_territorio_do_pacote(): void {
+        $this->resetAfterTest();
+
+        $html = seo::head_html();
+
+        $this->assertMatchesRegularExpression(
+            '~<meta property="og:locale" content="[a-z]{2,3}_[A-Za-z]{2,}">~',
+            $html,
+            'o og:locale precisa de lingua_TERRITORIO, e nao so da lingua'
+        );
+    }
+
+    /**
+     * A landing pede o hero antes, e a candidatura nao pede.
+     *
+     * Imagem de fundo o preload scanner nao enxerga: ela so baixa depois do
+     * CSSOM, e e a candidata a maior elemento visivel. Na candidatura o hero
+     * nao existe, e preload de recurso que a pagina nao usa e banda jogada
+     * fora, com aviso no console.
+     *
+     * @return void
+     */
+    public function test_so_a_landing_faz_preload_do_hero(): void {
+        $this->resetAfterTest();
+
+        $this->assertStringContainsString(
+            '<link rel="preload" as="image"',
+            seo::head_html()
+        );
+        $this->assertStringNotContainsString(
+            '<link rel="preload" as="image"',
+            seo::head_html(seo::SURFACE_APPLY)
+        );
+    }
+
+    /**
      * O sitemap tem uma entrada por idioma, e nao uma entrada so.
      *
      * O protocolo exige que CADA URL do cluster tenha a propria entrada, com o

@@ -252,8 +252,8 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **384 testes** (114 no núcleo, 48 no Asaas, 47 no
-`format_ldg`, **37 no `mod_ldgvideo`**, **80 no `local_partners`**, **24 no MP**,
+webhook, matrícula. **386 testes** (114 no núcleo, 48 no Asaas, 47 no
+`format_ldg`, **37 no `mod_ldgvideo`**, **82 no `local_partners`**, **24 no MP**,
 e 34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
 `theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
 

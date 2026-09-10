@@ -105,6 +105,47 @@ A regra: `seo::site_name()` devolve o nome **sem escape**, e quem escapa é o `s
 do atributo — uma vez só. No JSON-LD ninguém escapa, porque `json_encode()` já
 cuida do que precisa (e o `JSON_HEX_TAG` impede que um dado feche o `<script>`).
 
+## `og:locale`: o território sai do pacote, não do código
+
+O Open Graph quer `língua_TERRITÓRIO`, e o `en` do Moodle não tem território no
+código. Escrever `en_US` no PHP seria declarar um território que ninguém
+configurou, só para satisfazer o formato — e é o tipo de invenção que o resto
+desta classe recusa.
+
+O território sai do `langconfig` de cada pacote instalado, que é a resposta que o
+próprio site dá quando perguntam onde ele fala:
+
+| Pacote | `locale` declarado | `og:locale` |
+|---|---|---|
+| en | `en_AU.UTF-8` | `en_AU` |
+| pt_br | `pt_BR.UTF-8` | `pt_BR` |
+| es | `es_ES.UTF-8` | `es_ES` |
+
+O `en_AU` é a convenção do pacote base do Moodle. Se a versão em inglês do site
+não é australiana, o lugar de corrigir é o `locale` do pacote — não um mapa no
+nosso código.
+
+## O hero: preload em vez de virar `<img>`
+
+A foto do hero é o fundo de uma `<section>`, e **o preload scanner do navegador
+não enxerga imagem de fundo**: ela só começa a baixar depois do CSSOM, e é a
+candidata natural a maior elemento visível da página (LCP).
+
+A correção óbvia seria virar `<img>` com `fetchpriority="high"`. Não foi o
+caminho, por duas razões:
+
+- O contraste daquele bloco foi **medido no pixel** sobre a composição
+  foto+cortina. Trocar o fundo por um elemento no fluxo mexe no empilhamento e
+  obrigaria a remedir tudo.
+- A imagem é uma malha abstrata: **decorativa**. Viraria `<img alt="">`, então
+  não há ganho de busca por imagem para compensar o risco — e um `alt`
+  descritivo com palavra-chave numa imagem que não ilustra nada seria invenção.
+
+`<link rel="preload" as="image" fetchpriority="high">` devolve a descoberta para
+o início do documento com o mesmo efeito e sem tocar no layout. Sai **só na
+landing**: a candidatura não mostra o hero, e preload de recurso que a página não
+usa é banda jogada fora, com aviso no console.
+
 ## A armadilha que bloqueou tudo: `enablemyhome`
 
 Com o Painel desligado, o `index.php` do core redireciona **todo visitante

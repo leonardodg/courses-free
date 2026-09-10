@@ -329,6 +329,22 @@ class seo {
         $tags = [
             '<meta name="description" content="' . s($descricao) . '">',
             '<link rel="canonical" href="' . s($url) . '">',
+        ];
+
+        // A foto do hero e o FUNDO de uma secao, e imagem de fundo o preload
+        // scanner do navegador NAO enxerga: ela so comeca a baixar depois do
+        // CSSOM, e e a candidata a maior elemento visivel da pagina. O preload
+        // devolve a descoberta para o inicio do documento sem tocar no layout -
+        // o contraste daquele bloco foi medido no pixel, e virar <img> pediria
+        // remedir tudo por um ganho que o preload ja da.
+        //
+        // So na landing: a candidatura nao mostra o hero, e preload de recurso
+        // que a pagina nao usa e aviso no console e banda jogada fora.
+        if ($superficie === self::SURFACE_LANDING) {
+            $tags[] = '<link rel="preload" as="image" href="' . s($imagem) . '" fetchpriority="high">';
+        }
+
+        $tags = array_merge($tags, [
             '<meta property="og:type" content="website">',
             '<meta property="og:site_name" content="' . s($site) . '">',
             '<meta property="og:title" content="' . s($title) . '">',
@@ -336,11 +352,21 @@ class seo {
             '<meta property="og:url" content="' . s($url) . '">',
             '<meta property="og:image" content="' . s($imagem) . '">',
             '<meta property="og:locale" content="' . s(self::og_locale()) . '">',
+        ]);
+
+        // Os outros idiomas em que a MESMA pagina existe. E o par do hreflang
+        // no vocabulario do Open Graph: sem eles, quem compartilha a versao em
+        // portugues nao informa que existe uma em espanhol.
+        foreach (self::alternate_locales() as $locale) {
+            $tags[] = '<meta property="og:locale:alternate" content="' . s($locale) . '">';
+        }
+
+        $tags = array_merge($tags, [
             '<meta name="twitter:card" content="summary_large_image">',
             '<meta name="twitter:title" content="' . s($title) . '">',
             '<meta name="twitter:description" content="' . s($descricao) . '">',
             '<meta name="twitter:image" content="' . s($imagem) . '">',
-        ];
+        ]);
 
         // So pedimos indexacao quando o site permite. Ver indexing_allowed().
         if (self::indexing_allowed()) {
@@ -510,7 +536,53 @@ class seo {
      * @return string
      */
     protected static function og_locale(): string {
-        return str_replace('-', '_', self::hreflang(current_language()));
+        return self::locale_for(current_language());
+    }
+
+    /**
+     * O locale de um idioma, no formato que o Open Graph espera.
+     *
+     * O TERRITORIO SAI DO PACOTE DE IDIOMA, e nao de um mapa nosso. O Open
+     * Graph quer lingua_TERRITORIO, e o 'en' do Moodle nao tem territorio no
+     * codigo - escrever "en_US" aqui seria declarar um territorio que ninguem
+     * configurou, so para satisfazer o formato. O langconfig de cada pacote ja
+     * declara o seu ('en_AU.UTF-8', 'pt_BR.UTF-8', 'es_ES.UTF-8'), e essa e a
+     * resposta que o proprio site da quando perguntam onde ele fala.
+     *
+     * @param string $lang
+     * @return string
+     */
+    protected static function locale_for(string $lang): string {
+        $locale = (string) get_string_manager()->get_string('locale', 'langconfig', null, $lang);
+        $locale = explode('.', $locale)[0];
+
+        if (preg_match('/^[a-z]{2,3}_[A-Za-z]{2,}$/', $locale)) {
+            return $locale;
+        }
+
+        // Pacote sem locale utilizavel: cai no formato do hreflang, que ao
+        // menos declara a lingua certa.
+        return str_replace('-', '_', self::hreflang($lang));
+    }
+
+    /**
+     * Os locales dos OUTROS idiomas em que esta pagina existe.
+     *
+     * @return array
+     */
+    protected static function alternate_locales(): array {
+        $atual = current_language();
+        $locales = [];
+
+        foreach (array_keys(get_string_manager()->get_list_of_translations()) as $lang) {
+            if ($lang === $atual) {
+                continue;
+            }
+
+            $locales[] = self::locale_for($lang);
+        }
+
+        return array_values(array_unique($locales));
     }
 
     /**
