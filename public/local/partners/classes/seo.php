@@ -101,6 +101,52 @@ class seo {
     }
 
     /**
+     * A razao social, quando declarada.
+     *
+     * Publica porque o rodape tambem a mostra, e as duas superficies precisam
+     * dizer o mesmo nome. Vazia quando ninguem preencheu - e ai o rodape usa o
+     * nome do site, em vez de inventar uma empresa.
+     *
+     * @return string
+     */
+    public static function legal_name(): string {
+        return trim((string) self::brand()['legalname']);
+    }
+
+    /**
+     * O titulo da aba, com a palavra-chave que interessa.
+     *
+     * NAO e o mesmo texto do H1. O H1 fala com quem ja esta na pagina; o title
+     * fala com quem esta lendo uma lista de resultados e ainda nao clicou, e
+     * precisa dizer o que a pagina resolve em menos de 60 caracteres.
+     *
+     * O nome do site e anexado pelo proprio Moodle, respeitando
+     * $CFG->sitenameintitle.
+     *
+     * @return string
+     */
+    public static function page_title(): string {
+        return get_string('seotitle', 'local_partners');
+    }
+
+    /**
+     * O site permite que os buscadores indexem?
+     *
+     * O core ja emite `<meta name="robots" content="noindex">` quando o
+     * administrador escolhe "em lugar nenhum" ($CFG->allowindexing == 2). Se
+     * emitissemos "index, follow" ao lado, o buscador ficaria com as duas -
+     * e em caso de conflito vale a MAIS RESTRITIVA. A nossa tag seria
+     * silenciosamente derrotada, e ninguem descobriria olhando a pagina.
+     *
+     * @return bool
+     */
+    protected static function indexing_allowed(): bool {
+        global $CFG;
+
+        return (int) ($CFG->allowindexing ?? 0) !== 2;
+    }
+
+    /**
      * Tudo que vai para o <head> da landing.
      *
      * @return string
@@ -112,7 +158,9 @@ class seo {
             [self::structured_data()]
         );
 
-        return implode("\n", array_filter($partes)) . "\n";
+        return implode("\n", array_filter($partes)) . "\n"
+            . self::verification_html()
+            . self::analytics_html();
     }
 
     /**
@@ -145,11 +193,8 @@ class seo {
         $url = self::canonical_url();
         $imagem = (new moodle_url('/local/partners/pix/hero.jpg'))->out(false);
 
-        return [
+        $tags = [
             '<meta name="description" content="' . s($descricao) . '">',
-            // O max-image-preview:large e o que libera a imagem grande no
-            // resultado; sem ele o buscador mostra miniatura ou nada.
-            '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">',
             '<link rel="canonical" href="' . s($url) . '">',
             '<meta property="og:type" content="website">',
             '<meta property="og:site_name" content="' . s($title) . '">',
@@ -163,6 +208,71 @@ class seo {
             '<meta name="twitter:description" content="' . s($descricao) . '">',
             '<meta name="twitter:image" content="' . s($imagem) . '">',
         ];
+
+        // So pedimos indexacao quando o site permite. Ver indexing_allowed().
+        if (self::indexing_allowed()) {
+            // O max-image-preview:large e o que libera a imagem grande no
+            // resultado; sem ele o buscador mostra miniatura ou nada.
+            array_splice($tags, 1, 0, [
+                '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">',
+            ]);
+        }
+
+        return $tags;
+    }
+
+    /**
+     * A meta de verificacao do Google Search Console.
+     *
+     * O valor sai da configuracao, e nao do codigo: ele e proprio de cada
+     * propriedade cadastrada, e trocar de propriedade nao pode exigir deploy.
+     * Vazio, a tag nao sai - meta de verificacao com valor errado e pior que
+     * ausente, porque o Search Console reporta "falhou" em vez de "faltando".
+     *
+     * @return string
+     */
+    public static function verification_html(): string {
+        $token = trim((string) get_config('local_partners', 'searchconsoletoken'));
+
+        if ($token === '') {
+            return '';
+        }
+
+        return '<meta name="google-site-verification" content="' . s($token) . '">' . "\n";
+    }
+
+    /**
+     * O trecho do Google Analytics.
+     *
+     * SO NAS PAGINAS PUBLICAS de captacao, e nao no site inteiro. Quem entra no
+     * LMS e aluno em atividade de estudo, e mandar o comportamento dele para um
+     * terceiro e outra decisao, com outro peso - a de medir visitante que ainda
+     * nao e cliente e bem menor.
+     *
+     * ISTO NAO DISPENSA AVISO DE COOKIES. O gtag grava cookie de primeira parte
+     * e envia dados a um terceiro; sob a LGPD e o GDPR isso pede base legal e,
+     * na pratica, banner de consentimento. O interruptor aqui e tecnico, nao
+     * juridico.
+     *
+     * @return string
+     */
+    public static function analytics_html(): string {
+        $id = trim((string) get_config('local_partners', 'analyticsid'));
+
+        // Formato do GA4 (G-XXXXXXX) ou do Ads/UA legado. Um id malformado
+        // carrega o script de um terceiro sem medir nada.
+        if ($id === '' || !preg_match('/^(G|GT|AW|UA)-[A-Z0-9-]+$/i', $id)) {
+            return '';
+        }
+
+        $seguro = s($id);
+
+        return '<script async src="https://www.googletagmanager.com/gtag/js?id=' . $seguro . '"></script>' . "\n"
+            . '<script>window.dataLayer=window.dataLayer||[];'
+            . 'function gtag(){dataLayer.push(arguments);}'
+            . 'gtag("js", new Date());'
+            . 'gtag("config", "' . $seguro . '", {"anonymize_ip": true});'
+            . '</script>' . "\n";
     }
 
     /**

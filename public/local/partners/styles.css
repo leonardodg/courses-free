@@ -411,6 +411,12 @@
     color: var(--ldgp-text);
 }
 
+.ldgp .ldgp-btn--sm {
+    font-size: 0.8125rem;
+    min-height: 2.25rem;
+    padding: 0.375rem 0.875rem;
+}
+
 .ldgp .ldgp-btn--block {
     width: 100%;
 }
@@ -490,10 +496,46 @@
     gap: 0.5rem;
 }
 
+/* Entrar e Aplicar, lado a lado, com a mesma caixa. */
 .ldgp-bar-actions .ldgp-btn {
     font-size: 0.8125rem;
     min-height: 2.25rem;
     padding: 0.375rem 0.875rem;
+    white-space: nowrap;
+}
+
+.ldgp-langs {
+    align-items: center;
+    background-color: var(--ldgp-canvas);
+    border: 1px solid var(--ldgp-border);
+    border-radius: var(--ldgp-radius);
+    display: inline-flex;
+    overflow: hidden;
+}
+
+.ldgp-lang {
+    align-items: center;
+    color: var(--ldgp-text-muted);
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 600;
+    justify-content: center;
+    letter-spacing: 0.04em;
+    /* 2.25rem de alvo, como o alternador ao lado. */
+    min-height: 2.25rem;
+    min-width: 2.25rem;
+    padding: 0.25rem 0.5rem;
+    text-decoration: none;
+}
+
+.ldgp-lang:hover {
+    background-color: var(--ldgp-elevated);
+    color: var(--ldgp-text);
+}
+
+.ldgp-lang--current {
+    background-color: var(--ldgp-primary-soft);
+    color: var(--ldgp-primary-text);
 }
 
 .ldgp-modetoggle {
@@ -528,27 +570,93 @@
 /* -------------------------------------------------------------------------
  * Hero
  * ------------------------------------------------------------------------- */
+/*
+ * O hero e uma FAIXA de largura total com a imagem de fundo.
+ *
+ * O endereco da imagem chega por style inline, do PHP. O que esta aqui e o
+ * enquadramento: a foto cobre a faixa inteira, e o miolo continua preso ao
+ * container - fundo sangrando, texto alinhado com o resto da pagina.
+ */
 .ldgp-hero {
-    background-image: var(--ldgp-mesh);
+    background-color: var(--ldgp-canvas);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
     border-top: 0;
     overflow: hidden;
-    padding: 3.5rem 0 3rem;
+    padding: 4.5rem 0 4rem;
     position: relative;
     text-align: center;
 }
 
-/* A malha quadriculada de fundo. Puramente decorativa, e por isso fica no
-   pseudo-elemento: nao entra na arvore de acessibilidade nem na selecao. */
+/*
+ * A cortina sobre a foto, mais a malha quadriculada.
+ *
+ * Ela e ESCURA NOS DOIS MODOS, e nao acompanha o alternador. A foto e escura;
+ * texto escuro sobre ela ficaria ilegivel no modo claro, e clarear a cortina
+ * apagaria a imagem. Por isso o texto do hero tambem e fixo em claro - ver o
+ * bloco logo abaixo.
+ */
 .ldgp-hero::before {
     background-image:
-        linear-gradient(to right, var(--ldgp-grid-line) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--ldgp-grid-line) 1px, transparent 1px);
-    background-size: 4rem 4rem;
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(9, 14, 26, 0.82) 0%, rgba(9, 14, 26, 0.92) 100%);
+    background-size: 4rem 4rem, 4rem 4rem, auto;
     content: "";
     inset: 0;
-    mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
     pointer-events: none;
     position: absolute;
+}
+
+/* O miolo fica ACIMA da cortina. */
+.ldgp-hero > .ldgp-inner {
+    position: relative;
+    z-index: 1;
+}
+
+/*
+ * Texto do hero em claro, sempre. Ver a razao no bloco da cortina.
+ *
+ * Contraste MEDIDO no pixel, amostrando a captura sobre o composto foto+cortina
+ * (nao estimado a partir da cor da cortina): branco 15,98:1 no ponto mais claro
+ * do fundo e 18,60:1 na media; o lead a 86% de branco da 11,54:1 no pior caso.
+ * Refaca a medicao se a foto do hero mudar - o numero e da COMPOSICAO, e nao
+ * das cores declaradas aqui.
+ */
+.ldgp-hero .ldgp-herotitle {
+    color: #fff;
+}
+
+.ldgp-hero .ldgp-herolead,
+.ldgp-hero .ldgp-herostats {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.ldgp-hero .ldgp-pill {
+    background-color: rgba(9, 14, 26, 0.55);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.ldgp-hero .ldgp-pill strong {
+    color: #fff;
+}
+
+.ldgp-hero .ldgp-btn--ghost {
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+}
+
+.ldgp-hero .ldgp-btn--ghost:hover,
+.ldgp-hero .ldgp-btn--ghost:focus-visible {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #fff;
+}
+
+.ldgp-hero .ldgp-herostats svg {
+    color: #8fc2ff;
 }
 
 .ldgp-pill {
@@ -613,17 +721,6 @@
     gap: 0.75rem;
     margin: 0 auto;
     max-width: 26rem;
-}
-
-.ldgp-herofigure {
-    border: 1px solid var(--ldgp-border);
-    border-radius: var(--ldgp-radius-xl);
-    box-shadow: var(--ldgp-shadow-card);
-    display: block;
-    height: auto;
-    margin: 2.5rem auto 0;
-    max-width: 100%;
-    width: 100%;
 }
 
 .ldgp-herostats {
@@ -1113,9 +1210,14 @@
 .ldgp-applytop {
     align-items: center;
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     justify-content: space-between;
     margin-bottom: 1.25rem;
+}
+
+.ldgp-applytop .ldgp-langs {
+    margin-left: auto;
 }
 
 .ldgp-applytop .ldgp-back {
@@ -1437,6 +1539,89 @@
     flex-direction: row;
 }
 
+/* -------------------------------------------------------------------------
+ * Rodape e atalho de teclado
+ *
+ * Os dois existem porque estas paginas usam o layout 'embedded', que nao traz
+ * chrome nenhum: a barra de secoes e o unico menu, e nada do tema aparece.
+ * ------------------------------------------------------------------------- */
+.ldgp-skip {
+    background-color: var(--ldgp-card);
+    border: 1px solid var(--ldgp-primary);
+    border-radius: var(--ldgp-radius);
+    color: var(--ldgp-text);
+    left: 0.5rem;
+    padding: 0.625rem 1rem;
+    position: absolute;
+    text-decoration: none;
+    /* Fora da tela ate receber foco - e nao display:none, que o tiraria da
+       ordem de tabulacao e anularia o proprio atalho. */
+    top: -6rem;
+    transition: top 0.15s ease;
+    z-index: 10;
+}
+
+.ldgp-skip:focus {
+    top: 0.5rem;
+}
+
+.ldgp-footer {
+    background-color: color-mix(in srgb, var(--ldgp-canvas) 92%, var(--ldgp-card));
+    border-top: 1px solid var(--ldgp-border);
+    padding: 2.5rem 0 2rem;
+}
+
+.ldgp-footer-top {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.ldgp-footer-name {
+    color: var(--ldgp-text);
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.ldgp-footer-brand p {
+    font-size: 0.875rem;
+    margin: 0.375rem 0 0;
+    max-width: 34rem;
+}
+
+.ldgp-footer-nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ldgp-footer-nav a {
+    align-items: center;
+    color: var(--ldgp-text-muted);
+    display: inline-flex;
+    font-size: 0.875rem;
+    min-height: 2.75rem;
+    text-decoration: none;
+}
+
+.ldgp-footer-nav a:hover {
+    color: var(--ldgp-text);
+}
+
+.ldgp-footer-legal {
+    border-top: 1px solid var(--ldgp-border);
+    color: var(--ldgp-text-low);
+    font-size: 0.8125rem;
+    margin: 0;
+    padding-top: 1.25rem;
+}
+
 /*
  * O honeypot.
  *
@@ -1486,7 +1671,7 @@
     }
 
     .ldgp-hero {
-        padding: 4.5rem 0 4rem;
+        padding: 6rem 0 5.5rem;
     }
 
     .ldgp-grid--pillars,
@@ -1497,6 +1682,11 @@
     .ldgp-grid--plans {
         gap: 1.25rem;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ldgp-footer-top {
+        align-items: flex-start;
+        flex-direction: row;
     }
 
     .ldgp-formcard {
@@ -1590,6 +1780,16 @@
  * `ldg-has-landing` e a mesma coisa pela home do theme_ldg, que serve a landing
  * no lugar da frontpage.
  */
+/*
+ * No layout 'embedded' a cadeia e outra: #page > section.embedded-main, sem
+ * drawers e sem region-main. As duas listas convivem porque o mesmo
+ * styles.css atende as paginas de captacao (embedded) e a home do theme_ldg,
+ * que serve a landing dentro do layout de frontpage.
+ */
+body.ldgp-page #page,
+body.ldgp-page .embedded-main,
+body.ldg-has-landing #page,
+body.ldg-has-landing .embedded-main,
 body.ldgp-page #page.drawers,
 body.ldgp-page #page.drawers .main-inner,
 body.ldgp-page #page-content,

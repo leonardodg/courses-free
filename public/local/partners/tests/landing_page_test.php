@@ -246,6 +246,80 @@ final class landing_page_test extends \advanced_testcase {
     }
 
     /**
+     * O seletor lista exatamente os idiomas que o site tem.
+     *
+     * A fonte e o proprio Moodle. Uma lista escrita no plugin divergiria dela
+     * no dia em que alguem instalasse um idioma - e o pior caso e oferecer um
+     * idioma que nao existe, que devolve a pagina em ingles sem explicar por
+     * que.
+     *
+     * @return void
+     */
+    public function test_o_seletor_lista_o_que_o_site_tem(): void {
+        $this->resetAfterTest();
+
+        $instalados = array_keys(get_string_manager()->get_list_of_translations());
+        $oferecidos = array_column(landing_page::languages(), 'code');
+
+        if (count($instalados) < 2) {
+            // Com um idioma so NAO ha seletor, e isso e a regra e nao uma
+            // limitacao: um seletor de uma opcao so ocupa espaco e nao decide
+            // nada. E o caso do ambiente do phpunit, que instala so o ingles.
+            $this->assertSame([], $oferecidos);
+
+            return;
+        }
+
+        sort($instalados);
+        sort($oferecidos);
+
+        $this->assertSame($instalados, $oferecidos);
+    }
+
+    /**
+     * O hreflang de cada link sai em BCP 47.
+     *
+     * O Moodle diz 'pt_br' e o padrao quer 'pt-br'. O atributo do link precisa
+     * concordar com o do cabecalho, senao o buscador ve dois sinais diferentes
+     * para a mesma pagina.
+     *
+     * @return void
+     */
+    public function test_o_hreflang_do_link_nao_usa_sublinhado(): void {
+        $this->resetAfterTest();
+
+        $idiomas = landing_page::languages();
+
+        if (!$idiomas) {
+            $this->markTestSkipped('o site de teste tem um idioma so, e ai nao ha seletor');
+        }
+
+        foreach ($idiomas as $idioma) {
+            $this->assertStringNotContainsString('_', $idioma['hreflang']);
+            // A URL, ao contrario, usa o codigo do Moodle - e ele que o site le.
+            $this->assertStringContainsString('lang=' . $idioma['code'], $idioma['url']);
+        }
+    }
+
+    /**
+     * Menu de idiomas desligado no site esconde o seletor.
+     *
+     * A landing nao contraria a configuracao do Moodle: se o administrador
+     * desligou a troca de idioma, ela nao reaparece por uma porta lateral.
+     *
+     * @return void
+     */
+    public function test_menu_de_idiomas_desligado_esconde_o_seletor(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->langmenu = 0;
+
+        $this->assertSame([], landing_page::languages());
+        $this->assertFalse($this->contexto()['haslanguages']);
+    }
+
+    /**
      * O docblock do template nao vaza para a tela.
      *
      * Um comentario de mustache termina no PRIMEIRO fecha-chaves duplo. Citar

@@ -106,7 +106,12 @@
 
     {{> local_partners/sectionbar }}
 
-    <section class="ldgp-hero">
+    <main id="ldgp-main" tabindex="-1">
+
+    {{! A imagem e o FUNDO da secao, e nao uma figura abaixo do texto: o
+        hero ocupa a largura toda e o miolo continua no container. O
+        endereco vem do PHP, entao o style inline e o unico caminho. }}
+    <section class="ldgp-hero" style="background-image: url('{{heroimage}}');">
         <div class="ldgp-inner">
             <p class="ldgp-pill">
                 <span class="ldgp-dot"></span>
@@ -135,10 +140,6 @@
                 <li>{{> local_partners/icons/check }}<span>{{#str}}herostat2, local_partners{{/str}}</span></li>
                 <li>{{> local_partners/icons/check }}<span>{{#str}}herostat3, local_partners{{/str}}</span></li>
             </ul>
-
-            {{! Imagem decorativa: o alt vazio e proposital, ela nao carrega
-                informacao que o texto ao lado ja nao de. }}
-            <img src="{{heroimage}}" alt="" class="ldgp-herofigure" loading="lazy">
         </div>
     </section>
 
@@ -328,6 +329,9 @@
         </div>
     </section>
 
+    </main>
+
+    {{#footer}}{{> local_partners/footer }}{{/footer}}
 </div>
 {{#js}}
     require(['local_partners/sectionbar', 'local_partners/colormode'], function(Bar, ColorMode) {

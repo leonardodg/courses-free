@@ -63,6 +63,10 @@ class apply_page implements renderable, templatable {
             'landingurl' => (new moodle_url('/local/partners/index.php'))->out(false),
             'colormode' => landing_page::color_mode(),
             'isloggedin' => isloggedin() && !isguestuser(),
+            'loginurl' => (new moodle_url('/login/index.php'))->out(false),
+            'footer' => landing_page::footer(),
+            'languages' => landing_page::languages(),
+            'haslanguages' => count(landing_page::languages()) > 1,
             'trust' => $this->trust(),
         ];
     }

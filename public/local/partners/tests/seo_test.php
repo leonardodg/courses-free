@@ -258,4 +258,72 @@ final class seo_test extends \advanced_testcase {
 
         $this->assertStringContainsString('content="index, follow', seo::head_html());
     }
+
+    /**
+     * Com a indexacao desligada no site, NAO pedimos indexacao.
+     *
+     * O core ja emite noindex quando o administrador escolhe "em lugar nenhum".
+     * Emitir "index, follow" ao lado deixaria as duas na pagina, e em conflito
+     * vale a mais restritiva - a nossa seria derrotada em silencio, e a pagina
+     * pareceria pedir indexacao sem nunca consegui-la.
+     *
+     * @return void
+     */
+    public function test_indexacao_desligada_no_site_e_respeitada(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->allowindexing = 2;
+
+        $html = seo::head_html();
+
+        $this->assertStringNotContainsString('content="index, follow', $html);
+        // O resto do cabecalho continua: canonical e schema servem para quem
+        // recebe o link por outro caminho.
+        $this->assertStringContainsString('rel="canonical"', $html);
+    }
+
+    /**
+     * A meta de verificacao so sai quando ha valor.
+     *
+     * Verificacao com valor errado e pior que ausente: o Search Console passa a
+     * reportar "falhou" em vez de "faltando", e quem investiga procura no lugar
+     * errado.
+     *
+     * @return void
+     */
+    public function test_a_verificacao_so_sai_com_valor(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame('', seo::verification_html());
+
+        set_config('searchconsoletoken', 'abc123XYZ', 'local_partners');
+
+        $this->assertStringContainsString('name="google-site-verification"', seo::verification_html());
+        $this->assertStringContainsString('abc123XYZ', seo::verification_html());
+    }
+
+    /**
+     * Id de analytics malformado nao carrega script de terceiro.
+     *
+     * Um id errado nao mede nada, e mesmo assim traz o script do Google para
+     * dentro de uma pagina publica - custo de rede e de privacidade sem
+     * contrapartida nenhuma.
+     *
+     * @return void
+     */
+    public function test_id_de_analytics_malformado_nao_carrega_nada(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame('', seo::analytics_html());
+
+        set_config('analyticsid', 'nao-e-um-id', 'local_partners');
+        $this->assertSame('', seo::analytics_html());
+
+        set_config('analyticsid', 'G-ABC123XYZ', 'local_partners');
+        $saida = seo::analytics_html();
+
+        $this->assertStringContainsString('googletagmanager.com/gtag/js?id=G-ABC123XYZ', $saida);
+        $this->assertStringContainsString('anonymize_ip', $saida);
+    }
 }

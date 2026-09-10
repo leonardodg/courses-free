@@ -21,6 +21,7 @@ use core\output\renderer_base;
 use core\output\templatable;
 use local_marketplace\plan;
 use local_marketplace\plan_tier;
+use local_partners\seo;
 use moodle_url;
 
 /**
@@ -52,6 +53,10 @@ class landing_page implements renderable, templatable {
             'faq' => $this->faq(),
             'sections' => self::sections(),
             'colormode' => self::color_mode(),
+            'languages' => self::languages(),
+            'haslanguages' => count(self::languages()) > 1,
+            'footer' => self::footer(),
+            'loginurl' => (new moodle_url('/login/index.php'))->out(false),
             // Decide ONDE o alternador guarda a escolha: quem esta autenticado
             // grava a preferencia do perfil, que vale no site inteiro; o
             // visitante anonimo grava no navegador, porque setUserPreference
@@ -81,6 +86,88 @@ class landing_page implements renderable, templatable {
         }
 
         return $out;
+    }
+
+    /**
+     * O contexto do rodape, comum as duas paginas publicas.
+     *
+     * Existe porque estas paginas usam o layout 'embedded' e nao recebem chrome
+     * nenhum do tema - a barra de secoes e o unico menu, e o rodape e nosso.
+     *
+     * @return array
+     */
+    public static function footer(): array {
+        global $SITE, $CFG;
+
+        $politica = !empty($CFG->sitepolicy) ? $CFG->sitepolicy : ($CFG->sitepolicyguest ?? '');
+        $marca = seo::legal_name();
+
+        return [
+            'sitename' => format_string($SITE->shortname),
+            'landingurl' => (new moodle_url('/local/partners/index.php'))->out(false),
+            'applyurl' => (new moodle_url('/local/partners/apply.php'))->out(false),
+            'loginurl' => (new moodle_url('/login/index.php'))->out(false),
+            'sections' => self::sections(),
+            // Vazia vira false para o mustache poder cair no nome do site, em
+            // vez de imprimir uma empresa que ninguem declarou.
+            'legalname' => $marca !== '' ? $marca : false,
+            'year' => userdate(time(), '%Y'),
+            'haspolicy' => $politica !== '',
+            'policyurl' => $politica,
+        ];
+    }
+
+    /**
+     * Os idiomas oferecidos ao visitante.
+     *
+     * A lista sai de get_list_of_translations() SEM o parametro de "todos": ela
+     * ja devolve o que esta instalado E habilitado, respeitando o $CFG->langlist
+     * do administrador. Uma lista escrita no plugin divergiria dela no dia em
+     * que alguem instalasse um idioma novo - e o pior caso e oferecer um idioma
+     * que o site nao tem, que devolve a pagina em ingles sem explicar por que.
+     *
+     * Devolve vazio quando o menu de idiomas esta desligado no site: a landing
+     * nao contraria a configuracao do Moodle.
+     *
+     * @param moodle_url|null $atual A pagina em que o visitante esta.
+     * @return array
+     */
+    public static function languages(?moodle_url $atual = null): array {
+        global $CFG, $PAGE;
+
+        if (empty($CFG->langmenu)) {
+            return [];
+        }
+
+        $traducoes = get_string_manager()->get_list_of_translations();
+
+        if (count($traducoes) < 2) {
+            return [];
+        }
+
+        $base = $atual ?? ($PAGE->has_set_url() ? $PAGE->url : new moodle_url('/local/partners/index.php'));
+        $corrente = current_language();
+        $saida = [];
+
+        foreach ($traducoes as $codigo => $nome) {
+            $url = new moodle_url($base, ['lang' => $codigo]);
+
+            $saida[] = [
+                'code' => $codigo,
+                // O hreflang do link precisa do formato BCP 47, e nao do formato
+                // do Moodle - a mesma conversao que a classe seo faz.
+                'hreflang' => str_replace('_', '-', $codigo),
+                // O nome vem do proprio pacote de idioma, entao cada opcao
+                // aparece no idioma dela: quem procura portugues reconhece
+                // "Portugues", e nao "Portuguese".
+                'label' => $nome,
+                'short' => strtoupper(explode('_', $codigo)[0]),
+                'url' => $url->out(false),
+                'iscurrent' => $codigo === $corrente,
+            ];
+        }
+
+        return $saida;
     }
 
     /**

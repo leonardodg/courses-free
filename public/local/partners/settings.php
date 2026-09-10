@@ -92,6 +92,25 @@ if ($hassiteconfig) {
         1
     ));
 
+    // Descoberta por buscador. Os dois valores sao PROPRIOS DE CADA PROPRIEDADE
+    // cadastrada no Google, e nao do codigo: trocar de propriedade nao pode
+    // exigir deploy.
+    $settings->add(new admin_setting_configtext(
+        'local_partners/searchconsoletoken',
+        get_string('searchconsoletoken', 'local_partners'),
+        get_string('searchconsoletoken_desc', 'local_partners'),
+        '',
+        PARAM_ALPHANUMEXT
+    ));
+
+    $settings->add(new admin_setting_configtext(
+        'local_partners/analyticsid',
+        get_string('analyticsid', 'local_partners'),
+        get_string('analyticsid_desc', 'local_partners'),
+        '',
+        PARAM_ALPHANUMEXT
+    ));
+
     $ADMIN->add('localplugins', $settings);
 
     // A escolha da home fica na tela de Configuracoes da pagina inicial, junto
