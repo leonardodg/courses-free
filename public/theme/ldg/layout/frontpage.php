@@ -70,28 +70,17 @@ if ($ldglanding === '') {
     return;
 }
 
-// Com landing, montamos o contexto minimo do drawers: a landing e o miolo, e o
-// cabecalho e o rodape continuam sendo do tema.
-$themesettings = new \theme_ldg\util\settings();
-
-$primary = new core\navigation\output\primary($PAGE);
-$renderer = $PAGE->get_renderer('core');
-$primarymenu = $primary->export_for_template($renderer);
-
+// Com landing, o contexto e minimo de proposito: ela e a pagina INTEIRA.
+//
+// Nem navbar nem rodape do tema entram aqui. A landing ja traz a propria barra
+// de secoes e o proprio rodape - e enquanto este layout tambem montava os do
+// tema, quem abria a raiz do dominio via duas barras e dois rodapes, um dentro
+// do outro. A pagina servida na raiz e a mesma de /local/partners/index.php, e
+// tem que ser identica a ela.
 $templatecontext = [
-    'sitename' => format_string($SITE->shortname, true, [
-        'context' => \core\context\course::instance(SITEID),
-        'escape' => false,
-    ]),
     'output' => $OUTPUT,
-    'bodyattributes' => $OUTPUT->body_attributes(['uses-drawers', 'ldg-has-landing']),
-    'primarymoremenu' => $primarymenu['moremenu'],
-    'mobileprimarynav' => $primarymenu['mobileprimarynav'],
-    'usermenu' => $primarymenu['user'],
-    'langmenu' => $primarymenu['lang'],
+    'bodyattributes' => $OUTPUT->body_attributes(['ldg-has-landing']),
     'landing' => $ldglanding,
 ];
-
-$templatecontext = array_merge($templatecontext, $themesettings->footer());
 
 echo $OUTPUT->render_from_template('theme_ldg/landing', $templatecontext);

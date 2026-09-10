@@ -82,32 +82,53 @@ class landing {
     }
 
     /**
-     * Meta tags de compartilhamento da landing.
+     * O que o rodape do SITE precisa saber para falar a mesma lingua da landing.
      *
-     * Tudo passa por s() e format_string(): sao textos de configuracao indo
-     * para dentro de atributo HTML.
+     * Faz parte da superficie que o tema consome, junto de is_enabled(),
+     * replaces_frontpage(), render() e head_html(). O tema chama por
+     * class_exists e cai no que ele mesmo tem quando este plugin nao existe -
+     * a dependencia continua sendo do tema para ca, e continua opcional.
+     *
+     * Devolve so o que e comum as duas superficies: a marca, a frase que explica
+     * o produto, os links legais que tem destino, a razao social, o CNPJ e o
+     * credito de quem assina. Ancoras de secao ficam de fora de proposito -
+     * elas so existem na landing.
+     *
+     * @return array
+     */
+    public static function site_footer(): array {
+        $criador = seo::creator();
+        $legais = landing_page::legal_links();
+
+        return [
+            'legal' => $legais,
+            'haslegal' => !empty($legais),
+            // A marca e a frase saem daqui e nao do tema: sao os mesmos textos
+            // da landing, ja traduzidos neste plugin. Duplica-los no tema
+            // significaria dois lugares para corrigir a mesma frase, e um deles
+            // ficaria para tras.
+            'brand' => landing_page::brand(),
+            'tagline' => get_string('footertagline', 'local_partners'),
+            'legalname' => seo::legal_name() !== '' ? seo::legal_name() : false,
+            'taxid' => seo::tax_id() !== '' ? seo::tax_id() : false,
+            'creatorname' => $criador['name'] !== '' ? $criador['name'] : false,
+            'creatorurl' => $criador['url'],
+            'landingurl' => (new moodle_url('/local/partners/index.php'))->out(false),
+            'landingenabled' => self::is_enabled(),
+        ];
+    }
+
+    /**
+     * O que a landing acrescenta ao <head>.
+     *
+     * Delega para a classe seo, que trata indexacao, compartilhamento, idioma e
+     * dados estruturados juntos - sao a mesma decisao vista de angulos
+     * diferentes, e separa-los faria o canonical de um lado divergir do @id do
+     * outro.
      *
      * @return string
      */
     public static function head_html(): string {
-        global $SITE;
-
-        $title = format_string($SITE->fullname);
-        $description = get_string('metadescription', 'local_partners');
-        $url = (new moodle_url('/'))->out(false);
-        $image = (new moodle_url('/local/partners/pix/hero.jpg'))->out(false);
-
-        $tags = [
-            '<meta name="description" content="' . s($description) . '">',
-            '<link rel="canonical" href="' . s($url) . '">',
-            '<meta property="og:type" content="website">',
-            '<meta property="og:title" content="' . s($title) . '">',
-            '<meta property="og:description" content="' . s($description) . '">',
-            '<meta property="og:url" content="' . s($url) . '">',
-            '<meta property="og:image" content="' . s($image) . '">',
-            '<meta name="twitter:card" content="summary_large_image">',
-        ];
-
-        return implode("\n", $tags) . "\n";
+        return seo::head_html();
     }
 }

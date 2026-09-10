@@ -21,6 +21,7 @@ use core\output\renderer_base;
 use core\output\templatable;
 use local_marketplace\plan;
 use local_marketplace\plan_tier;
+use local_partners\seo;
 use moodle_url;
 
 /**
@@ -50,7 +51,304 @@ class landing_page implements renderable, templatable {
             'hasplans' => !empty($this->plans()),
             'steps' => $this->steps(),
             'faq' => $this->faq(),
+            'sections' => self::sections(),
+            'colormode' => self::color_mode(),
+            'languages' => self::languages(),
+            'haslanguages' => count(self::languages()) > 1,
+            'currentlanguage' => self::current_language_label(),
+            'footer' => self::footer(),
+            'brand' => self::brand($output),
+            'loginurl' => (new moodle_url('/login/index.php'))->out(false),
+            'logouturl' => self::logout_url(),
+            // Decide ONDE o alternador guarda a escolha: quem esta autenticado
+            // grava a preferencia do perfil, que vale no site inteiro; o
+            // visitante anonimo grava no navegador, porque setUserPreference
+            // exige sessao - e o publico desta pagina e justamente ele.
+            'isloggedin' => isloggedin() && !isguestuser(),
         ];
+    }
+
+    /**
+     * As secoes da pagina, na ordem em que aparecem.
+     *
+     * Esta lista alimenta OS DOIS lados: os links da barra de secoes e os id=
+     * das proprias secoes no template. Escrever a lista duas vezes e como uma
+     * ancora passa a apontar para lugar nenhum sem ninguem notar - por isso ela
+     * e exportada, e nao repetida no mustache.
+     *
+     * O `inbar` marca quem aparece na BARRA. So o "Apply" fica de fora, e por um
+     * motivo: ele ja e o botao primario ao lado do de entrar, e a ancora repetia
+     * a mesma acao a dois centimetros dela. Na barra o "Apply" e um botao; no
+     * rodape, onde nao ha botao, continua sendo um link como os outros.
+     *
+     * @return array
+     */
+    public static function sections(): array {
+        $out = [];
+
+        foreach (['features', 'pricing', 'how', 'faq', 'apply'] as $id) {
+            $out[] = [
+                'id' => 'ldgp-' . $id,
+                'label' => get_string('section' . $id, 'local_partners'),
+                'inbar' => $id !== 'apply',
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * O endereco de sair, com a chave de sessao.
+     *
+     * O `logout.php` do Moodle EXIGE sesskey - sem ela ele recusa, e por um bom
+     * motivo: um <img src="/login/logout.php"> numa pagina de terceiro derrubaria
+     * a sessao de quem passasse por la.
+     *
+     * Devolve vazio para quem nao esta autenticado. Chamar sesskey() sem sessao
+     * fabrica uma, e a landing e justamente a pagina do visitante anonimo.
+     *
+     * @return string
+     */
+    public static function logout_url(): string {
+        if (!isloggedin() || isguestuser()) {
+            return '';
+        }
+
+        return (new moodle_url('/login/logout.php', ['sesskey' => sesskey()]))->out(false);
+    }
+
+    /**
+     * A marca, para a barra e para o rodape.
+     *
+     * Ela sumiu quando a navbar do tema saiu destas paginas, e nao pode sumir:
+     * pagina de captacao sem marca e pagina de ninguem.
+     *
+     * A busca vai do mais especifico para o mais geral, e cada degrau tem uma
+     * razao:
+     *
+     *  1. o logo do TEMA em uso, quando o renderer dele expuser um. E soft, por
+     *     method_exists - o plugin nao pode declarar dependencia de tema nenhum,
+     *     e sob Boost ou Moove o metodo simplesmente nao existe;
+     *  2. o logo do SITE, que e do core e vale em qualquer tema;
+     *  3. o nome curto do site, desenhado como marca-palavra. Sem imagem
+     *     nenhuma, ainda ha marca - e nao um buraco.
+     *
+     * SAO DOIS RENDERERS, e nao um. A pagina de cadastro renderiza pelo renderer
+     * DO PLUGIN (`$PAGE->get_renderer('local_partners')`), que nao tem get_logo
+     * nenhum - e a marca caia para a palavra ali enquanto na landing aparecia a
+     * imagem, com a mesma chamada. Por isso o renderer recebido e apenas o
+     * primeiro candidato: o $OUTPUT do tema vem logo atras.
+     *
+     * @param renderer_base|null $output
+     * @return array
+     */
+    public static function brand(?renderer_base $output = null): array {
+        global $SITE, $OUTPUT;
+
+        $claro = false;
+        $escuro = false;
+
+        foreach ([$output, $OUTPUT] as $renderer) {
+            if ($renderer === null) {
+                continue;
+            }
+
+            if (method_exists($renderer, 'get_logo')) {
+                $claro = $renderer->get_logo();
+                $escuro = method_exists($renderer, 'get_logo_dark') ? $renderer->get_logo_dark() : $claro;
+            } else if (method_exists($renderer, 'get_logo_url')) {
+                $url = $renderer->get_logo_url();
+                $claro = $url ? $url->out(false) : false;
+                $escuro = $claro;
+            }
+
+            if ($claro) {
+                break;
+            }
+        }
+
+        return [
+            'name' => format_string($SITE->shortname),
+            'homeurl' => (new moodle_url('/local/partners/index.php'))->out(false),
+            'logolight' => $claro ?: false,
+            'logodark' => $escuro ?: false,
+            'haslogo' => (bool) $claro,
+        ];
+    }
+
+    /**
+     * O contexto do rodape, comum as duas paginas publicas.
+     *
+     * Existe porque estas paginas usam o layout 'embedded' e nao recebem chrome
+     * nenhum do tema - a barra de secoes e o unico menu, e o rodape e nosso.
+     *
+     * @return array
+     */
+    public static function footer(bool $simples = false): array {
+        global $SITE;
+
+        $marca = seo::legal_name();
+        $criador = seo::creator();
+        $legais = self::legal_links();
+
+        return [
+            'sitename' => format_string($SITE->shortname),
+            'landingurl' => (new moodle_url('/local/partners/index.php'))->out(false),
+            'applyurl' => (new moodle_url('/local/partners/apply.php'))->out(false),
+            'loginurl' => (new moodle_url('/login/index.php'))->out(false),
+            'logouturl' => self::logout_url(),
+            'isloggedin' => isloggedin() && !isguestuser(),
+            // A mesma marca da barra: no rodape ela era so a palavra, e a
+            // pagina terminava com um nome de site onde comecou com uma logo.
+            'brand' => self::brand(),
+            'sections' => self::sections(),
+            // Vazia vira false para o mustache poder cair no nome do site, em
+            // vez de imprimir uma empresa que ninguem declarou.
+            'legalname' => $marca !== '' ? $marca : false,
+            'taxid' => seo::tax_id() !== '' ? seo::tax_id() : false,
+            'creatorname' => $criador['name'] !== '' ? $criador['name'] : false,
+            'creatorurl' => $criador['url'],
+            'legal' => $legais,
+            'haslegal' => !empty($legais),
+            'year' => userdate(time(), '%Y'),
+            // A variante simples e uma linha so, como no mockup do cadastro. A
+            // completa e a da landing, com colunas.
+            'issimple' => $simples,
+        ];
+    }
+
+    /**
+     * Termos, privacidade e cookies - so os que tem destino.
+     *
+     * Link legal que nao leva a lugar nenhum e pior que link ausente: ele
+     * PROMETE um documento. Cada um so aparece quando alguem configurou a URL,
+     * e o padrao do de termos e a politica do site, que o Moodle ja tem.
+     *
+     * @return array
+     */
+    public static function legal_links(): array {
+        global $CFG;
+
+        $politica = !empty($CFG->sitepolicy) ? $CFG->sitepolicy : ($CFG->sitepolicyguest ?? '');
+
+        $mapa = [
+            'termsurl' => ['chave' => 'footerterms', 'padrao' => $politica],
+            'privacyurl' => ['chave' => 'footerprivacy', 'padrao' => ''],
+            'cookiesurl' => ['chave' => 'footercookies', 'padrao' => ''],
+        ];
+
+        $saida = [];
+
+        foreach ($mapa as $config => $dados) {
+            $url = trim((string) get_config('local_partners', $config));
+
+            if ($url === '') {
+                $url = (string) $dados['padrao'];
+            }
+
+            if ($url === '') {
+                continue;
+            }
+
+            $saida[] = [
+                'label' => get_string($dados['chave'], 'local_partners'),
+                'url' => $url,
+            ];
+        }
+
+        return $saida;
+    }
+
+    /**
+     * Os idiomas oferecidos ao visitante.
+     *
+     * A lista sai de get_list_of_translations() SEM o parametro de "todos": ela
+     * ja devolve o que esta instalado E habilitado, respeitando o $CFG->langlist
+     * do administrador. Uma lista escrita no plugin divergiria dela no dia em
+     * que alguem instalasse um idioma novo - e o pior caso e oferecer um idioma
+     * que o site nao tem, que devolve a pagina em ingles sem explicar por que.
+     *
+     * Devolve vazio quando o menu de idiomas esta desligado no site: a landing
+     * nao contraria a configuracao do Moodle.
+     *
+     * @param moodle_url|null $atual A pagina em que o visitante esta.
+     * @return array
+     */
+    public static function languages(?moodle_url $atual = null): array {
+        global $CFG, $PAGE;
+
+        if (empty($CFG->langmenu)) {
+            return [];
+        }
+
+        $traducoes = get_string_manager()->get_list_of_translations();
+
+        if (count($traducoes) < 2) {
+            return [];
+        }
+
+        $base = $atual ?? ($PAGE->has_set_url() ? $PAGE->url : new moodle_url('/local/partners/index.php'));
+        $corrente = current_language();
+        $saida = [];
+
+        foreach ($traducoes as $codigo => $nome) {
+            $url = new moodle_url($base, ['lang' => $codigo]);
+
+            $saida[] = [
+                'code' => $codigo,
+                // O hreflang do link precisa do formato BCP 47, e nao do formato
+                // do Moodle - a mesma conversao que a classe seo faz.
+                'hreflang' => str_replace('_', '-', $codigo),
+                // O nome vem do proprio pacote de idioma, entao cada opcao
+                // aparece no idioma dela: quem procura portugues reconhece
+                // "Portugues", e nao "Portuguese".
+                'label' => $nome,
+                'short' => strtoupper(explode('_', $codigo)[0]),
+                'url' => $url->out(false),
+                'iscurrent' => $codigo === $corrente,
+            ];
+        }
+
+        return $saida;
+    }
+
+    /**
+     * O rotulo curto do idioma em uso, para o botao do seletor.
+     *
+     * @return string
+     */
+    public static function current_language_label(): string {
+        foreach (self::languages() as $idioma) {
+            if ($idioma['iscurrent']) {
+                return $idioma['short'];
+            }
+        }
+
+        return strtoupper(explode('_', current_language())[0]);
+    }
+
+    /**
+     * O modo de cor com que a pagina nasce.
+     *
+     * Escuro e o padrao: e o que o desenho pede, e e o que o visitante anonimo
+     * ve. O estado sai PRONTO do servidor - deixar o JavaScript corrigir depois
+     * produz um pisca de escuro para claro a cada carregamento.
+     *
+     * A chave e a mesma do theme_ldg e do theme_moove ('dark-mode-on'), de
+     * proposito: assim a escolha feita na landing continua valendo no resto do
+     * site, e a do resto do site vale aqui. Nao lemos classe nenhuma dos temas -
+     * so a preferencia, que e do core.
+     *
+     * @return string 'dark' ou 'light'.
+     */
+    public static function color_mode(): string {
+        $preference = get_user_preferences('dark-mode-on', null);
+
+        if ($preference === null) {
+            return 'dark';
+        }
+
+        return $preference ? 'dark' : 'light';
     }
 
     /**
@@ -136,6 +434,19 @@ class landing_page implements renderable, templatable {
         }
 
         return $steps;
+    }
+
+    /**
+     * As perguntas frequentes, para quem precisa delas fora do template.
+     *
+     * O bloco JSON-LD da pagina precisa das MESMAS perguntas que aparecem na
+     * tela: schema com pergunta que o visitante nao encontra e recusado pelos
+     * validadores, e com razao. Uma lista so, dois consumidores.
+     *
+     * @return array
+     */
+    public static function faq_items(): array {
+        return (new self())->faq();
     }
 
     /**

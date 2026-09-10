@@ -72,11 +72,21 @@ class application_form extends \moodleform {
     protected function definition() {
         $mform = $this->_form;
 
-        $mform->addElement('text', 'companyname', get_string('companyname', 'local_partners'), ['size' => 50, 'maxlength' => 255]);
+        $mform->addElement(
+            'text',
+            'companyname',
+            get_string('companyname', 'local_partners'),
+            ['size' => 50, 'maxlength' => 255, 'parentclass' => 'ldgp-half']
+        );
         $mform->setType('companyname', PARAM_TEXT);
         $mform->addRule('companyname', null, 'required', null, 'client');
 
-        $mform->addElement('text', 'cnpj', get_string('cnpj', 'local_partners'), ['size' => 20, 'maxlength' => 18]);
+        $mform->addElement(
+            'text',
+            'cnpj',
+            get_string('cnpj', 'local_partners'),
+            ['size' => 20, 'maxlength' => 18, 'parentclass' => 'ldgp-half']
+        );
         $mform->setType('cnpj', PARAM_TEXT);
         $mform->addHelpButton('cnpj', 'cnpj', 'local_partners');
 
@@ -108,7 +118,7 @@ class application_form extends \moodleform {
                 'text',
                 'contactname',
                 get_string('contactname', 'local_partners'),
-                ['size' => 50, 'maxlength' => 255]
+                ['size' => 50, 'maxlength' => 255, 'parentclass' => 'ldgp-half']
             );
             $mform->setType('contactname', PARAM_TEXT);
             $mform->addRule('contactname', null, 'required', null, 'client');
@@ -117,32 +127,116 @@ class application_form extends \moodleform {
                 'text',
                 'contactemail',
                 get_string('contactemail', 'local_partners'),
-                ['size' => 50, 'maxlength' => 255]
+                ['size' => 50, 'maxlength' => 255, 'parentclass' => 'ldgp-half']
             );
             $mform->setType('contactemail', PARAM_RAW_TRIMMED);
             $mform->addRule('contactemail', null, 'required', null, 'client');
         }
 
-        $mform->addElement('text', 'contactphone', get_string('contactphone', 'local_partners'), ['size' => 30, 'maxlength' => 30]);
+        $mform->addElement(
+            'text',
+            'contactphone',
+            get_string('contactphone', 'local_partners'),
+            ['size' => 30, 'maxlength' => 30, 'parentclass' => 'ldgp-half']
+        );
         $mform->setType('contactphone', PARAM_TEXT);
 
-        $mform->addElement('text', 'website', get_string('website', 'local_partners'), ['size' => 50, 'maxlength' => 255]);
+        $mform->addElement(
+            'text',
+            'website',
+            get_string('website', 'local_partners'),
+            ['size' => 50, 'maxlength' => 255, 'parentclass' => 'ldgp-half']
+        );
         $mform->setType('website', PARAM_RAW_TRIMMED);
 
         // Os planos vem do banco, e nao de uma lista escrita aqui: e a mesma
         // fonte que a comparacao de planos da landing usa.
-        $plans = ['' => get_string('planundecided', 'local_partners')];
+        //
+        // Sao CARTOES de radio, e nao um select, porque o plano e uma escolha
+        // com preco e comissao - informacao que nao cabe numa linha de select.
+        // O element-radio do core imprime o rotulo CRU, entao o cartao inteiro
+        // cabe ali como HTML montado aqui. A classe passada em atributos cai
+        // no <label> que envolve o radio, e nao no proprio input - por isso o
+        // nome 'wrap'. O input fica irmao do cartao, que e o que permite
+        // pintar o selecionado com input:checked + .ldgp-plancard.
+        $radios = [];
+
         foreach (plan::get_public_plans() as $plan) {
-            $plans[(int) $plan->get('id')] = format_string($plan->get('name'));
+            $radios[] = $mform->createElement(
+                'radio',
+                'planid',
+                '',
+                $this->plan_card((int) $plan->get('id')),
+                (int) $plan->get('id'),
+                ['class' => 'ldgp-plancard__wrap']
+            );
         }
-        $mform->addElement('select', 'planid', get_string('planofinterest', 'local_partners'), $plans);
+
+        $radios[] = $mform->createElement(
+            'radio',
+            'planid',
+            '',
+            $this->plan_card(0),
+            0,
+            ['class' => 'ldgp-plancard__wrap']
+        );
+
+        // O ultimo argumento e $appendName, e ele PRECISA ser false. Com true o
+        // campo vira plangroup[planid], api::submit() grava null em toda
+        // candidatura, e nenhum teste que nao escolha plano perceberia.
+        $mform->addGroup(
+            $radios,
+            'plangroup',
+            get_string('planofinterest', 'local_partners'),
+            '',
+            false
+        );
         $mform->setType('planid', PARAM_INT);
+        $mform->setDefault('planid', 0);
+
+        // A lista de paises e a do Moodle: ja vem traduzida nos tres idiomas, e
+        // respeita a restricao do administrador em $CFG->allcountrycodes. Uma
+        // lista escrita aqui divergiria dela na primeira mudanca.
+        $countries = ['' => get_string('choosedots')] + get_string_manager()->get_list_of_countries();
+        $mform->addElement(
+            'select',
+            'country',
+            get_string('country', 'local_partners'),
+            $countries,
+            ['parentclass' => 'ldgp-half']
+        );
+        $mform->setType('country', PARAM_ALPHA);
+        $mform->addRule('country', null, 'required', null, 'client');
+
+        if (!empty($GLOBALS['CFG']->country)) {
+            $mform->setDefault('country', $GLOBALS['CFG']->country);
+        }
+
+        $bands = ['' => get_string('learnersbandundecided', 'local_partners')];
+        foreach (application::LEARNER_BANDS as $band) {
+            $bands[$band] = application::band_label($band);
+        }
+        $mform->addElement(
+            'select',
+            'learnersband',
+            get_string('learnersband', 'local_partners'),
+            $bands,
+            ['parentclass' => 'ldgp-half']
+        );
+        $mform->setType('learnersband', PARAM_ALPHANUM);
 
         $mform->addElement('textarea', 'message', get_string('applicationmessage', 'local_partners'), [
             'rows' => 4,
             'cols' => 50,
         ]);
         $mform->setType('message', PARAM_TEXT);
+
+        // O advcheckbox posta valor tambem quando DESMARCADO, e o checkbox
+        // comum nao posta nada. Com o comum, o servidor nao distingue "nao
+        // aceitou" de "campo nao veio", e a checagem do aceite ficaria sujeita
+        // a como o navegador montou o POST.
+        $mform->addElement('advcheckbox', 'termsaccepted', '', $this->terms_label());
+        $mform->setType('termsaccepted', PARAM_INT);
 
         // Honeypot. Escondido por CSS, nunca por type="hidden": um robo ignora
         // display:none e preenche tudo que parece campo, mas tambem preenche
@@ -193,6 +287,29 @@ class application_form extends \moodleform {
             $errors['contactemail'] = get_string('erroremailinvalid', 'local_partners');
         }
 
+        // O aceite se confere AQUI, e nao so no navegador. O required do
+        // moodleform vira atributo HTML, e atributo HTML some com um curl - uma
+        // candidatura sem consentimento entraria na fila em silencio, e o
+        // carimbo de tempo perderia o valor de prova que e a razao de ele
+        // existir.
+        if (empty($data['termsaccepted'])) {
+            $errors['termsaccepted'] = get_string('errortermsrequired', 'local_partners');
+        }
+
+        if (
+            !empty($data['country'])
+            && !array_key_exists($data['country'], get_string_manager()->get_list_of_countries())
+        ) {
+            $errors['country'] = get_string('errorcountryinvalid', 'local_partners');
+        }
+
+        if (
+            !empty($data['learnersband'])
+            && !in_array($data['learnersband'], application::LEARNER_BANDS, true)
+        ) {
+            $errors['learnersband'] = get_string('errorlearnersbandinvalid', 'local_partners');
+        }
+
         $digits = !empty($data['cnpj']) ? cnpj::normalise($data['cnpj']) : '';
 
         if ($digits !== '' && !cnpj::is_valid($digits)) {
@@ -226,6 +343,72 @@ class application_form extends \moodleform {
         }
 
         return $errors;
+    }
+
+    /**
+     * O cartao de um plano, usado como rotulo do radio.
+     *
+     * Nome, mensalidade e comissao saem do REGISTRO. Escrever numero aqui faria
+     * o cadastro divergir da landing no primeiro reajuste, e as duas telas sao
+     * lidas com dez segundos de diferenca.
+     *
+     * @param int $planid Zero para o cartao "ainda nao decidi".
+     * @return string
+     */
+    protected function plan_card(int $planid): string {
+        if ($planid === 0) {
+            return \html_writer::div(
+                \html_writer::tag('strong', get_string('planundecided', 'local_partners')),
+                'ldgp-plancard ldgp-plancard--undecided'
+            );
+        }
+
+        $plan = plan::get_record(['id' => $planid]);
+
+        if (!$plan) {
+            return '';
+        }
+
+        $fee = (float) $plan->get('monthlyfee');
+        $preco = $fee <= 0
+            ? get_string('planfree', 'local_partners')
+            : \core_payment\helper::get_cost_as_string($fee, $plan->get('currency'));
+
+        return \html_writer::div(
+            \html_writer::tag('strong', format_string($plan->get('name')), ['class' => 'ldgp-plancard__name'])
+            . \html_writer::span($preco, 'ldgp-plancard__price')
+            . \html_writer::span(
+                get_string('plancommission', 'local_partners', format_float((float) $plan->get('commissionpct'), 2)),
+                'ldgp-plancard__note'
+            ),
+            'ldgp-plancard'
+        );
+    }
+
+    /**
+     * O rotulo do aceite, com link para a politica do site quando houver uma.
+     *
+     * O endereco sai de $CFG->sitepolicy, que e onde o Moodle ja guarda esse
+     * documento - o mockup usava href="#", e um link que nao leva a lugar
+     * nenhum ao lado de "eu concordo" e pior que nao ter link.
+     *
+     * @return string
+     */
+    protected function terms_label(): string {
+        global $CFG;
+
+        $url = !empty($CFG->sitepolicy) ? $CFG->sitepolicy : ($CFG->sitepolicyguest ?? '');
+
+        if (empty($url)) {
+            return get_string('termsacceptplain', 'local_partners');
+        }
+
+        $link = \html_writer::link($url, get_string('termslinktext', 'local_partners'), [
+            'target' => '_blank',
+            'rel' => 'noopener noreferrer',
+        ]);
+
+        return get_string('termsaccept', 'local_partners', $link);
     }
 
     /**

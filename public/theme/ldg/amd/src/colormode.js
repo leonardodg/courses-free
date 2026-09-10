@@ -34,7 +34,7 @@
  */
 define(['core_user/repository'], function(UserRepository) {
 
-    var TRIGGER = '#toggle-darkmode-input';
+    var TRIGGER = '#toggle-darkmode';
 
     // A mesma chave que \theme_ldg\util\settings::color_mode() le no servidor.
     // Mudar uma sem a outra faz o modo voltar ao padrao no proximo carregamento.
@@ -61,7 +61,7 @@ define(['core_user/repository'], function(UserRepository) {
         document.body.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
 
         if (trigger) {
-            trigger.checked = dark;
+            trigger.setAttribute('aria-pressed', dark ? 'true' : 'false');
         }
 
         UserRepository.setUserPreference(PREFERENCE, dark ? 1 : 0);
@@ -76,10 +76,10 @@ define(['core_user/repository'], function(UserRepository) {
             }
 
             // O estado inicial vem do servidor; aqui so espelhamos no controle,
-            // senao o interruptor aparece desligado numa pagina escura.
-            trigger.checked = isDark();
+            // senao o botao anuncia "nao pressionado" numa pagina escura.
+            trigger.setAttribute('aria-pressed', isDark() ? 'true' : 'false');
 
-            trigger.addEventListener('change', function() {
+            trigger.addEventListener('click', function() {
                 apply(!isDark());
             });
         }

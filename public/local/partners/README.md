@@ -56,6 +56,13 @@ Com outro tema a landing continua existindo em `/local/partners/index.php`, mas
 o visitante anônimo para fora de `/` **antes** de qualquer código de tema rodar,
 então a landing nunca chega a ser renderizada e parece que o plugin não funciona.
 
+**Na home o tema não desenha cromo nenhum.** A landing já traz a própria barra de
+seções e o próprio rodapé, e enquanto o layout de frontpage também montava a
+navbar e o rodapé do tema, quem abria a raiz do domínio via duas barras e dois
+rodapés, um dentro do outro. A página servida em `/` é idêntica à de
+`/local/partners/index.php` — e um cenário behat conta os elementos para que
+continue sendo.
+
 ### Para a confirmação de e-mail funcionar
 
 O site precisa **conseguir enviar e-mail** (SMTP configurado em
@@ -129,6 +136,56 @@ telefone e IP de quem talvez nem exista.
   inteira; a aprovada perde nome, e-mail, telefone, mensagem e IP, mas a linha
   fica, porque existe uma **empresa** criada a partir dela.
 
+## Onde mora o estilo
+
+**No plugin, em `styles.css`** — e essa é a diferença que sustenta tudo o mais.
+O `theme_config` varre `styles.css` de todo plugin e o injeta na CSS compilada
+de **qualquer** tema, então a landing e o cadastro renderizam igual sob
+`theme_ldg`, `theme_boost` e `theme_moove`. Enquanto o estilo morava em
+`theme/ldg/scss/ldg/_landing.scss`, as mesmas páginas saíam cruas nos outros
+dois.
+
+Isso é uma **exceção deliberada** à regra do projeto de que o tema pinta e o
+plugin entrega marcação. A regra continua valendo para o `format_ldg`; aqui ela
+não serve, porque o requisito é justamente não depender do tema.
+
+Consequências que valem conhecer:
+
+- **Todo seletor carrega o escopo `.ldgp`.** A CSS de plugin entra *antes* da do
+  tema, e em empate de especificidade o tema vence. Uma regra sem o escopo
+  funciona sob Boost e desaparece sob o `ldg`, em silêncio.
+- **Os tokens vivem em `.ldgp`, nunca em `:root`.** O `:root` é o `<html>`, e o
+  atributo de modo de cor é escrito no wrapper.
+- **As fontes são servidas pelo próprio plugin**, e não pelo Google Fonts: a
+  landing é pública, e requisição a terceiro numa página pública entrega o IP de
+  todo visitante a quem não precisa dele.
+
+> **Editou o `styles.css` e nada mudou na tela? Suba o `version.php`.** O
+> `purge_caches` **não** invalida CSS de plugin. É a armadilha que mais custa
+> tempo aqui, e o sintoma é sempre o mesmo: "a correção não funcionou".
+
+## Modo claro e escuro
+
+A página nasce **escura**, resolvida no servidor a partir da preferência
+`dark-mode-on` — a mesma chave que o `theme_ldg` e o `theme_moove` usam, então a
+escolha vale nos dois sentidos.
+
+O alternador existe porque **o `theme_boost` do 5.2 não tem nenhum**, e o
+público desta página é o visitante anônimo, que também não tem preferência de
+usuário para guardar: para ele, a escolha vai no `localStorage`, e um `<script>`
+inline corrige o atributo antes da pintura para não piscar.
+
+## Descoberta por buscador
+
+`classes/seo.php` monta `description`, `robots`, `canonical`, Open Graph,
+Twitter, `hreflang` por idioma instalado, e um grafo JSON-LD com `Organization`,
+`WebSite`, `WebPage`, `FAQPage` e `Service` com as ofertas.
+
+**Nada ali é inventado.** Preço e moeda saem do banco, o FAQ do schema é o mesmo
+da tela, e todo campo de marca que ninguém preencheu simplesmente não é
+publicado. Os campos de marca ficam em `seo::brand()`, vazios: razão social,
+identificador fiscal, endereço, telefone, e-mail e perfis oficiais.
+
 ## Armadilhas
 
 **`MESSAGE_DEFAULT_LOGGEDIN` não existe no Moodle 5.2** e derruba o upgrade em
@@ -141,6 +198,22 @@ sintoma é não haver sintoma nenhum.
 **Aprovar é idempotente por `companyid`.** Duas submissões não podem produzir
 duas categorias, e a checagem de estado vem **antes** de qualquer escrita.
 
+**Nunca cite uma tag de mustache dentro de um comentário de mustache.** O
+comentário termina no **primeiro** `}}`, e todo o resto do docblock — incluindo o
+*Example context* — sai como parágrafo na página pública. Já aconteceu, e só a
+captura de tela mostrou.
+
+**`addGroup` com `$appendName = true` renomeia o campo em silêncio.** O `planid`
+viraria `plangroup[planid]`, e `api::submit()` gravaria `null` em toda
+candidatura.
+
+**O `.d-flex` do Bootstrap é `display: flex !important`.** Uma grade declarada
+por cima é ignorada, e o `getComputedStyle` mostra as duas coisas ao mesmo tempo.
+
+**Com `cachejs` ligado o Moodle serve o AMD compilado.** Sem `amd/build/`, o
+módulo não roda — botão que não faz nada, sem erro no console. `npx grunt amd`
+gera, e os arquivos vão versionados.
+
 ## Testes
 
 ```bash
@@ -148,4 +221,20 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
   php vendor/bin/phpunit --testsuite local_partners_testsuite
 ```
 
-29 testes: os três caminhos de envio, a confirmação, a aprovação e a privacidade.
+**56 testes**: os três caminhos de envio, a confirmação, a aprovação, a
+privacidade, o contexto da landing e os dados estruturados.
+
+E **20 cenários behat**, dos quais nove exigem navegador de verdade porque
+**medem a tela** — coluna única no celular, três colunas no desktop, a barra
+grudando abaixo do cabeçalho, o alvo de toque de 44px, e o campo-armadilha fora
+da tela sob `boost`, `moove` e `ldg`:
+
+```bash
+moodev up --full
+docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+  vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
+  --profile=chrome --tags "@local_partners"
+```
+
+A conferência visual contra o mockup, que número não decide, está em
+[`docs/data-validation/local-partners-layout.md`](../../../docs/data-validation/local-partners-layout.md).

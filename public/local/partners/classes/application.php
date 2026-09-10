@@ -48,6 +48,34 @@ class application extends persistent {
     /** @var string Recusada. */
     const STATUS_REJECTED = 'rejected';
 
+    /** @var string Faixa declarada: ate 100 alunos ativos por mes. */
+    const BAND_UPTO_100 = 'upto100';
+
+    /** @var string Faixa declarada: de 100 a 1.000. */
+    const BAND_100_TO_1000 = '100to1000';
+
+    /** @var string Faixa declarada: de 1.000 a 5.000. */
+    const BAND_1000_TO_5000 = '1000to5000';
+
+    /** @var string Faixa declarada: mais de 5.000. */
+    const BAND_OVER_5000 = 'over5000';
+
+    /**
+     * As faixas, na ordem em que aparecem no formulario.
+     *
+     * Sao texto, e nao numero de ordem: um inteiro remapearia em silencio se a
+     * lista mudasse, e a "faixa 2" de hoje viraria outra coisa amanha sem
+     * ninguem perceber.
+     *
+     * @var string[]
+     */
+    const LEARNER_BANDS = [
+        self::BAND_UPTO_100,
+        self::BAND_100_TO_1000,
+        self::BAND_1000_TO_5000,
+        self::BAND_OVER_5000,
+    ];
+
     /**
      * Define as propriedades.
      *
@@ -80,6 +108,21 @@ class application extends persistent {
                 'default' => null,
             ],
             'planid' => [
+                'type' => PARAM_INT,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
+            'country' => [
+                'type' => PARAM_ALPHA,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
+            'learnersband' => [
+                'type' => PARAM_ALPHANUM,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+            ],
+            'termsaccepted' => [
                 'type' => PARAM_INT,
                 'null' => NULL_ALLOWED,
                 'default' => null,
@@ -177,6 +220,80 @@ class application extends persistent {
 
         if (!plan::record_exists((int) $value)) {
             return new lang_string('errorplannotfound', 'local_partners');
+        }
+
+        return true;
+    }
+
+    /**
+     * O rotulo de uma faixa, traduzido.
+     *
+     * A chave de idioma NAO e derivada do valor da faixa. Derivar produziria
+     * 'learnersband100to1000' e 'learnersband1000to5000', que em ordem
+     * alfabetica de verdade ficam ao contrario do que qualquer pessoa espera -
+     * e o phpcs cobra a ordem do arquivo de idioma. Nomes por tamanho resolvem,
+     * e o numero fica no texto, que e onde o leitor procura.
+     *
+     * @param string $band Uma das LEARNER_BANDS.
+     * @return string
+     */
+    public static function band_label(string $band): string {
+        $keys = [
+            self::BAND_UPTO_100 => 'learnersbandsmall',
+            self::BAND_100_TO_1000 => 'learnersbandmedium',
+            self::BAND_1000_TO_5000 => 'learnersbandlarge',
+            self::BAND_OVER_5000 => 'learnersbandxlarge',
+        ];
+
+        if (!isset($keys[$band])) {
+            return '';
+        }
+
+        return get_string($keys[$band], 'local_partners');
+    }
+
+    /**
+     * O pais, quando informado, precisa ser um que o site ofereca.
+     *
+     * NAO usa 'choices' na definicao da propriedade: o persistent confere a
+     * lista antes de qualquer coisa e reprova o proprio nulo, porque
+     * in_array(null, [...]) e falso. Campo anulavel com lista fechada valida
+     * aqui, do mesmo jeito que o CNPJ e o plano.
+     *
+     * A lista e a do Moodle, e sem o parametro de "todos": se o administrador
+     * restringiu os paises do site, o formulario oferece menos e a validacao
+     * precisa concordar com o formulario.
+     *
+     * @param string|null $value
+     * @return true|lang_string
+     */
+    protected function validate_country($value) {
+        if ($value === null || $value === '') {
+            return true;
+        }
+
+        if (!array_key_exists((string) $value, get_string_manager()->get_list_of_countries())) {
+            return new lang_string('errorcountryinvalid', 'local_partners');
+        }
+
+        return true;
+    }
+
+    /**
+     * A faixa de alunos, quando informada, precisa ser uma das quatro.
+     *
+     * Mesma razao do validate_country para nao usar 'choices'.
+     *
+     * @param string|null $value
+     * @return true|lang_string
+     */
+    protected function validate_learnersband($value) {
+        if ($value === null || $value === '') {
+            return true;
+        }
+
+        if (!in_array((string) $value, self::LEARNER_BANDS, true)) {
+            return new lang_string('errorlearnersbandinvalid', 'local_partners');
         }
 
         return true;

@@ -111,6 +111,22 @@ class settings {
             }
         }
 
+        // O rodape do site fala a mesma lingua do rodape da landing: mesmos
+        // links legais, mesma razao social, mesmo credito. A chamada e por
+        // class_exists, como o resto do contato com o local_partners: a
+        // dependencia e daqui para la, e e opcional - sem o plugin, o rodape
+        // continua funcionando com o que o tema tem.
+        $site = get_site();
+
+        $templatecontext['sitename'] = format_string($site->shortname);
+        $templatecontext['year'] = userdate(time(), '%Y');
+        $templatecontext['haspartnersfooter'] = false;
+
+        if (class_exists('\local_partners\landing')) {
+            $templatecontext = array_merge($templatecontext, \local_partners\landing::site_footer());
+            $templatecontext['haspartnersfooter'] = true;
+        }
+
         $templatecontext['enablemobilewebservice'] = $CFG->enablemobilewebservice;
 
         if ($CFG->enablemobilewebservice) {

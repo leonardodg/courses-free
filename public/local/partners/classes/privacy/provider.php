@@ -63,6 +63,9 @@ class provider implements
             'contactemail' => 'privacy:metadata:application:contactemail',
             'contactphone' => 'privacy:metadata:application:contactphone',
             'message' => 'privacy:metadata:application:message',
+            'country' => 'privacy:metadata:application:country',
+            'learnersband' => 'privacy:metadata:application:learnersband',
+            'termsaccepted' => 'privacy:metadata:application:termsaccepted',
             'submitterip' => 'privacy:metadata:application:submitterip',
             'userid' => 'privacy:metadata:application:userid',
             'reviewerid' => 'privacy:metadata:application:reviewerid',
@@ -172,6 +175,11 @@ class provider implements
                         'website' => $record->website,
                         'message' => $record->message,
                         'status' => $record->status,
+                        'country' => $record->country,
+                        'learnersband' => $record->learnersband,
+                        'termsaccepted' => $record->termsaccepted
+                            ? \core_privacy\local\request\transform::datetime($record->termsaccepted)
+                            : null,
                         'submitterip' => $record->submitterip,
                         'timecreated' => \core_privacy\local\request\transform::datetime($record->timecreated),
                     ]
@@ -193,6 +201,15 @@ class provider implements
      *   nome, e-mail, telefone, mensagem e IP saem; razao social, CNPJ e a
      *   empresa criada ficam, porque sao dados da PESSOA JURIDICA e nao de quem
      *   preencheu o formulario.
+     *
+     * Pelo mesmo criterio, PAIS e FAIXA DE ALUNOS ficam: descrevem a operacao,
+     * e nao a pessoa.
+     *
+     * O ACEITE DOS TERMOS tambem fica, e por uma razao mais forte: ele e o
+     * registro de um ato juridico. Apaga-lo destruiria a prova de que a empresa
+     * consentiu - justamente o documento que a lei de protecao de dados espera
+     * que exista. Quem apagar isto por engano nao vai descobrir o estrago no
+     * dia em que apagar.
      *
      * @param string $select Trecho de WHERE que identifica os usuarios.
      * @param array $params

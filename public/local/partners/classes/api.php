@@ -70,6 +70,12 @@ class api {
             'contactphone' => !empty($data->contactphone) ? $data->contactphone : null,
             'website' => !empty($data->website) ? $data->website : null,
             'planid' => !empty($data->planid) ? (int) $data->planid : null,
+            'country' => !empty($data->country) ? $data->country : null,
+            'learnersband' => !empty($data->learnersband) ? $data->learnersband : null,
+            // O aceite guarda QUANDO, e nao "sim": um booleano valendo 1 em toda
+            // linha e redundante com a existencia da linha. Quem nao aceitou
+            // fica nulo - zero diria "recusou", que e outra afirmacao.
+            'termsaccepted' => !empty($data->termsaccepted) ? time() : null,
             'message' => !empty($data->message) ? $data->message : null,
             'status' => $needsconfirmation ? application::STATUS_UNCONFIRMED : application::STATUS_PENDING,
             'userid' => $authenticated ? (int) $USER->id : null,

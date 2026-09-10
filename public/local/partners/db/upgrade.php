@@ -66,5 +66,34 @@ function xmldb_local_partners_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026090100, 'local', 'partners');
     }
 
+    if ($oldversion < 2026091000) {
+        $table = new xmldb_table('local_partners_application');
+
+        // O terceiro campo do construtor depois do default e o ANTERIOR, e ele
+        // precisa bater com a ordem do install.xml - senao o
+        // check_database_schema acusa a divergencia no proximo ambiente novo.
+        $field = new xmldb_field('country', XMLDB_TYPE_CHAR, '2', null, null, null, null, 'planid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('learnersband', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'country');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('termsaccepted', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'learnersband');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // As tres ficam NULAS nas candidaturas que ja existem, e e de proposito.
+        // Pais e faixa ninguem declarou; o aceite, principalmente, nao se
+        // retroage: preencher com 1 seria inventar um consentimento que ninguem
+        // deu, e com 0 seria registrar uma recusa que tambem nao houve.
+
+        upgrade_plugin_savepoint(true, 2026091000, 'local', 'partners');
+    }
+
     return true;
 }

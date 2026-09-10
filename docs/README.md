@@ -9,6 +9,7 @@ split de pagamento. Gateways: Mercado Pago e Asaas.
 |---|---|
 | entender a estrutura de worktrees | [`dev/estrutura-worktrees.md`](dev/estrutura-worktrees.md) |
 | montar o ambiente e começar a codar | [`dev/moodev.md`](dev/moodev.md) e [`dev/guia-worktrees.md`](dev/guia-worktrees.md) |
+| **saber como uma feature se faz aqui** | [`dev/padrao-de-implementacao.md`](dev/padrao-de-implementacao.md) |
 | mandar a mudança para produção | [`dev/fluxo-de-contribuicao.md`](dev/fluxo-de-contribuicao.md) |
 | entender **por que** o sistema é assim | [`architecture/decisoes-marketplace.md`](architecture/decisoes-marketplace.md) |
 | saber o que existe e o que falta | [`architecture/estado-e-proximas-fases.md`](architecture/estado-e-proximas-fases.md) |
@@ -17,6 +18,8 @@ split de pagamento. Gateways: Mercado Pago e Asaas.
 | **configurar uma instalação nova** | [`operacao/configuracao-inicial.md`](operacao/configuracao-inicial.md) |
 | configurar **um plugin** específico | o `README.md` dentro do diretório dele |
 | saber que dado pessoal é coletado | [`legal/mapa-de-dados-pessoais.md`](legal/mapa-de-dados-pessoais.md) |
+| **publicar termos, privacidade e cookies** | [`legal/politicas-modelo.md`](legal/politicas-modelo.md) |
+| **cadastrar o site no Google** | [`operacao/cadastrar-no-google.md`](operacao/cadastrar-no-google.md) |
 
 ### Os READMEs dos plugins
 

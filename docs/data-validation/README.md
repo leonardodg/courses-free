@@ -8,6 +8,7 @@ Como se verifica que o sistema funciona — e o que ainda não foi visto funcion
 | [`asaas-sandbox.md`](asaas-sandbox.md) | provar o **split** no Asaas: contas, webhook, script e passo a passo com `curl` |
 | [`asaas-assinatura.md`](asaas-assinatura.md) | provar o **ciclo** da assinatura no Asaas: cobranca automatica, corte por falta de pagamento e volta ao pagar a atrasada |
 | [`mercadopago-split.md`](mercadopago-split.md) | provar o **split** no Mercado Pago: as três contas, painel, túnel e as três rodadas |
+| [`local-partners-layout.md`](local-partners-layout.md) | provar o **layout** da landing e do cadastro nas cinco larguras e nos três temas |
 
 Scripts em [`scripts/`](scripts/). Credenciais **nunca** entram aqui: ficam em
 `.devcontainer/secrets/`, coberto pelo `.gitignore`. Este repositório está no

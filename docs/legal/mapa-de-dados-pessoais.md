@@ -60,9 +60,22 @@ A tabela mais sensível do projeto, porque o formulário é **público e anônim
 | `companyname`, `cnpj` | pessoa **jurídica** — não é dado pessoal de quem preencheu |
 | `contactname`, `contactemail`, `contactphone` | pessoa natural |
 | `message` | texto livre; pode conter qualquer coisa que a pessoa escreveu |
+| `country`, `learnersband` | atributos da **operação**, como a razão social — não identificam ninguém |
+| `termsaccepted` | **momento** do aceite dos termos, não um booleano |
 | `submitterip` | serve **só** ao limite de taxa |
 | `userid` | presente apenas quando o envio veio de alguém autenticado |
 | `reviewerid` | quem decidiu — dado de um usuário do site |
+
+**O aceite sobrevive ao pedido de exclusão, e é de propósito.** Numa candidatura
+aprovada, o esquecimento tira nome, e-mail, telefone, mensagem e IP, mas mantém
+`termsaccepted`: ele é o registro de um ato jurídico, e apagá-lo destruiria a
+prova de que a empresa consentiu — justamente o documento que a LGPD espera que
+exista. `country` e `learnersband` ficam pelo mesmo critério que `companyname` e
+`cnpj`: descrevem a operação, não a pessoa.
+
+Candidatura anterior a setembro de 2026 tem os três **nulos**, e assim
+permanecem. Retroagir o aceite com `1` inventaria um consentimento que ninguém
+deu; com `0`, registraria uma recusa que também não houve.
 
 **Dois regimes diferentes, e a distinção importa:**
 

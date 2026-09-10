@@ -32,8 +32,21 @@ use local_partners\landing;
 
 $PAGE->set_context(\core\context\system::instance());
 $PAGE->set_url(new moodle_url('/local/partners/index.php'));
-$PAGE->set_pagelayout('standard');
-$PAGE->set_title(get_string('landingtitle', 'local_partners'));
+// A barra de secoes e o UNICO menu desta pagina.
+//
+// O layout 'embedded' nao traz navbar, drawer nem rodape - e definido
+// pelo theme_boost e herdado pelo ldg e pelo moove, entao as tres
+// renderizam igual. O preco e ter o proprio rodape, que esta em
+// templates/footer.mustache, e o proprio atalho para o conteudo.
+$PAGE->set_pagelayout('embedded');
+// A classe libera a largura no styles.css. O layout 'standard' limita a
+// .main-inner a largura de leitura, o que corta o hero pela metade - medido em
+// 720px dentro de um viewport de 1440.
+$PAGE->add_body_class('ldgp-page');
+// O title da aba NAO e o texto do H1. O H1 fala com quem ja esta na
+// pagina; o title fala com quem esta lendo uma lista de resultados de
+// busca e ainda nao clicou. O nome do site e anexado pelo Moodle.
+$PAGE->set_title(\local_partners\seo::page_title());
 $PAGE->set_heading('');
 
 if (!landing::is_enabled()) {

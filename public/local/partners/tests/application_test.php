@@ -270,6 +270,94 @@ final class application_test extends \advanced_testcase {
     }
 
     /**
+     * Pais fora da lista do Moodle nao entra.
+     *
+     * O pais nao e enfeite de formulario: e ele que decide moeda e conta de
+     * split la na frente, e o mesmo alfabeto ISO que a oferta usa.
+     *
+     * @return void
+     */
+    public function test_pais_invalido_e_recusado(): void {
+        $this->resetAfterTest();
+        $this->as_anonymous_visitor();
+
+        $this->expectException(\core\invalid_persistent_exception::class);
+
+        api::submit($this->data(['country' => 'XX']));
+    }
+
+    /**
+     * Faixa de alunos fora da lista nao entra.
+     *
+     * @return void
+     */
+    public function test_faixa_de_alunos_fora_da_lista_e_recusada(): void {
+        $this->resetAfterTest();
+        $this->as_anonymous_visitor();
+
+        $this->expectException(\core\invalid_persistent_exception::class);
+
+        api::submit($this->data(['learnersband' => 'muitos']));
+    }
+
+    /**
+     * Pais e faixa chegam a linha do jeito que foram informados.
+     *
+     * @return void
+     */
+    public function test_pais_e_faixa_chegam_a_linha(): void {
+        $this->resetAfterTest();
+        $this->as_anonymous_visitor();
+
+        $application = api::submit($this->data([
+            'country' => 'BR',
+            'learnersband' => application::BAND_100_TO_1000,
+        ]));
+
+        $this->assertSame('BR', $application->get('country'));
+        $this->assertSame(application::BAND_100_TO_1000, $application->get('learnersband'));
+    }
+
+    /**
+     * O aceite grava o MOMENTO, e nao um "sim".
+     *
+     * Um booleano valendo 1 em toda linha e redundante com a existencia da
+     * linha - nao prova nada. O que tem valor probatorio e quando.
+     *
+     * @return void
+     */
+    public function test_o_aceite_grava_o_momento_e_nao_um_sim(): void {
+        $this->resetAfterTest();
+        $this->as_anonymous_visitor();
+
+        $antes = time();
+        $application = api::submit($this->data(['termsaccepted' => 1]));
+
+        $aceite = (int) $application->get('termsaccepted');
+
+        $this->assertGreaterThanOrEqual($antes, $aceite);
+        $this->assertLessThanOrEqual(time(), $aceite);
+    }
+
+    /**
+     * Candidatura sem aceite fica com nulo, e nao com zero.
+     *
+     * As que ja estao na fila entraram antes de o aceite existir. Retroagir com
+     * 1 inventaria um consentimento que ninguem deu, e zero diria "recusou",
+     * que tambem nao aconteceu. Nulo e a unica verdade disponivel.
+     *
+     * @return void
+     */
+    public function test_candidatura_sem_aceite_fica_com_nulo(): void {
+        $this->resetAfterTest();
+        $this->as_anonymous_visitor();
+
+        $application = api::submit($this->data());
+
+        $this->assertNull($application->get('termsaccepted'));
+    }
+
+    /**
      * Reenvio substitui a nao confirmada, em vez de acumular ou travar.
      *
      * Quem nao recebeu o e-mail precisa poder tentar de novo; sem isto, o

@@ -134,6 +134,79 @@ final class privacy_test extends \advanced_testcase {
     }
 
     /**
+     * Pais, faixa e aceite sobrevivem ao esquecimento numa candidatura aprovada.
+     *
+     * Pais e faixa sao atributos da OPERACAO, como a razao social e o CNPJ -
+     * nao identificam ninguem. O aceite e o caso forte: e o registro de um ato
+     * juridico, e apaga-lo destruiria a prova de que a empresa consentiu, que e
+     * exatamente o documento que a propria lei de protecao de dados espera que
+     * exista.
+     *
+     * @return void
+     */
+    public function test_aprovada_guarda_pais_faixa_e_aceite(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+        $application = $this->submit_as($user, [
+            'country' => 'BR',
+            'learnersband' => application::BAND_1000_TO_5000,
+            'termsaccepted' => 1,
+        ]);
+
+        $this->setAdminUser();
+        api::approve($application, (object) ['shortname' => 'editoraaceite', 'ownerid' => null]);
+
+        $this->delete_for($user);
+
+        $record = $DB->get_record(application::TABLE, ['id' => $application->get('id')]);
+
+        $this->assertSame('BR', $record->country);
+        $this->assertSame(application::BAND_1000_TO_5000, $record->learnersband);
+        $this->assertNotEmpty($record->termsaccepted);
+    }
+
+    /**
+     * O que a pessoa enviou volta para ela por inteiro, com os campos novos.
+     *
+     * @return void
+     */
+    public function test_export_devolve_pais_faixa_e_aceite(): void {
+        $this->resetAfterTest();
+
+        \core_privacy\local\request\writer::reset();
+
+        $user = $this->getDataGenerator()->create_user();
+        $application = $this->submit_as($user, [
+            'country' => 'BR',
+            'learnersband' => application::BAND_UPTO_100,
+            'termsaccepted' => 1,
+        ]);
+
+        $context = \core\context\system::instance();
+
+        provider::export_user_data(new approved_contextlist(
+            \core_user::get_user($user->id),
+            'local_partners',
+            [$context->id]
+        ));
+
+        $exported = \core_privacy\local\request\writer::with_context($context)->get_data([
+            get_string('privacy:path:applications', 'local_partners'),
+            $application->get('id'),
+        ]);
+
+        $this->assertSame('BR', $exported->country);
+        $this->assertSame(application::BAND_UPTO_100, $exported->learnersband);
+        // A data sai formatada, e nao como carimbo cru: quem pede os proprios
+        // dados le uma data, nao um inteiro de epoch.
+        $this->assertNotEmpty($exported->termsaccepted);
+        $this->assertIsNotNumeric($exported->termsaccepted);
+    }
+
+    /**
      * A exclusao de um usuario nao encosta na candidatura de outro.
      *
      * @return void
