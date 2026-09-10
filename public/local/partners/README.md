@@ -52,9 +52,31 @@ Precisa de **duas** coisas, e a segunda costuma ser esquecida:
 Com outro tema a landing continua existindo em `/local/partners/index.php`, mas
 `/` mostra a frontpage padrão.
 
-**`enablemyhome` desligado quebra isto**, e o sintoma engana: o core redireciona
-o visitante anônimo para fora de `/` **antes** de qualquer código de tema rodar,
-então a landing nunca chega a ser renderizada e parece que o plugin não funciona.
+**`enablemyhome` desligado quebra isto** — *Administração do site → Aparência →
+Navegação → Painel ativado*. O sintoma engana duas vezes: o core redireciona o
+visitante anônimo para fora de `/` **antes** de qualquer código de tema rodar,
+então a landing nunca chega a ser renderizada; e o destino é a **tela de login**,
+o que faz procurar em *Segurança → Políticas do site* e mexer no `forcelogin`,
+que não tem nada a ver. O trecho é `public/index.php:79`:
+
+```php
+if (empty($CFG->enablemyhome)) {
+    if (!isloggedin()) {
+        // Non-logged-in users must log in first (forcelogin may be off, but the
+        // page they are headed for is disabled, so send them to the login page).
+        redirect(get_login_url());
+    }
+```
+
+Diagnóstico de uma linha:
+
+```bash
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://SEU-SITE/
+```
+
+`200` e vazio: servindo. `303` para `/login/index.php`: é o Painel, não o login.
+E isso derruba a descoberta por buscador inteira junto — canônica, `hreflang` e
+sitemap apontam todos para a raiz.
 
 **Na home o tema não desenha cromo nenhum.** A landing já traz a própria barra de
 seções e o próprio rodapé, e enquanto o layout de frontpage também montava a

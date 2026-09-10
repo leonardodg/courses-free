@@ -137,6 +137,31 @@ A terceira é a que engana: com ela desligada, o core **redireciona o visitante
 anônimo para fora de `/` antes de qualquer código de tema rodar**. A landing
 nunca chega a ser renderizada, e parece que o plugin não funciona.
 
+**O destino do redirecionamento é a tela de login, e é por isso que ele engana
+duas vezes**: quem vê o sintoma procura em *Segurança → Políticas do site*, mexe
+no `forcelogin` e não resolve nada, porque não é o `forcelogin`. O trecho é este,
+em `public/index.php:79`:
+
+```php
+if (empty($CFG->enablemyhome)) {
+    if (!isloggedin()) {
+        // Non-logged-in users must log in first (forcelogin may be off, but the
+        // page they are headed for is disabled, so send them to the login page).
+        redirect(get_login_url());
+    }
+```
+
+O teste, de uma linha, sem abrir o navegador:
+
+```bash
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://SEU-SITE/
+```
+
+`200` e vazio: a landing está servindo. `303` para `/login/index.php`: é o
+Painel. **Isto derruba o SEO inteiro junto** — canônica, `hreflang` e a entrada
+principal do sitemap apontam todos para a raiz. Ver
+[`../dev/seo-canonical-e-hreflang.md`](../dev/seo-canonical-e-hreflang.md).
+
 ### reCAPTCHA
 
 As chaves são **do site**, em `/admin/settings.php?section=manageauths`. O
@@ -225,6 +250,7 @@ navegador não confirma nada.
 | Webhook em 401 | token divergente entre painel e Moodle |
 | Empresa "sem meio de pagamento" após vincular | o gateway precisa estar **habilitado**, não só ter token |
 | Landing não aparece em `/` | `enablemyhome` desligado, ou tema não é o `theme_ldg` |
+| **`/` redireciona para a tela de login**, e nada nas configurações de login resolve | `enablemyhome` desligado. **Não é o `forcelogin`** — o core manda o anônimo para o login porque o Painel, e não a home, é o destino que ele calculou. Ver abaixo |
 | Fila de candidaturas vazia mesmo com envios | confirmação ligada e SMTP quebrado |
 | Logo trocada continua a antiga | falta purgar cache |
 | Vínculo do Asaas recusa salvar | falta a chave de cifragem |

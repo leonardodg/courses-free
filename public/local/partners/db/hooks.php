@@ -34,4 +34,14 @@ $callbacks = [
         'callback' => \local_partners\hook_callbacks::class . '::before_standard_head_html_generation',
         'priority' => 0,
     ],
+    [
+        // O titulo da landing quando ela serve a home.
+        //
+        // Precisa ser ESTE hook, e nao o de <head>: o template do tema resolve
+        // `page_title` antes de `standard_head_html`, entao um set_title() feito
+        // la nao tem efeito - e falha em silencio.
+        'hook' => \core\hook\output\before_http_headers::class,
+        'callback' => \local_partners\hook_callbacks::class . '::before_http_headers',
+        'priority' => 0,
+    ],
 ];

@@ -47,6 +47,16 @@ use moodle_url;
  */
 class seo {
     /**
+     * A landing: a raiz quando ela e a home, ou a URL propria do plugin.
+     */
+    public const SURFACE_LANDING = 'landing';
+
+    /**
+     * O formulario publico de candidatura.
+     */
+    public const SURFACE_APPLY = 'apply';
+
+    /**
      * Dados da marca que o Moodle NAO tem como saber.
      *
      * Ficam em codigo, e nao em configuracao de administrador, por decisao do
@@ -150,13 +160,57 @@ class seo {
      * fala com quem esta lendo uma lista de resultados e ainda nao clicou, e
      * precisa dizer o que a pagina resolve em menos de 60 caracteres.
      *
-     * O nome do site e anexado pelo proprio Moodle, respeitando
-     * $CFG->sitenameintitle.
+     * A MARCA ENTRA AQUI, e nao pelo nome do site. O core anexaria o nome curto
+     * do site (ver moodle_page::set_title()), que e um valor unico no banco: o
+     * titulo em portugues sairia com o sufixo em ingles. Vindo da string de
+     * idioma, a marca acompanha o idioma - e por isso quem chama precisa passar
+     * false no segundo parametro do set_title(), senao o nome do site vem por
+     * cima e o titulo fica com duas marcas.
+     *
+     * @param string $superficie
+     * @return string
+     */
+    public static function page_title(string $superficie = self::SURFACE_LANDING): string {
+        $titulo = $superficie === self::SURFACE_APPLY
+            ? get_string('applytitle', 'local_partners')
+            : get_string('seotitle', 'local_partners');
+
+        $marca = trim(get_string('brandname', 'local_partners'));
+
+        if ($marca === '') {
+            return $titulo;
+        }
+
+        return $titulo . ' | ' . $marca;
+    }
+
+    /**
+     * O nome do site, em texto puro, para dentro do JSON-LD.
+     *
+     * O format_string() escapa para HTML por padrao, e um "&" no nome do site
+     * vira "&amp;". Em atributo de meta tag isso esta certo - o navegador
+     * decodifica -, mas dentro de <script type="application/ld+json"> NAO:
+     * ali o conteudo e texto cru, e o parser le a entidade literalmente. O nome
+     * da empresa chega corrompido ao buscador, e nenhum validador reclama.
      *
      * @return string
      */
-    public static function page_title(): string {
-        return get_string('seotitle', 'local_partners');
+    protected static function site_name(): string {
+        global $SITE;
+
+        return format_string($SITE->fullname, true, ['escape' => false]);
+    }
+
+    /**
+     * A descricao desta superficie.
+     *
+     * @param string $superficie
+     * @return string
+     */
+    protected static function meta_description(string $superficie): string {
+        return $superficie === self::SURFACE_APPLY
+            ? get_string('applymetadescription', 'local_partners')
+            : get_string('metadescription', 'local_partners');
     }
 
     /**
@@ -181,11 +235,11 @@ class seo {
      *
      * @return string
      */
-    public static function head_html(): string {
+    public static function head_html(string $superficie = self::SURFACE_LANDING): string {
         $partes = array_merge(
-            self::meta_tags(),
-            self::alternate_links(),
-            [self::structured_data()]
+            self::meta_tags($superficie),
+            self::alternate_links($superficie),
+            [self::structured_data($superficie)]
         );
 
         return implode("\n", array_filter($partes)) . "\n"
@@ -194,15 +248,24 @@ class seo {
     }
 
     /**
-     * O endereco canonico da landing.
+     * O endereco da superficie, SEM parametro de idioma.
      *
-     * E a RAIZ quando a landing e a home, e a URL propria quando nao e. Duas
+     * E a raiz quando a landing e a home, e a URL propria quando nao e. Duas
      * paginas com o mesmo conteudo e sem canonical fazem o buscador escolher
      * uma delas por conta propria, e normalmente a errada.
      *
+     * Esta e a URL que serve de x-default: a versao que o Moodle escolhe
+     * sozinho, e a resposta certa para quem o buscador nao conseguiu
+     * classificar por idioma.
+     *
+     * @param string $superficie
      * @return string
      */
-    public static function canonical_url(): string {
+    public static function base_url(string $superficie = self::SURFACE_LANDING): string {
+        if ($superficie === self::SURFACE_APPLY) {
+            return (new moodle_url('/local/partners/apply.php'))->out(false);
+        }
+
         $url = landing::replaces_frontpage()
             ? new moodle_url('/')
             : new moodle_url('/local/partners/index.php');
@@ -211,23 +274,63 @@ class seo {
     }
 
     /**
+     * O endereco canonico DESTA versao da pagina.
+     *
+     * Cada versao de idioma aponta para ELA MESMA, e nao para a versao sem
+     * parametro. Nao e preciosismo: canonical e hreflang se contradizem quando
+     * /?lang=pt_br declara canonica para /, e a canonica vence. O buscador
+     * consolida as versoes numa so e DESCARTA o cluster inteiro - a versao em
+     * portugues nunca chega a ser indexada, e o Search Console reporta isso
+     * como "pagina alternativa com tag canonica adequada", que parece um aviso
+     * benigno e nao e.
+     *
+     * O idioma sai da requisicao quando nao vem por parametro. O PARAM_LANG
+     * devolve vazio para idioma que nao esta instalado, entao um ?lang=xyz nao
+     * vira canonica.
+     *
+     * @param string $superficie
+     * @param string|null $lang Nulo le da requisicao.
+     * @return string
+     */
+    public static function canonical_url(
+        string $superficie = self::SURFACE_LANDING,
+        ?string $lang = null
+    ): string {
+        $base = self::base_url($superficie);
+        $lang ??= optional_param('lang', '', PARAM_LANG);
+
+        if ($lang === '') {
+            return $base;
+        }
+
+        return (new moodle_url($base, ['lang' => $lang]))->out(false);
+    }
+
+    /**
      * Meta tags de indexacao e de compartilhamento.
      *
+     * @param string $superficie
      * @return array
      */
-    protected static function meta_tags(): array {
-        global $SITE;
-
-        $title = format_string($SITE->fullname);
-        $descricao = get_string('metadescription', 'local_partners');
-        $url = self::canonical_url();
+    protected static function meta_tags(string $superficie = self::SURFACE_LANDING): array {
+        // O nome do SITE fica no og:site_name, que e o campo dele. O og:title e
+        // a manchete que o WhatsApp, o LinkedIn e o assistente de IA mostram:
+        // repetir a marca ali gasta a manchete sem dizer o que a pagina resolve.
+        //
+        // O site_name() vem SEM escape, e quem escapa e o s() aqui embaixo, uma
+        // vez so. Escapar nos dois lugares fazia um "&" no nome do site virar
+        // "&amp;amp;" no atributo, e o compartilhamento mostrava a entidade.
+        $site = self::site_name();
+        $title = self::page_title($superficie);
+        $descricao = self::meta_description($superficie);
+        $url = self::canonical_url($superficie);
         $imagem = (new moodle_url('/local/partners/pix/hero.jpg'))->out(false);
 
         $tags = [
             '<meta name="description" content="' . s($descricao) . '">',
             '<link rel="canonical" href="' . s($url) . '">',
             '<meta property="og:type" content="website">',
-            '<meta property="og:site_name" content="' . s($title) . '">',
+            '<meta property="og:site_name" content="' . s($site) . '">',
             '<meta property="og:title" content="' . s($title) . '">',
             '<meta property="og:description" content="' . s($descricao) . '">',
             '<meta property="og:url" content="' . s($url) . '">',
@@ -314,23 +417,71 @@ class seo {
      *
      * @return array
      */
-    protected static function alternate_links(): array {
-        $canonica = self::canonical_url();
+    protected static function alternate_links(string $superficie = self::SURFACE_LANDING): array {
         $links = [];
 
+        // Cada alternate e a CANONICA daquele idioma, e nao uma URL montada por
+        // fora: se as duas divergirem em um caractere, o buscador procura o link
+        // de retorno no endereco anunciado, nao acha, e descarta o cluster.
         foreach (array_keys(get_string_manager()->get_list_of_translations()) as $lang) {
-            $url = new moodle_url($canonica, ['lang' => $lang]);
-
             $links[] = '<link rel="alternate" hreflang="' . s(self::hreflang($lang))
-                . '" href="' . s($url->out(false)) . '">';
+                . '" href="' . s(self::canonical_url($superficie, $lang)) . '">';
         }
 
         // O x-default aponta para a pagina SEM parametro de idioma: e a versao
         // que o Moodle escolhe sozinho, e a resposta certa para quem o buscador
         // nao conseguiu classificar.
-        $links[] = '<link rel="alternate" hreflang="x-default" href="' . s($canonica) . '">';
+        $links[] = '<link rel="alternate" hreflang="x-default" href="'
+            . s(self::base_url($superficie)) . '">';
 
         return $links;
+    }
+
+    /**
+     * As entradas do sitemap, ja com o cluster de idioma de cada uma.
+     *
+     * UMA ENTRADA POR IDIOMA, e nao uma entrada com os alternates dentro. O
+     * formato antigo parecia economico e estava errado: o protocolo exige que
+     * cada URL do cluster tenha a propria entrada, repetindo o conjunto
+     * completo de alternates - inclusive a que aponta para ela mesma. Sem isso
+     * nao existe link de retorno, e o cluster e descartado inteiro.
+     *
+     * Vive aqui, e nao no sitemap.php, porque assim tem teste: script de saida
+     * direta so se prova abrindo o navegador.
+     *
+     * @return array
+     */
+    public static function sitemap_entries(): array {
+        $superficies = [
+            [self::SURFACE_LANDING, '1.0', 'weekly'],
+            [self::SURFACE_APPLY, '0.8', 'monthly'],
+        ];
+
+        $idiomas = array_keys(get_string_manager()->get_list_of_translations());
+        $entradas = [];
+
+        foreach ($superficies as [$superficie, $prioridade, $frequencia]) {
+            $alternates = [];
+
+            foreach ($idiomas as $lang) {
+                $alternates[self::hreflang($lang)] = self::canonical_url($superficie, $lang);
+            }
+
+            $alternates['x-default'] = self::base_url($superficie);
+
+            // A URL limpa e as por idioma sao todas <loc> proprias, e todas
+            // carregam o mesmo cluster.
+            foreach ($alternates as $url) {
+                $entradas[] = [
+                    'url' => $url,
+                    'priority' => $prioridade,
+                    'changefreq' => $frequencia,
+                    'alternates' => $alternates,
+                ];
+            }
+        }
+
+        return $entradas;
     }
 
     /**
@@ -371,14 +522,21 @@ class seo {
      *
      * @return string
      */
-    protected static function structured_data(): string {
-        $grafo = array_values(array_filter([
-            self::organization(),
-            self::website(),
-            self::webpage(),
-            self::faq_page(),
-            self::offer_catalog(),
-        ]));
+    protected static function structured_data(string $superficie = self::SURFACE_LANDING): string {
+        // A candidatura leva so a identidade e a propria pagina. O FAQ e os
+        // planos descrevem a landing: repeti-los aqui seria declarar que esta
+        // pagina responde perguntas que ela nao mostra, e validador recusa.
+        $pecas = $superficie === self::SURFACE_APPLY
+            ? [self::organization(), self::website(), self::webpage($superficie)]
+            : [
+                self::organization(),
+                self::website(),
+                self::webpage($superficie),
+                self::faq_page(),
+                self::offer_catalog(),
+            ];
+
+        $grafo = array_values(array_filter($pecas));
 
         $json = json_encode(
             ['@context' => 'https://schema.org', '@graph' => $grafo],
@@ -396,15 +554,13 @@ class seo {
      * @return array
      */
     protected static function organization(): array {
-        global $SITE;
-
         $marca = self::brand();
         $raiz = (new moodle_url('/'))->out(false);
 
         $org = [
             '@type' => 'Organization',
             '@id' => $raiz . '#organization',
-            'name' => format_string($SITE->fullname),
+            'name' => self::site_name(),
             'url' => $raiz,
         ];
 
@@ -449,14 +605,12 @@ class seo {
      * @return array
      */
     protected static function website(): array {
-        global $SITE;
-
         $raiz = (new moodle_url('/'))->out(false);
 
         return [
             '@type' => 'WebSite',
             '@id' => $raiz . '#website',
-            'name' => format_string($SITE->fullname),
+            'name' => self::site_name(),
             'url' => $raiz,
             'publisher' => ['@id' => $raiz . '#organization'],
             'inLanguage' => self::hreflang(current_language()),
@@ -468,16 +622,19 @@ class seo {
      *
      * @return array
      */
-    protected static function webpage(): array {
+    protected static function webpage(string $superficie = self::SURFACE_LANDING): array {
         $raiz = (new moodle_url('/'))->out(false);
-        $url = self::canonical_url();
+        $url = self::canonical_url($superficie);
+        $nome = $superficie === self::SURFACE_APPLY
+            ? get_string('applytitle', 'local_partners')
+            : get_string('landingtitle', 'local_partners');
 
         return [
             '@type' => 'WebPage',
             '@id' => $url . '#webpage',
             'url' => $url,
-            'name' => get_string('landingtitle', 'local_partners'),
-            'description' => get_string('metadescription', 'local_partners'),
+            'name' => $nome,
+            'description' => self::meta_description($superficie),
             'isPartOf' => ['@id' => $raiz . '#website'],
             'about' => ['@id' => $raiz . '#organization'],
             'inLanguage' => self::hreflang(current_language()),

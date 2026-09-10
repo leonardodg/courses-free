@@ -46,7 +46,9 @@ $PAGE->add_body_class('ldgp-page');
 // O title da aba NAO e o texto do H1. O H1 fala com quem ja esta na
 // pagina; o title fala com quem esta lendo uma lista de resultados de
 // busca e ainda nao clicou. O nome do site e anexado pelo Moodle.
-$PAGE->set_title(\local_partners\seo::page_title());
+// O false e obrigatorio: a marca ja vem na string de idioma, e deixar o core
+// anexar o nome do site poria uma segunda marca no mesmo titulo.
+$PAGE->set_title(\local_partners\seo::page_title(), false);
 $PAGE->set_heading('');
 
 if (!landing::is_enabled()) {
