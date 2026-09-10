@@ -29,6 +29,18 @@
 // fixos - no modo claro, --ldg-surface seria branco sobre a foto.
 
 body.pagelayout-login {
+    // O #page da tela de entrar sai BRANCO, e o branco vence tudo que esta
+    // dentro dele: o painel da marca cobre a metade esquerda, e a metade
+    // direita ficava um retangulo branco com um cartao escuro no meio - a
+    // pagina mais visitada do site com duas identidades ao mesmo tempo.
+    //
+    // Nao e a regra do .login-layout-right que falhou: aquela pinta a COLUNA,
+    // que continua transparente por desenho. O branco vem do #page, um degrau
+    // acima, e e la que ele precisa ser desfeito.
+    #page {
+        background-color: var(--ldg-bg);
+    }
+
     #page .login-layout-left {
         // O Boost pinta o painel com $primary enquanto a imagem carrega. Sem
         // isto, o azul chapado pisca antes da foto aparecer.

@@ -180,6 +180,13 @@ body .secondary-navigation .moremenu .nav-tabs .nav-link {
     margin-top: var(--ldg-navbar-height);
 }
 
+// A landing NAO tem navbar do tema, e por isso nao reserva altura para ela. Sem
+// esta excecao a pagina inicial abria com uma faixa vazia de 64px acima da barra
+// de secoes - o espaco de uma barra que nao esta la.
+#page.ldg-landing-page {
+    margin-top: 0;
+}
+
 [data-region="right-hand-drawer"].drawer {
     top: var(--ldg-navbar-height);
     height: calc(100% - var(--ldg-navbar-height));

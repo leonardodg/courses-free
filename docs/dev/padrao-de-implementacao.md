@@ -203,6 +203,26 @@ arquivo do core aqui.
 
 **Sem sessão, a sonda mede a tela de login** e diz que está tudo bem.
 
+**Antes de concluir que uma regra de CSS não pegou, confira o artefato que a
+página carregou.** A revisão muda a cada `purge_caches`, e a aba pode reusar a
+anterior — duas correções foram dadas como falhas por isso numa rodada só, e as
+duas estavam corretas:
+
+```bash
+url=$(curl -sk <pagina> | grep -oE 'styles.php/[^"]*' | head -1)
+curl -sk "https://localhost:8443/theme/$url" | grep -o 'SEU_SELETOR{[^}]*}'
+```
+
+**Meça as duas sessões.** Muita coisa muda entre o visitante anônimo e o usuário
+autenticado — que botão aparece, para onde a raiz do domínio leva, se o menu de
+idiomas fica na navbar ou dentro do menu do perfil. Uma bateria que só mede uma
+das duas passa dizendo metade.
+
+**Cromo duplicado não é erro de HTML, e nenhum teste de servidor o pega.** Quando
+um plugin desenha o próprio cabeçalho e rodapé e o tema também desenha os dele, o
+HTML dos dois está correto — o defeito é haver dois. A prova é contar:
+`I should see exactly 1 ".ldgp-bar" elements`.
+
 ## CSS de plugin que precisa funcionar em qualquer tema
 
 Um plugin com `styles.css` entra na CSS compilada de **todos** os temas:

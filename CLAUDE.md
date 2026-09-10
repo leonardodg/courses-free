@@ -241,17 +241,23 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 | Cenário behat de celular passa dizendo o que não é | O Moodle **escala** o viewport. Use `without runtime scaling` |
 | `'choices'` do persistent reprova campo anulável | A lista é conferida antes da validação customizada, e `in_array(null, [...])` é falso. Use `validate_<campo>()` |
 | `Could not open input file` num script de CLI | CLI do **core** fica na raiz (`admin/cli/`); de **plugin**, sob `public/` |
+| Duas navbars e dois rodapes na home | O plugin desenha o proprio cromo E o layout do tema desenha o dele. Nenhum teste de servidor pega: conte os elementos |
+| Marca vira palavra numa pagina so | `$PAGE->get_renderer('<plugin>')` nao tem `get_logo`; so o renderer do TEMA tem. Caia para o `$OUTPUT` |
+| Cenario behat sobre a home cai no login | O site do behat nasce sem Dashboard, e o `index.php` do core redireciona anonimo. Ponha `enablemyhome`, `forcelogin` e `theme` no cenario |
+| "A regra de CSS nao pegou" | A revisao muda a cada purge e a aba reusa a anterior. Confira o `styles.php/...` que a pagina carregou de verdade |
+| Metade branca na tela de entrar | O `#page` do layout de login sai `#fff` do Boost, e vence tudo dentro dele. Pintar a coluna nao resolve |
 
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **360 testes** (114 no núcleo, 48 no Asaas, 47 no
-`format_ldg`, **37 no `mod_ldgvideo`**, **56 no `local_partners`**, **24 no MP**,
+webhook, matrícula. **372 testes** (114 no núcleo, 48 no Asaas, 47 no
+`format_ldg`, **37 no `mod_ldgvideo`**, **68 no `local_partners`**, **24 no MP**,
 e 34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
 `theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
 
-O behat cobre **34 cenários** de quatro plugins, e **doze deles medem a tela** —
-três no vídeo e nove na captação de parceiros — é a única prova de que o `aspect-ratio` do `mod_ldgvideo` continua
+O behat cobre **50 cenários** de quatro plugins, e **vinte e um deles medem a
+tela** — três no vídeo, dezessete na captação de parceiros e um no tema. Os do
+vídeo são a única prova de que o `aspect-ratio` do `mod_ldgvideo` continua
 vencendo o `width` fixo que o `core_media_manager` escreve no iframe. Os quatro
 do `paygw_mercadopago` cobrem a configuração e a trava que impede habilitar o
 gateway sem token.
@@ -265,12 +271,26 @@ tema pinta; ela continua valendo para o `format_ldg`.
 
 Junto vieram três campos na candidatura (país, faixa de alunos e o **momento**
 do aceite dos termos), um alternador claro/escuro que o Boost não tem, e SEO com
-JSON-LD cujo preço sai do banco. Nove cenários behat **medem a tela**, e o
+JSON-LD cujo preço sai do banco. Dezessete cenários behat **medem a tela**, e o
 roteiro de conferência está em `docs/data-validation/local-partners-layout.md`.
 
 Sete defeitos daquela rodada só apareceram no navegador, e nenhum quebrou um
 teste — inclusive o docblock do mustache virando parágrafo na página pública.
 O método está em `docs/dev/padrao-de-implementacao.md`.
+
+**A segunda rodada, no mesmo dia, veio de conferência tela a tela**, e achou mais
+quatro do mesmo tipo: a raiz do domínio mostrando barra e rodapé em duplicata,
+porque o layout de frontpage do tema desenhava o cromo dele por cima do da
+landing; a marca virando palavra só no cadastro, porque ali quem renderiza é o
+renderer do PLUGIN, que não tem `get_logo`; o "Apply" repetido como âncora e como
+botão na mesma barra; e a tela de entrar com metade branca, vinda do `#page` do
+Boost.
+
+Dela saíram três decisões que valem daqui para frente: **a home e a landing são a
+mesma página e não podem divergir** — quem serve a landing na raiz não monta
+cromo nenhum; **rodapé e barras de controle ficam escuros nos dois modos**, como
+a navbar; e **quem já entrou vê SAIR onde o anônimo vê ENTRAR**, com `sesskey` no
+endereço.
 
 **O plano Free ganhou a peça dele** em 04/09/2026: o `mod_ldgvideo` e a
 separação dos papéis de empresa. A fronteira "vídeo fica fora da plataforma"

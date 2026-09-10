@@ -189,11 +189,52 @@ final class landing_page_test extends \advanced_testcase {
 
         foreach ($secoes as $secao) {
             $this->assertStringNotContainsString('[[', $secao['label']);
-            // Os dois lados: a secao existe na pagina...
+            // A secao existe na pagina, esteja ela na barra ou nao.
             $this->assertStringContainsString('id="' . $secao['id'] . '"', $html);
-            // ...e a barra tem um link que aponta para ela.
+
+            if (empty($secao['inbar'])) {
+                continue;
+            }
+
+            // E quem esta na barra tem um link que aponta para ela.
             $this->assertStringContainsString('href="#' . $secao['id'] . '"', $html);
         }
+    }
+
+    /**
+     * O "Apply" nao aparece duas vezes na barra.
+     *
+     * Ele e o BOTAO primario da barra, e enquanto tambem era ancora a mesma
+     * acao aparecia duas vezes a dois centimetros de distancia - uma como link
+     * de texto no meio das secoes, outra como botao azul na ponta.
+     *
+     * O `inbar` e o que separa os dois usos, e este teste segura os DOIS lados:
+     * a ancora sai da barra, e a secao continua existindo na pagina para o
+     * botao ter para onde levar.
+     *
+     * @return void
+     */
+    public function test_a_ancora_de_candidatura_nao_repete_o_botao_da_barra(): void {
+        $this->resetAfterTest();
+
+        $secoes = $this->contexto()['sections'];
+        $apply = null;
+
+        foreach ($secoes as $secao) {
+            if ($secao['id'] === 'ldgp-apply') {
+                $apply = $secao;
+            }
+        }
+
+        $this->assertNotNull($apply, 'a secao de candidatura sumiu da lista');
+        $this->assertFalse($apply['inbar'], 'a candidatura voltou a ser ancora da barra');
+
+        $html = $this->html();
+        $barra = substr($html, strpos($html, 'ldgp-bar-list'));
+        $barra = substr($barra, 0, strpos($barra, '</ul>'));
+
+        $this->assertStringNotContainsString('href="#ldgp-apply"', $barra);
+        $this->assertStringContainsString('id="ldgp-apply"', $html);
     }
 
     /**
@@ -340,5 +381,86 @@ final class landing_page_test extends \advanced_testcase {
         foreach (['@template', 'Context variables', 'Example context'] as $marca) {
             $this->assertStringNotContainsString($marca, $html, 'o docblock do template escapou para a pagina');
         }
+    }
+    /**
+     * A saida da sessao existe na barra, e leva a chave de sessao junto.
+     *
+     * O logout.php do Moodle recusa chamada sem sesskey, e com razao: uma
+     * <img src="/login/logout.php"> numa pagina de terceiro derrubaria a sessao
+     * de quem passasse por la. Um botao "Sair" que devolve erro e pior que
+     * nenhum botao.
+     *
+     * @return void
+     */
+    public function test_o_botao_de_sair_leva_a_chave_de_sessao(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $url = landing_page::logout_url();
+
+        $this->assertStringContainsString('/login/logout.php', $url);
+        $this->assertStringContainsString('sesskey=', $url);
+        $this->assertStringContainsString($url, $this->html());
+    }
+
+    /**
+     * Visitante anonimo nao recebe endereco de sair.
+     *
+     * Nao e detalhe de aparencia: sesskey() FABRICA uma sessao quando nao ha
+     * nenhuma, e o publico desta pagina e justamente quem ainda nao entrou.
+     *
+     * @return void
+     */
+    public function test_visitante_anonimo_nao_recebe_endereco_de_sair(): void {
+        $this->resetAfterTest();
+        $this->setUser(null);
+
+        $this->assertSame('', landing_page::logout_url());
+    }
+
+    /**
+     * A marca acha a logo mesmo quando o renderer recebido nao tem nenhuma.
+     *
+     * A pagina de cadastro renderiza pelo renderer DO PLUGIN, que nao expoe
+     * get_logo; a landing renderiza pelo do tema, que expoe. Com a mesma
+     * chamada, uma mostrava a imagem e a outra caia para a palavra - e o
+     * sintoma era "a marca some no cadastro".
+     *
+     * @return void
+     */
+    public function test_a_marca_cai_para_o_renderer_do_tema(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+
+        $doplugin = $PAGE->get_renderer('local_partners');
+        $marca = landing_page::brand($doplugin);
+
+        // Sem logo configurada no site de teste, o que se prova e que a busca
+        // percorre os dois renderers e devolve a estrutura completa - e nao que
+        // ha imagem, que depende de configuracao.
+        $this->assertArrayHasKey('haslogo', $marca);
+        $this->assertArrayHasKey('logolight', $marca);
+        $this->assertNotEmpty($marca['name']);
+    }
+
+    /**
+     * O rodape do SITE recebe a marca e a frase, e nao so os links legais.
+     *
+     * E a superficie que o theme_ldg consome. Sem estes dois campos o rodape do
+     * tema teria que escrever a propria frase, e as duas versoes divergiriam na
+     * primeira correcao de texto.
+     *
+     * @return void
+     */
+    public function test_o_rodape_do_site_leva_marca_e_frase(): void {
+        $this->resetAfterTest();
+
+        $rodape = \local_partners\landing::site_footer();
+
+        $this->assertArrayHasKey('brand', $rodape);
+        $this->assertArrayHasKey('haslogo', $rodape['brand']);
+        $this->assertNotEmpty($rodape['tagline']);
+        $this->assertStringNotContainsString('[[', $rodape['tagline']);
     }
 }

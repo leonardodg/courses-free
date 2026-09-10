@@ -35,8 +35,9 @@
     * sections - array de { id, label }
     * applyurl - URL do formulario de candidatura
     * brand - { name, homeurl, logolight, logodark, haslogo }
-    * loginurl - URL da tela de login; o botao some para quem ja entrou
-    * isloggedin - boolean
+    * loginurl - URL da tela de login, para quem ainda nao entrou
+    * logouturl - URL de sair, ja com sesskey, para quem entrou
+    * isloggedin - boolean; decide qual dos dois botoes aparece
     * languages - array de { code, hreflang, label, short, url, iscurrent }
     * haslanguages - boolean; falso quando o site tem um idioma so ou o menu
                      de idiomas esta desligado
@@ -45,6 +46,7 @@
     {
         "applyurl": "/local/partners/apply.php",
         "loginurl": "/login/index.php",
+        "logouturl": "/login/logout.php?sesskey=abc",
         "isloggedin": false,
         "brand": {"name": "LeoDG", "homeurl": "/local/partners/index.php",
                   "logolight": "/logo.svg", "logodark": "/logo-dark.svg", "haslogo": true},
@@ -56,8 +58,9 @@
              "url": "/local/partners/index.php?lang=pt_br", "iscurrent": false}
         ],
         "sections": [
-            {"id": "ldgp-features", "label": "Features"},
-            {"id": "ldgp-pricing", "label": "Plans"}
+            {"id": "ldgp-features", "label": "Features", "inbar": true},
+            {"id": "ldgp-pricing", "label": "Plans", "inbar": true},
+            {"id": "ldgp-apply", "label": "Apply", "inbar": false}
         ]
     }
 }}
@@ -81,8 +84,12 @@
 
         <nav class="ldgp-bar-nav" aria-label="{{#str}}sectionnavlabel, local_partners{{/str}}">
             <ul class="ldgp-bar-list">
+                {{! O `inbar` deixa o "Apply" de fora: ele ja e o botao primario
+                    a dois centimetros dali, e a ancora repetia a mesma acao. }}
                 {{#sections}}
-                    <li><a class="ldgp-bar-link" href="#{{id}}">{{label}}</a></li>
+                    {{#inbar}}
+                        <li><a class="ldgp-bar-link" href="#{{id}}">{{label}}</a></li>
+                    {{/inbar}}
                 {{/sections}}
             </ul>
         </nav>
@@ -121,13 +128,18 @@
                 {{> local_partners/icons/moon }}
             </button>
 
+            {{! Entrar e Aplicar sao o MESMO componente de botao, um fantasma e o
+                outro primario. Quem ja entrou ve SAIR no lugar de entrar: antes
+                o botao simplesmente sumia, e a barra ficava sem nenhuma saida
+                para a sessao aberta. }}
             {{^isloggedin}}
-                {{! Entrar e Aplicar sao o MESMO componente de botao, um
-                    fantasma e o outro primario. O "Log in" da navbar e do tema:
-                    mexer nele mudaria o link de login em toda pagina do site,
-                    que e outra decisao. Aqui a landing responde por si. }}
                 <a href="{{loginurl}}" class="ldgp-btn ldgp-btn--ghost">
                     {{#str}}login{{/str}}
+                </a>
+            {{/isloggedin}}
+            {{#isloggedin}}
+                <a href="{{logouturl}}" class="ldgp-btn ldgp-btn--ghost">
+                    {{#str}}logout{{/str}}
                 </a>
             {{/isloggedin}}
 

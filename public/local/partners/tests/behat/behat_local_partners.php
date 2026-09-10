@@ -271,6 +271,128 @@ class behat_local_partners extends behat_base {
     }
 
     /**
+     * Quantos elementos casam com o seletor.
+     *
+     * Existe por causa da DUPLICIDADE de cromo: a home servia a landing e o
+     * layout do tema montava a propria navbar e o proprio rodape por cima dela,
+     * entao o visitante via duas barras e dois rodapes, um dentro do outro. O
+     * HTML estava correto nos dois; o defeito era haver dois.
+     *
+     * @Then /^I should see exactly (?P<count_number>\d+) "(?P<selector_string>(?:[^"]|\\")*)" elements$/
+     * @param int $esperado
+     * @param string $selector
+     * @return void
+     */
+    public function i_should_see_exactly_elements(int $esperado, string $selector): void {
+        $total = $this->evaluate_script(
+            'document.querySelectorAll(' . json_encode($selector) . ').length'
+        );
+
+        if ((int) $total !== $esperado) {
+            throw new ExpectationException(
+                sprintf('Esperava %d elementos "%s", e a pagina tem %d.', $esperado, $selector, $total),
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
+     * O elemento ocupa a largura inteira da janela.
+     *
+     * A landing e de sangria total. Dentro do container de leitura do Boost ela
+     * saia com faixas do fundo do TEMA dos dois lados - numa pagina escura sob
+     * um tema claro, aquilo parece defeito de carregamento.
+     *
+     * A tolerancia de 2px cobre o arredondamento da barra de rolagem.
+     *
+     * @Then /^the "(?P<selector_string>(?:[^"]|\\")*)" element should span the full viewport width$/
+     * @param string $selector
+     * @return void
+     */
+    public function the_element_should_span_the_full_viewport_width(string $selector): void {
+        $caixa = $this->medir_caixas($selector)[0];
+
+        // A medida e contra o BODY, e nao contra o documentElement: o Chrome do
+        // Selenium desenha barra de rolagem classica, de 15px, e ela entra na
+        // largura do documentElement mas nao na do body. Comparar com o
+        // documentElement acusaria 15px de falta numa pagina que ocupa tudo.
+        $largura = (int) $this->evaluate_script('document.body.clientWidth');
+
+        if (abs($caixa['width'] - $largura) > 2) {
+            throw new ExpectationException(
+                sprintf(
+                    'O "%s" tem %dpx numa janela de %dpx - deveria ocupar a largura toda.',
+                    $selector,
+                    $caixa['width'],
+                    $largura
+                ),
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
+     * O elemento nao passa de uma altura.
+     *
+     * Serve para a barra do celular: ela pode quebrar em linhas, mas nao pode
+     * virar um bloco que come um terco da primeira dobra.
+     *
+     * @Then /^the "(?P<selector_string>(?:[^"]|\\")*)" element should be at most (?P<pixels_number>\d+) pixels tall$/
+     * @param string $selector
+     * @param int $maximo
+     * @return void
+     */
+    public function the_element_should_be_at_most_pixels_tall(string $selector, int $maximo): void {
+        $caixa = $this->medir_caixas($selector)[0];
+
+        if ($caixa['height'] > $maximo) {
+            throw new ExpectationException(
+                sprintf('O "%s" tem %dpx de altura, e o limite e %d.', $selector, $caixa['height'], $maximo),
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
+     * O fundo do elemento e escuro, mesmo com a pagina em claro.
+     *
+     * O rodape e a barra de controles do cadastro sao superficies de MOLDURA e
+     * nao acompanham o modo de cor. Medir a luminancia e o unico jeito de
+     * provar isso sem fixar um hexadecimal no teste, que quebraria a cada ajuste
+     * de paleta.
+     *
+     * @Then /^the "(?P<selector_string>(?:[^"]|\\")*)" element should have a dark background$/
+     * @param string $selector
+     * @return void
+     */
+    public function the_element_should_have_a_dark_background(string $selector): void {
+        $luminancia = $this->evaluate_script(
+            '(function() {'
+            . 'var el = document.querySelector(' . json_encode($selector) . ');'
+            . 'if (!el) { return null; }'
+            . 'var cor = window.getComputedStyle(el).backgroundColor;'
+            . 'var n = cor.match(/[\\d.]+/g);'
+            . 'if (!n || n.length < 3) { return null; }'
+            // As tres primeiras casas de rgb() e de color(srgb ...). O srgb vem
+            // em 0..1, e o rgb em 0..255 - a normalizacao cobre os dois.
+            . 'var v = n.slice(0, 3).map(function(x) { x = parseFloat(x); return x <= 1 ? x * 255 : x; });'
+            . 'return (0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]) / 255;'
+            . '})()'
+        );
+
+        if ($luminancia === null || $luminancia > 0.25) {
+            throw new ExpectationException(
+                sprintf(
+                    'O fundo de "%s" tem luminancia %s - nao e uma superficie escura.',
+                    $selector,
+                    var_export($luminancia, true)
+                ),
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
      * Mede a caixa de cada elemento que casa com o seletor.
      *
      * @param string $selector

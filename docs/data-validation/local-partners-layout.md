@@ -208,6 +208,75 @@ grande.
 E um oitavo que o `stylelint` pegou antes do navegador: `clamp()` com soma
 precisa de `calc()` dentro — os quatro títulos fluidos estavam inválidos.
 
+## Resultado — segunda rodada, 10/09/2026
+
+A rodada saiu de uma conferência tela a tela do dono do projeto. Sete ajustes, e
+os quatro primeiros eram **defeito**, não preferência:
+
+**A página inicial mostrava tudo em duplicata.** A raiz do domínio serve a mesma
+landing de `/local/partners/index.php`, mas o layout de frontpage do tema montava
+a navbar e o rodapé **do tema** por cima — e a landing já traz os próprios. O
+visitante via duas barras e dois rodapés, um dentro do outro, e a página inteira
+espremida no container de leitura do Boost, com faixa de fundo dos dois lados.
+Medido depois: **1 barra, 1 rodapé, 1425px de largura em 1440**, sem rolagem
+lateral. Cenário behat novo segura os dois lados.
+
+**A marca sumia na página de cadastro.** `landing_page::brand()` recebe o
+renderer da página, e o cadastro renderiza pelo renderer **do plugin**, que não
+tem `get_logo`. A mesma chamada devolvia imagem na landing e palavra no cadastro.
+Agora o renderer recebido é apenas o primeiro candidato: o `$OUTPUT` do tema vem
+atrás.
+
+**O "Apply" aparecia duas vezes na barra**, como âncora no meio das seções e como
+botão azul na ponta, a dois centímetros um do outro.
+
+**A tela de entrar tinha metade branca.** O `#page` do layout de login sai `#fff`
+do Boost, e o branco vencia tudo dentro dele: painel escuro de um lado, retângulo
+branco com um cartão escuro no outro. A regra que existia pintava a *coluna*, que
+é transparente por desenho — o branco estava um degrau acima.
+
+E três decisões de desenho:
+
+**Entrar vira SAIR para quem já entrou.** O botão simplesmente sumia, e a barra
+ficava sem nenhuma saída para a sessão aberta. O endereço leva `sesskey` — o
+`logout.php` recusa sem ela, e com razão.
+
+**O rodapé virou três colunas com a primeira valendo por duas**, com a logo no
+lugar do nome em negrito, e a última linha com dois itens: razão social com CNPJ
+à esquerda, `© 2026 · Built by LeoDG` à direita. Saiu o `You are not logged in.
+(Log in)`, que empurrava os outros dois para fora do lugar. O bloco de depuração
+— `Purge all caches`, contagem de instâncias reativas — passou para **antes** da
+linha legal: ele só existe para quem tem debug ligado, e estava fechando o
+rodapé.
+
+**Rodapé e barra de controles do cadastro ficam escuros nos dois modos.** São
+superfícies de moldura, como a navbar. Medido pela luminância, e não por
+hexadecimal fixo, para o teste sobreviver a ajuste de paleta.
+
+### Números da segunda rodada
+
+| Superfície | 1440 | 390 |
+|---|---|---|
+| Home (= landing) | 1 barra, 1 rodapé, 0 rolagem lateral | idem, barra de 101px |
+| Landing | barra em `t=1`, marca + 4 âncoras + 2 botões | 2 linhas |
+| Cadastro | rodapé simples de 93px, 3 itens na linha | 143px |
+| Entrar / criar conta | sem navbar, sem rodapé | idem |
+| Rodapé do tema | 3 colunas: 559 / 267 / 267 | empilha |
+| Rodapé da landing | 3 colunas: 584 / 268 / 268 | empilha |
+
+A barra do celular saiu de **137px para 101px**: em 390 a marca ocupa 73px e o
+bloco de ações 274, num miolo útil de 358 — faltavam **5px** para as duas
+caberem lado a lado. Tirar o globo do seletor de idioma devolve 22px, e a sigla
+sozinha já diz o que ele faz. Abaixo de 390 ela volta a três linhas, sem estouro.
+
+### O que a segunda rodada rodou
+
+- **68 testes** no `local_partners`, **15** no `theme_ldg`, **129** no núcleo
+- **25 cenários behat** de captação e **5** do tema, todos com `--profile=chrome`
+- `phpcs --standard=moodle` limpo nos dois plugins, lido por inteiro
+- `stylelint` limpo no `styles.css` e nos parciais SCSS tocados
+- medição e captura em 1440 e 390, claro e escuro, anônimo e autenticado
+
 ## O que continua sem prova
 
 **Tipografia, respiro e hierarquia.** Número resolve "3 colunas de 365px";
@@ -255,13 +324,27 @@ módulo simplesmente não roda — botão que não faz nada, sem erro no console
 Chrome devolve `Unexpected token 'const'` longe da causa.
 
 **Feature nova não é coletada sozinha.** Depois de criar um `.feature`, rode
-`php public/admin/tool/behat/cli/util.php --enable`.
-
-**Feature nova não é coletada sozinha.** Depois de criar um `.feature`, rode
 `php public/admin/tool/behat/cli/util.php --enable`, senão o behat responde
 `No scenarios` e parece que o arquivo está errado.
 
-**Sem sessão, a sonda mede a tela de login** e conclui que está tudo bem.
+**O primeiro `Runtime.evaluate` depois de um `Page.navigate` pode cair no
+contexto velho do `about:blank`.** `document.body` volta nulo e o erro parece da
+página. A sonda tenta de novo, e a medição só vale quando o seletor âncora já
+existe — por isso ela começa lançando se não achar.
 
-**`evaluate_script` avalia expressão, não bloco.** Envolva numa IIFE, senão o
-Chrome devolve `Unexpected token 'const'` longe da causa.
+**A revisão da CSS muda a cada `purge_caches`, e a aba pode reusar a anterior.**
+Duas correções desta rodada foram dadas como "não pegou" por isso, e as duas
+estavam certas: o `#page` branco da tela de entrar e a barra do cadastro no
+celular. Antes de concluir que uma regra falhou, confira se ela está no artefato
+que a página realmente carregou:
+
+```bash
+url=$(curl -sk https://localhost:8443/login/index.php | grep -oE 'styles.php/[^"]*' | head -1)
+curl -sk "https://localhost:8443/theme/$url" | grep -o 'SEU_SELETOR{[^}]*}'
+```
+
+**O site de teste do behat nasce sem Dashboard.** Com `enablemyhome` vazio, o
+`public/index.php` do CORE manda todo visitante anônimo para a tela de entrar
+**antes** de escolher qualquer layout. Um cenário sobre a página inicial pública
+precisa de `enablemyhome`, `forcelogin` e `theme` na mesa — sem eles ele mede o
+formulário de login e falha dizendo que o elemento não existe.

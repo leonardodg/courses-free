@@ -277,7 +277,13 @@ class core_renderer extends \theme_boost\output\core_renderer {
             return '';
         }
 
-        return $this->render_from_template('theme_ldg/colormode', []);
+        // O botao e de um icone so, e o icone diz para onde o clique leva. Sem
+        // saber o modo atual ele sairia sempre com o mesmo desenho, e o
+        // aria-pressed sairia sempre "false" - mentira para quem usa leitor de
+        // tela numa pagina que ja esta escura.
+        return $this->render_from_template('theme_ldg/colormode', [
+            'isdark' => $settings->color_mode() === 'dark',
+        ]);
     }
 
     /**

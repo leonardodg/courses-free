@@ -233,6 +233,65 @@
 }
 
 /* -------------------------------------------------------------------------
+ * As duas superficies que ficam ESCURAS nos dois modos
+ *
+ * O rodape e a barra de controles do cadastro nao acompanham o modo claro. Nao
+ * e descuido: sao superficies de MOLDURA, e a moldura escura e o que da a estas
+ * paginas a cara que elas tem. O mesmo vale no tema do Moodle, onde a navbar
+ * permanece escura com o site em claro - e a decisao ja tomada la.
+ *
+ * A tabela de tokens e a mesma do bloco escuro, redeclarada aqui. Redeclarar
+ * custa repeticao; a alternativa - um `data-bs-theme="dark"` no HTML destes dois
+ * blocos - custaria fazer o alternador de modo mexer em tres elementos em vez de
+ * um, e e mais facil de esquecer.
+ *
+ * O contraste continua o mesmo do modo escuro, ja medido: branco sobre #121212
+ * da 18.1:1, e o `text-low` #868b93 da 5.6:1.
+ * ------------------------------------------------------------------------- */
+.ldgp[data-bs-theme="light"] .ldgp-footer,
+.ldgp[data-bs-theme="light"] .ldgp-applytop {
+    --ldgp-canvas: #121212;
+    --ldgp-card: #1e1e1e;
+    --ldgp-elevated: #2a2a2a;
+    --ldgp-border: #3a3b3c;
+    --ldgp-border-strong: #4f5052;
+    --ldgp-primary-text: #3d97ff;
+    --ldgp-primary-fill-hover: #007aff;
+    --ldgp-text: #fff;
+    --ldgp-text-muted: #b0b3b8;
+    --ldgp-text-low: #868b93;
+
+    /* O fundo NAO e fixado aqui: a regra propria do rodape ja o calcula a partir
+       de --ldgp-canvas, e com os tokens trocados ela chega sozinha no tom certo.
+       O que precisa ser dito e a cor do TEXTO, que o rodape herdava do .ldgp. */
+    color: var(--ldgp-text);
+}
+
+/*
+ * A barra de controles do cadastro vira uma FAIXA quando o resto clareia. Sem
+ * moldura propria ela seria um borrao escuro no meio do texto; com ela, le-se
+ * como o que e - o lugar dos controles da pagina.
+ */
+.ldgp[data-bs-theme="light"] .ldgp-applytop {
+    background-color: var(--ldgp-canvas);
+    border: 1px solid var(--ldgp-border);
+    border-radius: var(--ldgp-radius-lg);
+    padding: 0.5rem 0.75rem;
+}
+
+/*
+ * Dentro de superficie escura vale a logo do modo ESCURO, mesmo com a pagina em
+ * claro - senao a marca preta desaparece no fundo #121212.
+ */
+.ldgp[data-bs-theme="light"] .ldgp-footer .ldgp-brand-logo--dark {
+    display: inline;
+}
+
+.ldgp[data-bs-theme="light"] .ldgp-footer .ldgp-brand-logo--light {
+    display: none;
+}
+
+/* -------------------------------------------------------------------------
  * Base
  * ------------------------------------------------------------------------- */
 .ldgp {
@@ -457,6 +516,41 @@
 .ldgp-bar-nav {
     order: 3;
     width: 100%;
+}
+
+/*
+ * No celular a barra e de DUAS linhas, e nao de tres.
+ *
+ * MEDIDO em 390: a marca ocupa 73px e o bloco de acoes 274, num miolo util de
+ * 358 - faltavam 5px para as duas caberem lado a lado, e a marca era empurrada
+ * para uma linha so dela. Tirar o globo do seletor de idioma devolve 22px, e a
+ * sigla sozinha ja diz o que ele faz.
+ *
+ * O globo NAO some do desktop: la sobra espaco, e o icone e o que faz o botao
+ * ser reconhecido como seletor de idioma por quem nunca o usou.
+ */
+@media (max-width: 575px) {
+    .ldgp-bar-inner {
+        column-gap: 0.75rem;
+    }
+
+    .ldgp-langbtn .ldgp-i-globe {
+        display: none;
+    }
+
+    /*
+     * Na barra do cadastro o "voltar" leva a linha inteira, e os controles ficam
+     * na de baixo, juntos. Sem isto o voltar e o entrar dividiam a primeira
+     * linha, o seletor de idioma ia com eles e o alternador de modo sobrava
+     * sozinho numa terceira - um botao orfao no meio da pagina.
+     */
+    .ldgp-applytop .ldgp-back {
+        flex-basis: 100%;
+    }
+
+    .ldgp-applytop .ldgp-langs {
+        margin-left: 0;
+    }
 }
 
 .ldgp-brand {
@@ -1702,16 +1796,32 @@
     margin-bottom: 1.5rem;
 }
 
+/*
+ * A marca do rodape e a MESMA da barra: a logo da casa.
+ *
+ * Era o nome curto do site em negrito, e a pagina abria com uma imagem de marca
+ * e terminava com um texto - duas identidades para a mesma empresa. Sem imagem
+ * configurada o `.ldgp-brand-word` continua valendo, e o rodape volta a ser
+ * palavra sem buraco nenhum.
+ */
 .ldgp-footer-name {
+    align-items: center;
     color: var(--ldgp-text);
+    display: inline-flex;
     font-size: 1.125rem;
     font-weight: 700;
     text-decoration: none;
 }
 
+.ldgp-footer-name .ldgp-brand-logo {
+    /* Menor que a da barra: aqui a marca assina, e nao anuncia. */
+    max-height: 2rem;
+    width: auto;
+}
+
 .ldgp-footer-brand p {
     font-size: 0.875rem;
-    margin: 0.375rem 0 0;
+    margin: 0.75rem 0 0;
     max-width: 34rem;
 }
 
@@ -1861,9 +1971,24 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    /*
+     * Tres colunas, e a primeira vale por DUAS.
+     *
+     * Grade e nao flex: com flex as tres se dividiam em partes iguais, e as
+     * colunas de link - listas de uma palavra so - ficavam tao largas quanto a
+     * frase que explica o produto, que precisa de linha larga para ser lida.
+     *
+     * A divisao e em DOIS niveis, e nao `2fr 1fr 1fr` num nivel so: a marca fica
+     * com metade, e a outra metade e uma grade de duas dentro do <nav>. O
+     * caminho de um nivel exigiria `display: contents` no <nav>, e isso apaga o
+     * landmark de navegacao em parte dos navegadores - acessibilidade paga a
+     * conta de uma linha de CSS mais curta.
+     */
     .ldgp-footer-top {
         align-items: flex-start;
-        flex-direction: row;
+        display: grid;
+        gap: 3rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     /* No desktop o alvo de 44px deixa a coluna esticada sem ganho: quem usa
@@ -2014,4 +2139,26 @@ body.ldg-has-landing #region-main > div {
 body.ldgp-page #region-main,
 body.ldg-has-landing #region-main {
     border: 0;
+}
+
+/*
+ * O que o Moodle monta para a pagina inicial, ABAIXO da landing.
+ *
+ * Lista de cursos, categorias, novidades - o que estiver marcado em
+ * Configuracoes da pagina inicial. A landing e de sangria total, mas isto e
+ * conteudo de leitura, e leitura de ponta a ponta de um monitor de 27 polegadas
+ * nao se le. Volta a ter a largura do resto do site.
+ *
+ * Vazio, nao ocupa nada: sem :empty o padding vertical deixaria uma faixa em
+ * branco depois do rodape da landing, e o caso comum e justamente esse -
+ * a home so com a landing.
+ */
+.ldg-landing-extra {
+    margin: 0 auto;
+    max-width: 1180px;
+    padding: 2rem 1.5rem;
+}
+
+.ldg-landing-extra:empty {
+    display: none;
 }

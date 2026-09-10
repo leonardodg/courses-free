@@ -59,6 +59,7 @@ class landing_page implements renderable, templatable {
             'footer' => self::footer(),
             'brand' => self::brand($output),
             'loginurl' => (new moodle_url('/login/index.php'))->out(false),
+            'logouturl' => self::logout_url(),
             // Decide ONDE o alternador guarda a escolha: quem esta autenticado
             // grava a preferencia do perfil, que vale no site inteiro; o
             // visitante anonimo grava no navegador, porque setUserPreference
@@ -75,6 +76,11 @@ class landing_page implements renderable, templatable {
      * ancora passa a apontar para lugar nenhum sem ninguem notar - por isso ela
      * e exportada, e nao repetida no mustache.
      *
+     * O `inbar` marca quem aparece na BARRA. So o "Apply" fica de fora, e por um
+     * motivo: ele ja e o botao primario ao lado do de entrar, e a ancora repetia
+     * a mesma acao a dois centimetros dela. Na barra o "Apply" e um botao; no
+     * rodape, onde nao ha botao, continua sendo um link como os outros.
+     *
      * @return array
      */
     public static function sections(): array {
@@ -84,10 +90,31 @@ class landing_page implements renderable, templatable {
             $out[] = [
                 'id' => 'ldgp-' . $id,
                 'label' => get_string('section' . $id, 'local_partners'),
+                'inbar' => $id !== 'apply',
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * O endereco de sair, com a chave de sessao.
+     *
+     * O `logout.php` do Moodle EXIGE sesskey - sem ela ele recusa, e por um bom
+     * motivo: um <img src="/login/logout.php"> numa pagina de terceiro derrubaria
+     * a sessao de quem passasse por la.
+     *
+     * Devolve vazio para quem nao esta autenticado. Chamar sesskey() sem sessao
+     * fabrica uma, e a landing e justamente a pagina do visitante anonimo.
+     *
+     * @return string
+     */
+    public static function logout_url(): string {
+        if (!isloggedin() || isguestuser()) {
+            return '';
+        }
+
+        return (new moodle_url('/login/logout.php', ['sesskey' => sesskey()]))->out(false);
     }
 
     /**
@@ -106,23 +133,38 @@ class landing_page implements renderable, templatable {
      *  3. o nome curto do site, desenhado como marca-palavra. Sem imagem
      *     nenhuma, ainda ha marca - e nao um buraco.
      *
+     * SAO DOIS RENDERERS, e nao um. A pagina de cadastro renderiza pelo renderer
+     * DO PLUGIN (`$PAGE->get_renderer('local_partners')`), que nao tem get_logo
+     * nenhum - e a marca caia para a palavra ali enquanto na landing aparecia a
+     * imagem, com a mesma chamada. Por isso o renderer recebido e apenas o
+     * primeiro candidato: o $OUTPUT do tema vem logo atras.
+     *
      * @param renderer_base|null $output
      * @return array
      */
     public static function brand(?renderer_base $output = null): array {
         global $SITE, $OUTPUT;
 
-        $renderer = $output ?? $OUTPUT;
         $claro = false;
         $escuro = false;
 
-        if (method_exists($renderer, 'get_logo')) {
-            $claro = $renderer->get_logo();
-            $escuro = method_exists($renderer, 'get_logo_dark') ? $renderer->get_logo_dark() : $claro;
-        } else if (method_exists($renderer, 'get_logo_url')) {
-            $url = $renderer->get_logo_url();
-            $claro = $url ? $url->out(false) : false;
-            $escuro = $claro;
+        foreach ([$output, $OUTPUT] as $renderer) {
+            if ($renderer === null) {
+                continue;
+            }
+
+            if (method_exists($renderer, 'get_logo')) {
+                $claro = $renderer->get_logo();
+                $escuro = method_exists($renderer, 'get_logo_dark') ? $renderer->get_logo_dark() : $claro;
+            } else if (method_exists($renderer, 'get_logo_url')) {
+                $url = $renderer->get_logo_url();
+                $claro = $url ? $url->out(false) : false;
+                $escuro = $claro;
+            }
+
+            if ($claro) {
+                break;
+            }
         }
 
         return [
@@ -154,6 +196,11 @@ class landing_page implements renderable, templatable {
             'landingurl' => (new moodle_url('/local/partners/index.php'))->out(false),
             'applyurl' => (new moodle_url('/local/partners/apply.php'))->out(false),
             'loginurl' => (new moodle_url('/login/index.php'))->out(false),
+            'logouturl' => self::logout_url(),
+            'isloggedin' => isloggedin() && !isguestuser(),
+            // A mesma marca da barra: no rodape ela era so a palavra, e a
+            // pagina terminava com um nome de site onde comecou com uma logo.
+            'brand' => self::brand(),
             'sections' => self::sections(),
             // Vazia vira false para o mustache poder cair no nome do site, em
             // vez de imprimir uma empresa que ninguem declarou.

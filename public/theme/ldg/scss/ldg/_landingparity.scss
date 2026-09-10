@@ -80,6 +80,55 @@
 }
 
 // -----------------------------------------------------------------------------
+// O alternador de modo de cor
+//
+// UM BOTAO DE UM ICONE, igual ao da barra da landing, no lugar do interruptor
+// de sol-chave-lua. O interruptor mostrava os dois estados ao mesmo tempo e
+// gastava tres elementos numa barra onde ele disputa espaco com sino, mensagem,
+// perfil e modo de edicao.
+//
+// A navbar e ESCURA nos dois modos - decisao ja tomada, e que fica -, entao as
+// cores aqui sao fixas e nao seguem os tokens de superficie.
+// -----------------------------------------------------------------------------
+.ldg-modetoggle {
+    align-items: center;
+    align-self: center;
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: var(--bs-border-radius);
+    color: rgba(255, 255, 255, 0.72);
+    display: inline-flex;
+    height: 2.25rem;
+    justify-content: center;
+    padding: 0;
+    width: 2.25rem;
+
+    &:hover,
+    &:focus-visible {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: #fff;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--ldg-accent);
+        outline-offset: 2px;
+    }
+
+    svg {
+        height: 1.125rem;
+        width: 1.125rem;
+    }
+}
+
+// Sol no escuro (o clique leva ao claro), lua no claro. O atributo e o do
+// Bootstrap, e nao uma classe nossa: e a mesma fonte de verdade que o
+// JavaScript escreve.
+[data-bs-theme="dark"] .ldg-modetoggle .ldg-i-moon,
+[data-bs-theme="light"] .ldg-modetoggle .ldg-i-sun {
+    display: none;
+}
+
+// -----------------------------------------------------------------------------
 // O menu de idiomas
 //
 // O core ja entrega o gesto certo - um suspenso que mostra so o idioma em uso e
@@ -89,27 +138,43 @@
 // superficies nao ensinarem dois gestos diferentes.
 // -----------------------------------------------------------------------------
 .langmenu {
+    align-items: center;
+    display: flex;
+
+    // A mesma pilula da landing: moldura fina, sigla em maiuscula, seta. A
+    // navbar e escura nos dois modos, entao as cores sao fixas - o token de
+    // borda clarearia no modo claro e a pilula sumiria no fundo escuro.
     .dropdown-toggle {
         align-items: center;
-        border: 1px solid var(--ldg-border);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         border-radius: var(--bs-border-radius);
+        color: rgba(255, 255, 255, 0.72);
         display: inline-flex;
         font-size: 0.8125rem;
         font-weight: 600;
         gap: 0.25rem;
+        letter-spacing: 0.04em;
         min-height: 2.25rem;
         padding: 0.25rem 0.5rem;
 
         &:hover,
         &[aria-expanded="true"] {
-            background-color: var(--ldg-surface-raised);
+            background-color: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--ldg-accent);
+            outline-offset: 2px;
         }
     }
 
+    // Estreito porque o item agora e a sigla: com o nome por extenso a caixa
+    // precisava de 12rem, e ficava um retangulo vazio ao lado de "EN".
     .dropdown-menu {
         border: 1px solid var(--ldg-border);
         border-radius: var(--bs-border-radius);
-        min-width: 12rem;
+        min-width: 6rem;
         padding: 0.25rem;
     }
 
@@ -139,23 +204,72 @@
 // direita, e uma linha final com razao social, CNPJ e credito. O de antes eram
 // tres colunas de peso igual, com o "Get the mobile app" flutuando no meio.
 // -----------------------------------------------------------------------------
+// O rodape do site fica ESCURO nos dois modos, como o da landing e como a
+// navbar. Sao superficies de moldura: a identidade nao muda de cor porque o
+// usuario prefere tela clara.
 #page-footer.ldg-footer {
-    border-top: 1px solid var(--ldg-border);
+    background-color: var(--ldg-navy);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.72);
     padding: calc(var(--ldg-gutter) * 1.5) 0 var(--ldg-gutter);
+
+    a {
+        color: rgba(255, 255, 255, 0.72);
+
+        &:hover,
+        &:focus-visible {
+            color: #fff;
+        }
+    }
+
+    h2,
+    strong {
+        color: #fff;
+    }
 }
 
+// Tres colunas, e a primeira vale por duas - a mesma proporcao do rodape da
+// landing. A divisao e em dois niveis pelo mesmo motivo de la: `display:
+// contents` no <nav> resolveria num nivel so, mas apaga o landmark de navegacao
+// em parte dos navegadores.
 .ldg-footer-top {
     display: flex;
     flex-direction: column;
     gap: var(--ldg-gutter);
-    justify-content: space-between;
     margin-bottom: var(--ldg-gutter);
 }
 
 .ldg-footer-name {
+    align-items: center;
+    display: flex;
     font-size: 1.125rem;
     font-weight: 700;
     margin-bottom: var(--ldg-space);
+}
+
+.ldg-footer-logo {
+    max-height: 2rem;
+    width: auto;
+}
+
+// A logo tem duas versoes, e aqui vale sempre a do fundo escuro: o rodape e
+// escuro mesmo com o site em claro, e a marca preta sumiria nele.
+.ldg-footer-logo--light {
+    display: none;
+}
+
+.ldg-footer-tagline {
+    font-size: 0.875rem;
+    margin: 0 0 var(--ldg-space);
+    max-width: 34rem;
+}
+
+// A faixa de depuracao: existe so com debug ligado, e nao pode disputar atencao
+// com a assinatura da empresa logo abaixo dela.
+.ldg-footer-debug {
+    font-size: 0.8125rem;
+    margin-bottom: var(--ldg-space);
+    opacity: 0.7;
 }
 
 // Os icones de contato e de rede: linha, sem a caixa de botao do Bootstrap, que
@@ -183,7 +297,7 @@
 .ldg-footer-cols {
     display: grid;
     gap: var(--ldg-gutter);
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
 }
 
 .ldg-footer-col {
@@ -220,9 +334,12 @@
     }
 }
 
+// A ultima linha: a empresa a esquerda, o credito a direita, e nada no meio.
+// Eram tres itens, e o do meio - o "You are not logged in. (Log in)" - empurrava
+// os outros dois para fora do lugar.
 .ldg-footer-legal {
     align-items: baseline;
-    border-top: 1px solid var(--ldg-border);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem var(--ldg-gutter);
@@ -232,7 +349,6 @@
     p {
         font-size: 0.8125rem;
         margin: 0;
-        opacity: 0.85;
     }
 }
 
@@ -242,16 +358,10 @@
 
 @media (min-width: 768px) {
     .ldg-footer-top {
+        display: grid;
         flex-direction: row;
-    }
-
-    .ldg-footer-brand {
-        max-width: 22rem;
-    }
-
-    .ldg-footer-cols {
-        flex: 1 1 auto;
-        max-width: 40rem;
+        gap: calc(var(--ldg-gutter) * 2);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .ldg-footer-col a {

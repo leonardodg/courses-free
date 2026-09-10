@@ -76,7 +76,21 @@ along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
         <div class="ldg-footer-top">
             <div class="ldg-footer-brand">
-                <p class="ldg-footer-name">{{sitename}}</p>
+                {{! A marca e a MESMA da landing: a logo da casa, e nao o nome
+                    curto do site em negrito. Sem imagem configurada, ou sem o
+                    local_partners instalado, ela volta a ser a palavra. }}
+                <p class="ldg-footer-name">
+                    {{#brand}}
+                        {{#haslogo}}
+                            <img src="{{logolight}}" alt="{{name}}" class="ldg-footer-logo ldg-footer-logo--light">
+                            <img src="{{logodark}}" alt="{{name}}" class="ldg-footer-logo ldg-footer-logo--dark">
+                        {{/haslogo}}
+                        {{^haslogo}}{{name}}{{/haslogo}}
+                    {{/brand}}
+                    {{^brand}}{{sitename}}{{/brand}}
+                </p>
+
+                {{#tagline}}<p class="ldg-footer-tagline">{{tagline}}</p>{{/tagline}}
 
                 {{#hasfootercontact}}
                     <ul class="ldg-footer-icons" aria-label="{{#str}}contactus, theme_ldg{{/str}}">
@@ -106,18 +120,34 @@ along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
                 {{/hasfootersocial}}
             </div>
 
-            <nav class="ldg-footer-cols" aria-label="{{#str}}footerlinks, theme_ldg{{/str}}">
-                {{#haspartnersfooter}}
-                    {{#landingenabled}}
-                        <div class="ldg-footer-col">
-                            <h2>{{#str}}footerplatform, theme_ldg{{/str}}</h2>
-                            <ul>
-                                <li><a href="{{config.wwwroot}}">{{#str}}home, core{{/str}}</a></li>
-                                <li><a href="{{landingurl}}">{{#str}}footerpartner, theme_ldg{{/str}}</a></li>
-                            </ul>
-                        </div>
-                    {{/landingenabled}}
+            {{! DUAS colunas de link, e nao tres.
 
+                Com a marca ocupando metade, tres colunas de link na outra
+                metade davam meia palavra por linha. "Ajuda e suporte" deixou de
+                ser coluna propria: o e-mail de suporte, o "Data retention
+                summary" e o "Get the mobile app" que o core acrescenta sao links
+                de plataforma como os outros, e passaram para a coluna
+                Plataforma. }}
+            <nav class="ldg-footer-cols" aria-label="{{#str}}footerlinks, theme_ldg{{/str}}">
+                <div class="ldg-footer-col ldg-footer-col--platform">
+                    <h2>{{#str}}footerplatform, theme_ldg{{/str}}</h2>
+                    <ul>
+                        <li><a href="{{config.wwwroot}}">{{#str}}home, core{{/str}}</a></li>
+                        {{#haspartnersfooter}}
+                            {{#landingenabled}}
+                                <li><a href="{{landingurl}}">{{#str}}footerpartner, theme_ldg{{/str}}</a></li>
+                            {{/landingenabled}}
+                        {{/haspartnersfooter}}
+                    </ul>
+
+                    {{# output.supportemail }}
+                        <div class="supportemail">{{{ output.supportemail }}}</div>
+                    {{/ output.supportemail }}
+                    {{{ output.standard_footer_html }}}
+                    <div class="tool_usertours-resettourcontainer"></div>
+                </div>
+
+                {{#haspartnersfooter}}
                     {{#haslegal}}
                         <div class="ldg-footer-col">
                             <h2>{{#str}}footerlegal, theme_ldg{{/str}}</h2>
@@ -127,21 +157,25 @@ along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
                         </div>
                     {{/haslegal}}
                 {{/haspartnersfooter}}
-
-                {{! Ajuda, suporte e o que o core acrescenta - inclusive o "Get
-                    the mobile app", que antes flutuava solto no meio do rodape e
-                    agora e um link como os outros. }}
-                <div class="ldg-footer-col ldg-footer-col--support">
-                    <h2>{{#str}}footersupport, theme_ldg{{/str}}</h2>
-                    {{# output.supportemail }}
-                        <div class="supportemail">{{{ output.supportemail }}}</div>
-                    {{/ output.supportemail }}
-                    {{{ output.standard_footer_html }}}
-                    <div class="tool_usertours-resettourcontainer"></div>
-                </div>
             </nav>
         </div>
 
+        {{! O bloco de depuracao vem ANTES da linha legal, e nao depois.
+
+            Ele so existe para quem tem debug ligado - administrador e
+            desenvolvedor -, e traz "Purge all caches" e a contagem de instancias
+            reativas. Enquanto ele fechava o rodape, a razao social e o CNPJ, que
+            sao a assinatura da empresa, ficavam no meio da pagina com uma faixa
+            de ferramenta embaixo. }}
+        <div class="footer-content-debugging ldg-footer-debug">
+            {{{ output.debug_footer_html }}}
+        </div>
+
+        {{! Duas colunas, e so duas: a empresa a esquerda, o credito a direita.
+            O terceiro item, o "You are not logged in. (Log in)" do
+            output.login_info, saiu - ele empurrava as outras duas para fora do
+            lugar e repetia, em texto miudo no rodape, o que o botao de entrar
+            no alto da pagina ja diz. }}
         <div class="ldg-footer-legal">
             <p class="ldg-footer-company">
                 {{#haspartnersfooter}}
@@ -152,22 +186,14 @@ along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
                 {{^haspartnersfooter}}<strong>{{sitename}}</strong>{{/haspartnersfooter}}
             </p>
 
-            <p class="ldg-footer-session">{{{ output.login_info }}}</p>
-
             <p class="ldg-footer-credit">
                 &copy; {{year}}
                 {{#haspartnersfooter}}
                     {{#creatorname}}
-                        &middot; <a href="{{creatorurl}}" target="_blank" rel="noopener noreferrer">{{#str}}themedevelopedby, theme_ldg{{/str}} {{creatorname}}</a>
+                        &middot; <a href="{{creatorurl}}" target="_blank" rel="noopener noreferrer">{{#str}}footercredit, theme_ldg, {{creatorname}}{{/str}}</a>
                     {{/creatorname}}
                 {{/haspartnersfooter}}
             </p>
-        </div>
-    </div>
-
-    <div class="footer-content-debugging footer-dark bg-dark text-light">
-        <div class="ldg-container-fluid footer-dark-inner">
-            {{{ output.debug_footer_html }}}
         </div>
     </div>
 

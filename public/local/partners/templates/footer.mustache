@@ -36,7 +36,8 @@
 
     Context variables required for this template:
     * issimple - true para a variante de uma linha
-    * sitename, landingurl, applyurl, loginurl
+    * sitename, landingurl, applyurl, loginurl, logouturl, isloggedin
+    * brand - a mesma marca da barra: name, logolight, logodark, haslogo
     * sections - as mesmas ancoras da barra
     * legal / haslegal - array de { label, url }, so os configurados
     * legalname - razao social, ou false
@@ -48,6 +49,8 @@
     {
         "issimple": false,
         "sitename": "LeoDG",
+        "isloggedin": false,
+        "brand": {"name": "LeoDG", "logolight": "/logo.svg", "logodark": "/logo-dark.svg", "haslogo": true},
         "landingurl": "/local/partners/index.php",
         "applyurl": "/local/partners/apply.php",
         "loginurl": "/login/index.php",
@@ -65,9 +68,24 @@
     <div class="ldgp-inner">
 
         {{^issimple}}
+            {{! Tres colunas, e a primeira vale por duas: a marca e a frase que
+                explica o produto precisam de linha larga, e as duas colunas de
+                link sao listas curtas que ficavam com meia palavra por linha
+                quando as tres tinham o mesmo peso. }}
             <div class="ldgp-footer-top">
                 <div class="ldgp-footer-brand">
-                    <a href="{{landingurl}}" class="ldgp-footer-name">{{sitename}}</a>
+                    <a href="{{landingurl}}" class="ldgp-footer-name">
+                        {{#brand}}
+                            {{#haslogo}}
+                                <img src="{{logolight}}" alt="{{name}}" class="ldgp-brand-logo ldgp-brand-logo--light">
+                                <img src="{{logodark}}" alt="{{name}}" class="ldgp-brand-logo ldgp-brand-logo--dark">
+                            {{/haslogo}}
+                            {{^haslogo}}
+                                {{! Sem imagem, a marca continua existindo como palavra. }}
+                                <span class="ldgp-brand-word">{{name}}</span>
+                            {{/haslogo}}
+                        {{/brand}}
+                    </a>
                     <p>{{#str}}footertagline, local_partners{{/str}}</p>
                 </div>
 
@@ -78,7 +96,8 @@
                             {{#sections}}
                                 <li><a href="{{landingurl}}#{{id}}">{{label}}</a></li>
                             {{/sections}}
-                            <li><a href="{{loginurl}}">{{#str}}login{{/str}}</a></li>
+                            {{^isloggedin}}<li><a href="{{loginurl}}">{{#str}}login{{/str}}</a></li>{{/isloggedin}}
+                            {{#isloggedin}}<li><a href="{{logouturl}}">{{#str}}logout{{/str}}</a></li>{{/isloggedin}}
                         </ul>
                     </div>
 

@@ -61,8 +61,12 @@ Feature: O tema decide o que a pagina mostra ao redor do conteudo
     #
     # O clique mexe so no data-bs-theme, que e o que o Bootstrap 5 consulta - a
     # troca e imediata e nao recarrega a pagina.
-    When I click on "#toggle-darkmode-input" "css_element"
+    When I click on "#toggle-darkmode" "css_element"
     Then "body[data-bs-theme='light']" "css_element" should exist
+    # O aria-pressed acompanha o estado real. Um botao de alternar que anuncia
+    # sempre o mesmo estado mente para quem usa leitor de tela, e o defeito nao
+    # aparece em captura de tela nenhuma.
+    And "#toggle-darkmode[aria-pressed='false']" "css_element" should exist
 
     # A classe ldg-light vem do SERVIDOR, no body_attributes. Ela so aparece
     # depois de recarregar - e por isso este passo prova o que o anterior nao

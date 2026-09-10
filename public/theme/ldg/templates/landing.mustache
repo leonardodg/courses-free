@@ -15,39 +15,38 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    Chrome da landing de captacao: navbar, miolo do plugin e rodape.
-
-    @template theme_ldg/landing
-    @author    LeoDG <callme@leodg.dev>
-    @copyright 2026 LeoDG <callme@leodg.dev>
-    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-}}
-{{!
     @template theme_ldg/landing
 
     Pagina inicial quando a landing de captacao toma o lugar dela.
 
-    O tema e dono do CHROME - cabecalho, rodape, scripts - e o plugin e dono do
-    MIOLO. Nenhum dos dois conhece as tabelas do outro: o conteudo chega pronto
-    em `landing`, vindo de local_partners\landing::render().
+    O tema entrega o CASCO - cabeca do documento, corpo, scripts - e mais nada.
+    Cabecalho e rodape sao do PLUGIN: a landing traz a propria barra de secoes e
+    o proprio rodape, e eram justamente eles que o visitante via em duplicata
+    quando este template ainda montava a navbar e o rodape do tema por cima.
 
-    Nao ha drawer nem course index aqui: e uma pagina de marketing para
-    visitante anonimo, e o menu lateral e feito de destinos pessoais que ele
-    nao tem.
+    A mesma pagina servida em /local/partners/index.php e servida aqui, na raiz
+    do dominio, e as duas precisam ser identicas - senao a home da marca e a URL
+    que se divulga mostram coisas diferentes.
+
+    Tambem nao ha `main-inner` nem `region-main-box`: aquilo e o container do
+    Boost, que limita a largura e foi o que espremeu a landing numa coluna
+    central com faixas pretas dos dois lados. O desenho dela e de sangria total.
+
+    Nao ha drawer nem course index: e uma pagina de marketing para visitante
+    anonimo, e o menu lateral e feito de destinos pessoais que ele nao tem.
+
+    NAO escreva chave dupla de mustache dentro deste comentario: ele termina no
+    primeiro fecha-chaves, e o resto do texto vai parar na tela.
 
     Context variables required for this template:
-    * sitename - nome curto do site
     * output - o renderer
     * bodyattributes - atributos da tag body
-    * primarymoremenu, mobileprimarynav, usermenu, langmenu - navegacao
     * landing - html do miolo, ja renderizado pelo local_partners
-    * os campos de rodape do theme_ldg\util\settings::footer()
 
     Example context (json):
     {
-        "sitename": "LDG",
         "bodyattributes": "class='ldg-has-landing'",
-        "landing": "<div class='ldg-landing'></div>"
+        "landing": "<div class='ldgp'></div>"
     }
 }}
 {{> theme_boost/head }}
@@ -57,33 +56,23 @@
 
 {{{ output.standard_top_of_body_html }}}
 
-{{> theme_ldg/navbar }}
+<div id="page" data-region="mainpage" class="ldg-landing-page">
+    {{{ landing }}}
 
-<div id="page" data-region="mainpage" class="drawers drag-container">
-    <div id="topofscroll" class="main-inner">
-        <div id="region-main-box">
-            <section id="region-main" aria-label="{{#str}}content{{/str}}">
-                {{{ landing }}}
+    {{!
+        O marcador de conteudo principal e OBRIGATORIO: o core_renderer::header()
+        quebra com "page layout file does not contain the main content
+        placeholder" sem ele, porque e aqui que ele corta a pagina entre
+        header() e footer().
 
-                {{!
-                    O marcador de conteudo principal e OBRIGATORIO: o
-                    core_renderer::header() quebra com "page layout file does
-                    not contain the main content placeholder" sem ele, porque e
-                    aqui que ele corta a pagina entre header() e footer().
-
-                    Abaixo da landing sai o que o Moodle monta para a pagina
-                    inicial - lista de cursos, categorias, novidades. Quem
-                    escolhe isso e a mesma tela de Configuracoes da pagina
-                    inicial onde se liga a landing: para ter so a landing,
-                    esvazie os itens de conteudo la. E o mesmo arranjo que o
-                    proprio Moove usa na frontpage dele.
-                }}
-                {{{ output.main_content }}}
-            </section>
-        </div>
+        Abaixo da landing sai o que o Moodle monta para a pagina inicial - lista
+        de cursos, categorias, novidades. Quem escolhe isso e a mesma tela de
+        Configuracoes da pagina inicial onde se liga a landing: para ter so a
+        landing, esvazie os itens de conteudo la.
+    }}
+    <div class="ldg-landing-extra">
+        {{{ output.main_content }}}
     </div>
-
-    {{> theme_ldg/footer }}
 </div>
 
 {{{ output.standard_end_of_body_html }}}

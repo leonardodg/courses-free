@@ -56,6 +56,13 @@ Com outro tema a landing continua existindo em `/local/partners/index.php`, mas
 o visitante anônimo para fora de `/` **antes** de qualquer código de tema rodar,
 então a landing nunca chega a ser renderizada e parece que o plugin não funciona.
 
+**Na home o tema não desenha cromo nenhum.** A landing já traz a própria barra de
+seções e o próprio rodapé, e enquanto o layout de frontpage também montava a
+navbar e o rodapé do tema, quem abria a raiz do domínio via duas barras e dois
+rodapés, um dentro do outro. A página servida em `/` é idêntica à de
+`/local/partners/index.php` — e um cenário behat conta os elementos para que
+continue sendo.
+
 ### Para a confirmação de e-mail funcionar
 
 O site precisa **conseguir enviar e-mail** (SMTP configurado em

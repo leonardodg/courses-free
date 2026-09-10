@@ -89,9 +89,10 @@ class landing {
      * class_exists e cai no que ele mesmo tem quando este plugin nao existe -
      * a dependencia continua sendo do tema para ca, e continua opcional.
      *
-     * Devolve so o que e comum as duas superficies: os links legais que tem
-     * destino, a razao social, o CNPJ e o credito de quem assina. Ancoras de
-     * secao ficam de fora de proposito - elas so existem na landing.
+     * Devolve so o que e comum as duas superficies: a marca, a frase que explica
+     * o produto, os links legais que tem destino, a razao social, o CNPJ e o
+     * credito de quem assina. Ancoras de secao ficam de fora de proposito -
+     * elas so existem na landing.
      *
      * @return array
      */
@@ -102,6 +103,12 @@ class landing {
         return [
             'legal' => $legais,
             'haslegal' => !empty($legais),
+            // A marca e a frase saem daqui e nao do tema: sao os mesmos textos
+            // da landing, ja traduzidos neste plugin. Duplica-los no tema
+            // significaria dois lugares para corrigir a mesma frase, e um deles
+            // ficaria para tras.
+            'brand' => landing_page::brand(),
+            'tagline' => get_string('footertagline', 'local_partners'),
             'legalname' => seo::legal_name() !== '' ? seo::legal_name() : false,
             'taxid' => seo::tax_id() !== '' ? seo::tax_id() : false,
             'creatorname' => $criador['name'] !== '' ? $criador['name'] : false,
