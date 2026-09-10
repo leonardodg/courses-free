@@ -111,6 +111,19 @@ if ($hassiteconfig) {
         PARAM_ALPHANUMEXT
     ));
 
+    // Documentos legais do rodape. Cada link so aparece quando tem destino:
+    // link legal que nao leva a lugar nenhum e pior que link ausente, porque ele
+    // PROMETE um documento. O de termos cai na politica do site quando existir.
+    foreach (['termsurl' => 'footerterms', 'privacyurl' => 'footerprivacy', 'cookiesurl' => 'footercookies'] as $nome => $rotulo) {
+        $settings->add(new admin_setting_configtext(
+            'local_partners/' . $nome,
+            get_string($nome, 'local_partners'),
+            get_string($nome . '_desc', 'local_partners', get_string($rotulo, 'local_partners')),
+            '',
+            PARAM_URL
+        ));
+    }
+
     $ADMIN->add('localplugins', $settings);
 
     // A escolha da home fica na tela de Configuracoes da pagina inicial, junto

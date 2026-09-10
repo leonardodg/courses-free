@@ -90,6 +90,10 @@ class seo {
             'telephone' => '',
             'email' => '',
 
+            // Quem assina o trabalho. Aparece no credito do rodape.
+            'creatorname' => 'LeoDG',
+            'creatorurl' => 'https://leodg.dev',
+
             // Perfis oficiais - o sinal de identidade que o schema chama de
             // sameAs. O site profissional do responsavel entra porque e ele que
             // liga esta plataforma a uma pessoa que existe, e e o unico endereco
@@ -111,6 +115,32 @@ class seo {
      */
     public static function legal_name(): string {
         return trim((string) self::brand()['legalname']);
+    }
+
+    /**
+     * O identificador fiscal, quando declarado.
+     *
+     * Publico porque o rodape mostra, e no Brasil rodape de plataforma que cobra
+     * costuma mostrar - e o que liga o site a uma pessoa juridica de verdade.
+     *
+     * @return string
+     */
+    public static function tax_id(): string {
+        return trim((string) self::brand()['taxid']);
+    }
+
+    /**
+     * Quem assina o trabalho, para o credito do rodape.
+     *
+     * @return array{name: string, url: string}
+     */
+    public static function creator(): array {
+        $marca = self::brand();
+
+        return [
+            'name' => trim((string) $marca['creatorname']),
+            'url' => trim((string) $marca['creatorurl']),
+        ];
     }
 
     /**

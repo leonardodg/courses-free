@@ -112,16 +112,26 @@
                     {{/isloggedin}}
 
                     {{#haslanguages}}
-                        <nav class="ldgp-langs" aria-label="{{#str}}languageselector, local_partners{{/str}}">
+                            <div class="ldgp-langs dropdown">
+                        <button type="button" class="ldgp-langbtn" data-bs-toggle="dropdown"
+                                aria-expanded="false" aria-label="{{#str}}languageselector, local_partners{{/str}}">
+                            {{> local_partners/icons/globe }}
+                            <span>{{currentlanguage}}</span>
+                            <span class="ldgp-caret" aria-hidden="true">{{> local_partners/icons/chevrondown }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end ldgp-langmenu">
                             {{#languages}}
-                                <a class="ldgp-lang{{#iscurrent}} ldgp-lang--current{{/iscurrent}}"
-                                   href="{{url}}" hreflang="{{hreflang}}" lang="{{hreflang}}"
-                                   title="{{label}}"{{#iscurrent}} aria-current="true"{{/iscurrent}}>
-                                    <span aria-hidden="true">{{short}}</span>
-                                    <span class="visually-hidden">{{label}}</span>
-                                </a>
+                                <li>
+                                    <a class="dropdown-item ldgp-langitem{{#iscurrent}} ldgp-langitem--current{{/iscurrent}}"
+                                       href="{{url}}" hreflang="{{hreflang}}" lang="{{hreflang}}"
+                                       {{#iscurrent}}aria-current="true"{{/iscurrent}}>
+                                        <span aria-hidden="true">{{short}}</span>
+                                        <span class="visually-hidden">{{label}}</span>
+                                    </a>
+                                </li>
                             {{/languages}}
-                        </nav>
+                        </ul>
+                    </div>
                     {{/haslanguages}}
 
                     {{! O alternador tambem vive aqui: quem chega direto no

@@ -18,6 +18,8 @@ split de pagamento. Gateways: Mercado Pago e Asaas.
 | **configurar uma instalação nova** | [`operacao/configuracao-inicial.md`](operacao/configuracao-inicial.md) |
 | configurar **um plugin** específico | o `README.md` dentro do diretório dele |
 | saber que dado pessoal é coletado | [`legal/mapa-de-dados-pessoais.md`](legal/mapa-de-dados-pessoais.md) |
+| **publicar termos, privacidade e cookies** | [`legal/politicas-modelo.md`](legal/politicas-modelo.md) |
+| **cadastrar o site no Google** | [`operacao/cadastrar-no-google.md`](operacao/cadastrar-no-google.md) |
 
 ### Os READMEs dos plugins
 

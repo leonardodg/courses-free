@@ -32,7 +32,17 @@ along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
     Nasceu como override sobre o rodape de um tema de terceiro e hoje e proprio
     - o tema nao depende mais dele.
 
-    Tres mudancas em relacao aquele original, que continuam valendo:
+    Em 10/09/2026 ele foi REFEITO no formato do rodape da landing de captacao:
+    marca a esquerda, colunas de links a direita, e uma linha final com a razao
+    social, o CNPJ e o credito. Os links legais, a razao social e o credito vem
+    do local_partners por class_exists - a dependencia continua sendo daqui para
+    la, e continua opcional.
+
+    O "Get the mobile app", que vem do output.standard_footer_html do core,
+    deixou de flutuar solto no meio do rodape e virou um link da coluna de
+    suporte, como os outros.
+
+    Tres mudancas em relacao ao original de terceiro, que continuam valendo:
 
     1. Saiu o bloco .copyright - a faixa laranja "This theme was proudly
        developed by conecti.me". E marca de terceiro no rodape de uma
@@ -61,139 +71,97 @@ along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
     }
 }}
 
-<footer id="page-footer" class="footer-popover">
-    <div class="ldg-container-fluid footer-columns">
-        <div class="row">
-            <div class="col-md-4 column-left">
-                {{#hasfootercontact}}
-                    <div class="contact">
-                        <h3 class="footer-title">{{#str}}contactus, theme_ldg{{/str}}</h3>
+<footer id="page-footer" class="footer-popover ldg-footer">
+    <div class="ldg-container-fluid ldg-footer-inner">
 
-                        <ul>
-                            {{#website}}
-                                <li>
-                                    <a href="{{{website}}}" target="_blank" class="website btn btn-link">
-                                        <i class="fa fa-globe"></i>
-                                    </a>
-                                </li>
-                            {{/website}}
-                            {{#mobile}}
-                                <li>
-                                    <a href="tel:{{{mobile}}}" target="_blank" class="mobile btn btn-link">
-                                        <i class="fa fa-phone"></i>
-                                    </a>
-                                </li>
-                            {{/mobile}}
-                            {{#mail}}
-                                <li>
-                                    <a href="mailto:{{{mail}}}" target="_blank" class="mail btn btn-link">
-                                        <i class="fa fa-envelope"></i>
-                                    </a>
-                                </li>
-                            {{/mail}}
-                        </ul>
-                    </div>
+        <div class="ldg-footer-top">
+            <div class="ldg-footer-brand">
+                <p class="ldg-footer-name">{{sitename}}</p>
+
+                {{#hasfootercontact}}
+                    <ul class="ldg-footer-icons" aria-label="{{#str}}contactus, theme_ldg{{/str}}">
+                        {{#website}}
+                            <li><a href="{{{website}}}" target="_blank" rel="noopener" class="website"
+                                   aria-label="{{#str}}contactus, theme_ldg{{/str}}"><i class="fa fa-globe"></i></a></li>
+                        {{/website}}
+                        {{#mobile}}
+                            <li><a href="tel:{{{mobile}}}" class="mobile"><i class="fa fa-phone"></i></a></li>
+                        {{/mobile}}
+                        {{#mail}}
+                            <li><a href="mailto:{{{mail}}}" class="mail"><i class="fa fa-envelope"></i></a></li>
+                        {{/mail}}
+                    </ul>
                 {{/hasfootercontact}}
 
                 {{#hasfootersocial}}
-                    <div class="socialnetworks">
-                        <h3 class="footer-title">{{#str}}followus, theme_ldg{{/str}}</h3>
-
-                        <ul class="mb-0">
-                            {{#tiktok}}
-                                <li>
-                                    <a href="{{{tiktok}}}" target="_blank" class="tiktok btn btn-link btn-rounded">
-                                        <i class="fab fa-tiktok"></i>
-                                    </a>
-                                </li>
-                            {{/tiktok}}
-
-                            {{#facebook}}
-                                <li>
-                                    <a href="{{{facebook}}}" target="_blank" class="facebook btn btn-link btn-rounded">
-                                        <i class="fa fa-facebook"></i>
-                                    </a>
-                                </li>
-                            {{/facebook}}
-
-                            {{#twitter}}
-                                <li>
-                                    <a href="{{{twitter}}}" target="_blank" class="twitter btn btn-link btn-rounded">
-                                        <i class="fa fa-twitter"></i>
-                                    </a>
-                                </li>
-                            {{/twitter}}
-
-                            {{#instagram}}
-                                <li>
-                                    <a href="{{{instagram}}}" target="_blank" class="instagram btn btn-link btn-rounded">
-                                        <i class="fa fa-instagram"></i>
-                                    </a>
-                                </li>
-                            {{/instagram}}
-
-                            {{#linkedin}}
-                                <li>
-                                    <a href="{{{linkedin}}}" target="_blank" class="linkedin btn btn-link btn-rounded">
-                                        <i class="fa fa-linkedin"></i>
-                                    </a>
-                                </li>
-                            {{/linkedin}}
-
-                            {{#pinterest}}
-                                <li>
-                                    <a href="{{{pinterest}}}" target="_blank" class="pinterest btn btn-link btn-rounded">
-                                        <i class="fa fa-pinterest"></i>
-                                    </a>
-                                </li>
-                            {{/pinterest}}
-
-                            {{#youtube}}
-                                <li>
-                                    <a href="{{{youtube}}}" target="_blank" class="youtube btn btn-link btn-rounded">
-                                        <i class="fa fa-youtube"></i>
-                                    </a>
-                                </li>
-                            {{/youtube}}
-
-                            {{#whatsapp}}
-                                <li>
-                                    <a href="https://api.whatsapp.com/send?phone={{{whatsapp}}}" target="_blank" class="whatsapp btn btn-link btn-rounded">
-                                    <i class="fa fa-whatsapp"></i>
-                                    </a>
-                                </li>
-                            {{/whatsapp}}
-
-                            {{#telegram}}
-                                <li>
-                                    <a href="{{{telegram}}}" target="_blank" class="telegram btn btn-link btn-rounded">
-                                        <i class="fa fa-telegram"></i>
-                                    </a>
-                                </li>
-                            {{/telegram}}
-                        </ul>
-                    </div>
+                    <ul class="ldg-footer-icons" aria-label="{{#str}}followus, theme_ldg{{/str}}">
+                        {{#tiktok}}<li><a href="{{{tiktok}}}" target="_blank" rel="noopener" class="tiktok"><i class="fab fa-tiktok"></i></a></li>{{/tiktok}}
+                        {{#facebook}}<li><a href="{{{facebook}}}" target="_blank" rel="noopener" class="facebook"><i class="fab fa-facebook"></i></a></li>{{/facebook}}
+                        {{#instagram}}<li><a href="{{{instagram}}}" target="_blank" rel="noopener" class="instagram"><i class="fab fa-instagram"></i></a></li>{{/instagram}}
+                        {{#linkedin}}<li><a href="{{{linkedin}}}" target="_blank" rel="noopener" class="linkedin"><i class="fab fa-linkedin"></i></a></li>{{/linkedin}}
+                        {{#youtube}}<li><a href="{{{youtube}}}" target="_blank" rel="noopener" class="youtube"><i class="fab fa-youtube"></i></a></li>{{/youtube}}
+                        {{#whatsapp}}<li><a href="{{{whatsapp}}}" target="_blank" rel="noopener" class="whatsapp"><i class="fab fa-whatsapp"></i></a></li>{{/whatsapp}}
+                        {{#telegram}}<li><a href="{{{telegram}}}" target="_blank" rel="noopener" class="telegram"><i class="fab fa-telegram"></i></a></li>{{/telegram}}
+                    </ul>
                 {{/hasfootersocial}}
             </div>
-            <div class="col-md-4 column-center">
-                {{# output.supportemail }}
-                    <div class="supportemail">{{{ output.supportemail }}}</div>
-                {{/ output.supportemail }}
 
-                {{{ output.login_info }}}
+            <nav class="ldg-footer-cols" aria-label="{{#str}}footerlinks, theme_ldg{{/str}}">
+                {{#haspartnersfooter}}
+                    {{#landingenabled}}
+                        <div class="ldg-footer-col">
+                            <h2>{{#str}}footerplatform, theme_ldg{{/str}}</h2>
+                            <ul>
+                                <li><a href="{{config.wwwroot}}">{{#str}}home, core{{/str}}</a></li>
+                                <li><a href="{{landingurl}}">{{#str}}footerpartner, theme_ldg{{/str}}</a></li>
+                            </ul>
+                        </div>
+                    {{/landingenabled}}
 
-                {{{ output.standard_footer_html }}}
+                    {{#haslegal}}
+                        <div class="ldg-footer-col">
+                            <h2>{{#str}}footerlegal, theme_ldg{{/str}}</h2>
+                            <ul>
+                                {{#legal}}<li><a href="{{url}}">{{label}}</a></li>{{/legal}}
+                            </ul>
+                        </div>
+                    {{/haslegal}}
+                {{/haspartnersfooter}}
 
-                <div class="tool_usertours-resettourcontainer"></div>
-            </div>
-            <div class="col-md-4 column-right">
-                <div class="madeby">
-                    <p>{{#str}}themedevelopedby, theme_ldg{{/str}}</p>
-                    <a href="https://www.linkedin.com/in/le0dg/" target="_blank" rel="noopener">
-                        <img src="{{config.wwwroot}}/theme/ldg/pix/logo.svg" alt="LeoDG">
-                    </a>
+                {{! Ajuda, suporte e o que o core acrescenta - inclusive o "Get
+                    the mobile app", que antes flutuava solto no meio do rodape e
+                    agora e um link como os outros. }}
+                <div class="ldg-footer-col ldg-footer-col--support">
+                    <h2>{{#str}}footersupport, theme_ldg{{/str}}</h2>
+                    {{# output.supportemail }}
+                        <div class="supportemail">{{{ output.supportemail }}}</div>
+                    {{/ output.supportemail }}
+                    {{{ output.standard_footer_html }}}
+                    <div class="tool_usertours-resettourcontainer"></div>
                 </div>
-            </div>
+            </nav>
+        </div>
+
+        <div class="ldg-footer-legal">
+            <p class="ldg-footer-company">
+                {{#haspartnersfooter}}
+                    {{#legalname}}<strong>{{legalname}}</strong>{{/legalname}}
+                    {{^legalname}}<strong>{{sitename}}</strong>{{/legalname}}
+                    {{#taxid}}<span class="ldg-footer-taxid">CNPJ {{taxid}}</span>{{/taxid}}
+                {{/haspartnersfooter}}
+                {{^haspartnersfooter}}<strong>{{sitename}}</strong>{{/haspartnersfooter}}
+            </p>
+
+            <p class="ldg-footer-session">{{{ output.login_info }}}</p>
+
+            <p class="ldg-footer-credit">
+                &copy; {{year}}
+                {{#haspartnersfooter}}
+                    {{#creatorname}}
+                        &middot; <a href="{{creatorurl}}" target="_blank" rel="noopener noreferrer">{{#str}}themedevelopedby, theme_ldg{{/str}} {{creatorname}}</a>
+                    {{/creatorname}}
+                {{/haspartnersfooter}}
+            </p>
         </div>
     </div>
 

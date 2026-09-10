@@ -104,6 +104,13 @@
     // para texto. Sobre este da 5,80:1. No escuro nao ha esse problema, e o
     // preenchimento e o proprio acento.
     --ldg-accent-fill: #0062cc;
+
+    // Preenchimento do BOTAO, separado do acento de texto e IGUAL NOS DOIS
+    // MODOS. Medido: branco sobre #0062cc da 5,80:1 e passa em AA; sobre o
+    // #4b8eff que o modo escuro usa como acento daria 3,18:1 e reprovaria. O
+    // mesmo par que a landing usa, para as duas superficies nao divergirem.
+    --ldg-btn-fill: #0062cc;
+    --ldg-btn-fill-hover: #007aff;
     --ldg-on-accent: #ffffff;
 
     // O cromo e navy nos DOIS modos. E o que da identidade ao modo claro sem

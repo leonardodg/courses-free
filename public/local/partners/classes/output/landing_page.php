@@ -55,6 +55,7 @@ class landing_page implements renderable, templatable {
             'colormode' => self::color_mode(),
             'languages' => self::languages(),
             'haslanguages' => count(self::languages()) > 1,
+            'currentlanguage' => self::current_language_label(),
             'footer' => self::footer(),
             'brand' => self::brand($output),
             'loginurl' => (new moodle_url('/login/index.php'))->out(false),
@@ -141,11 +142,12 @@ class landing_page implements renderable, templatable {
      *
      * @return array
      */
-    public static function footer(): array {
-        global $SITE, $CFG;
+    public static function footer(bool $simples = false): array {
+        global $SITE;
 
-        $politica = !empty($CFG->sitepolicy) ? $CFG->sitepolicy : ($CFG->sitepolicyguest ?? '');
         $marca = seo::legal_name();
+        $criador = seo::creator();
+        $legais = self::legal_links();
 
         return [
             'sitename' => format_string($SITE->shortname),
@@ -156,10 +158,58 @@ class landing_page implements renderable, templatable {
             // Vazia vira false para o mustache poder cair no nome do site, em
             // vez de imprimir uma empresa que ninguem declarou.
             'legalname' => $marca !== '' ? $marca : false,
+            'taxid' => seo::tax_id() !== '' ? seo::tax_id() : false,
+            'creatorname' => $criador['name'] !== '' ? $criador['name'] : false,
+            'creatorurl' => $criador['url'],
+            'legal' => $legais,
+            'haslegal' => !empty($legais),
             'year' => userdate(time(), '%Y'),
-            'haspolicy' => $politica !== '',
-            'policyurl' => $politica,
+            // A variante simples e uma linha so, como no mockup do cadastro. A
+            // completa e a da landing, com colunas.
+            'issimple' => $simples,
         ];
+    }
+
+    /**
+     * Termos, privacidade e cookies - so os que tem destino.
+     *
+     * Link legal que nao leva a lugar nenhum e pior que link ausente: ele
+     * PROMETE um documento. Cada um so aparece quando alguem configurou a URL,
+     * e o padrao do de termos e a politica do site, que o Moodle ja tem.
+     *
+     * @return array
+     */
+    public static function legal_links(): array {
+        global $CFG;
+
+        $politica = !empty($CFG->sitepolicy) ? $CFG->sitepolicy : ($CFG->sitepolicyguest ?? '');
+
+        $mapa = [
+            'termsurl' => ['chave' => 'footerterms', 'padrao' => $politica],
+            'privacyurl' => ['chave' => 'footerprivacy', 'padrao' => ''],
+            'cookiesurl' => ['chave' => 'footercookies', 'padrao' => ''],
+        ];
+
+        $saida = [];
+
+        foreach ($mapa as $config => $dados) {
+            $url = trim((string) get_config('local_partners', $config));
+
+            if ($url === '') {
+                $url = (string) $dados['padrao'];
+            }
+
+            if ($url === '') {
+                continue;
+            }
+
+            $saida[] = [
+                'label' => get_string($dados['chave'], 'local_partners'),
+                'url' => $url,
+            ];
+        }
+
+        return $saida;
     }
 
     /**
@@ -213,6 +263,21 @@ class landing_page implements renderable, templatable {
         }
 
         return $saida;
+    }
+
+    /**
+     * O rotulo curto do idioma em uso, para o botao do seletor.
+     *
+     * @return string
+     */
+    public static function current_language_label(): string {
+        foreach (self::languages() as $idioma) {
+            if ($idioma['iscurrent']) {
+                return $idioma['short'];
+            }
+        }
+
+        return strtoupper(explode('_', current_language())[0]);
     }
 
     /**

@@ -82,6 +82,36 @@ class landing {
     }
 
     /**
+     * O que o rodape do SITE precisa saber para falar a mesma lingua da landing.
+     *
+     * Faz parte da superficie que o tema consome, junto de is_enabled(),
+     * replaces_frontpage(), render() e head_html(). O tema chama por
+     * class_exists e cai no que ele mesmo tem quando este plugin nao existe -
+     * a dependencia continua sendo do tema para ca, e continua opcional.
+     *
+     * Devolve so o que e comum as duas superficies: os links legais que tem
+     * destino, a razao social, o CNPJ e o credito de quem assina. Ancoras de
+     * secao ficam de fora de proposito - elas so existem na landing.
+     *
+     * @return array
+     */
+    public static function site_footer(): array {
+        $criador = seo::creator();
+        $legais = landing_page::legal_links();
+
+        return [
+            'legal' => $legais,
+            'haslegal' => !empty($legais),
+            'legalname' => seo::legal_name() !== '' ? seo::legal_name() : false,
+            'taxid' => seo::tax_id() !== '' ? seo::tax_id() : false,
+            'creatorname' => $criador['name'] !== '' ? $criador['name'] : false,
+            'creatorurl' => $criador['url'],
+            'landingurl' => (new moodle_url('/local/partners/index.php'))->out(false),
+            'landingenabled' => self::is_enabled(),
+        ];
+    }
+
+    /**
      * O que a landing acrescenta ao <head>.
      *
      * Delega para a classe seo, que trata indexacao, compartilhamento, idioma e

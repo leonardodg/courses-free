@@ -118,9 +118,20 @@ class behat_local_partners extends behat_base {
             . 'var largura = document.documentElement.clientWidth;'
             . 'var piores = [];'
             . 'var todos = document.querySelectorAll(".ldgp, .ldgp *");'
+            // Container que rola na horizontal DE PROPOSITO - a lista de
+            // ancoras da barra no celular - tem filhos que passam da tela por
+            // desenho. Quem precisa caber e o container; medir os filhos dele
+            // acusaria falha onde ha uma decisao.
+            . 'var deliberado = function(el) {'
+            . '  for (var p = el.parentElement; p && p !== document.body; p = p.parentElement) {'
+            . '    var ox = window.getComputedStyle(p).overflowX;'
+            . '    if (ox === "auto" || ox === "scroll") { return true; }'
+            . '  }'
+            . '  return false;'
+            . '};'
             . 'for (var i = 0; i < todos.length; i++) {'
             . '  var r = todos[i].getBoundingClientRect();'
-            . '  if (r.width > 0 && Math.round(r.right) > largura + 1) {'
+            . '  if (r.width > 0 && Math.round(r.right) > largura + 1 && !deliberado(todos[i])) {'
             . '    piores.push(todos[i].className + " ate " + Math.round(r.right));'
             . '  }'
             . '}'

@@ -52,6 +52,10 @@
 // e quem pinta e o tema. Ver o README do format_ldg.
 @import "ldg/format";
 
+// Paridade com a landing de captacao: o botao de entrar e o rodape. Vem DEPOIS
+// de components e surfaces, que e quem poe a base que este arquivo refina.
+@import "ldg/landingparity";
+
 // Por ULTIMO, sempre: sao correcoes que dependem de vir depois do core para
 // vencer em empate de especificidade.
 @import "ldg/corefixes";
