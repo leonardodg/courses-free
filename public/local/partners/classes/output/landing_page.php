@@ -50,7 +50,56 @@ class landing_page implements renderable, templatable {
             'hasplans' => !empty($this->plans()),
             'steps' => $this->steps(),
             'faq' => $this->faq(),
+            'sections' => self::sections(),
+            'colormode' => self::color_mode(),
         ];
+    }
+
+    /**
+     * As secoes da pagina, na ordem em que aparecem.
+     *
+     * Esta lista alimenta OS DOIS lados: os links da barra de secoes e os id=
+     * das proprias secoes no template. Escrever a lista duas vezes e como uma
+     * ancora passa a apontar para lugar nenhum sem ninguem notar - por isso ela
+     * e exportada, e nao repetida no mustache.
+     *
+     * @return array
+     */
+    public static function sections(): array {
+        $out = [];
+
+        foreach (['features', 'pricing', 'how', 'faq', 'apply'] as $id) {
+            $out[] = [
+                'id' => 'ldgp-' . $id,
+                'label' => get_string('section' . $id, 'local_partners'),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * O modo de cor com que a pagina nasce.
+     *
+     * Escuro e o padrao: e o que o desenho pede, e e o que o visitante anonimo
+     * ve. O estado sai PRONTO do servidor - deixar o JavaScript corrigir depois
+     * produz um pisca de escuro para claro a cada carregamento.
+     *
+     * A chave e a mesma do theme_ldg e do theme_moove ('dark-mode-on'), de
+     * proposito: assim a escolha feita na landing continua valendo no resto do
+     * site, e a do resto do site vale aqui. Nao lemos classe nenhuma dos temas -
+     * so a preferencia, que e do core.
+     *
+     * @return string 'dark' ou 'light'.
+     */
+    public static function color_mode(): string {
+        $preference = get_user_preferences('dark-mode-on', null);
+
+        if ($preference === null) {
+            return 'dark';
+        }
+
+        return $preference ? 'dark' : 'light';
     }
 
     /**

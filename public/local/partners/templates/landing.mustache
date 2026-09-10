@@ -32,11 +32,16 @@
     * hasplans - boolean
     * steps - array de { number, title, text }
     * faq - array de { id, question, answer }
+    * sections - array de { id, label } - a MESMA lista que a barra de secoes
+                 usa; os id= abaixo saem dela, e nao de texto escrito aqui
+    * colormode - 'dark' ou 'light', ja resolvido no servidor
 
     Example context (json):
     {
         "applyurl": "/local/partners/apply.php",
         "heroimage": "/local/partners/pix/hero.jpg",
+        "colormode": "dark",
+        "sections": [{"id": "ldgp-pricing", "label": "Plans"}],
         "hasplans": true,
         "plans": [
             {
@@ -55,7 +60,7 @@
         "faq": [{"id": "f1", "question": "How much?", "answer": "9.9%."}]
     }
 }}
-<div class="ldg-landing">
+<div class="ldgp ldgp--landing ldg-landing">
 
     <section class="ldg-landing-hero" style="background-image: url('{{heroimage}}');">
         <div class="ldg-landing-inner">
@@ -65,7 +70,7 @@
         </div>
     </section>
 
-    <section class="ldg-landing-value">
+    <section class="ldg-landing-value" id="ldgp-features">
         <div class="ldg-landing-inner">
             <h2>{{#str}}valuetitle, local_partners{{/str}}</h2>
             <div class="ldg-landing-grid">
@@ -86,7 +91,7 @@
     </section>
 
     {{#hasplans}}
-        <section class="ldg-landing-plans" id="planos">
+        <section class="ldg-landing-plans" id="ldgp-pricing">
             <div class="ldg-landing-inner">
                 <h2>{{#str}}planstitle, local_partners{{/str}}</h2>
                 <p class="ldg-landing-lead">{{#str}}planslead, local_partners{{/str}}</p>
@@ -128,7 +133,7 @@
         </section>
     {{/hasplans}}
 
-    <section class="ldg-landing-how">
+    <section class="ldg-landing-how" id="ldgp-how">
         <div class="ldg-landing-inner">
             <h2>{{#str}}howtitle, local_partners{{/str}}</h2>
             <ol class="ldg-landing-steps">
@@ -145,7 +150,7 @@
         </div>
     </section>
 
-    <section class="ldg-landing-faq">
+    <section class="ldg-landing-faq" id="ldgp-faq">
         <div class="ldg-landing-inner">
             <h2>{{#str}}faqtitle, local_partners{{/str}}</h2>
             <div class="accordion" id="ldg-landing-faq">
@@ -168,7 +173,7 @@
         </div>
     </section>
 
-    <section class="ldg-landing-cta">
+    <section class="ldg-landing-cta" id="ldgp-apply">
         <div class="ldg-landing-inner">
             <h2>{{#str}}ctatitle, local_partners{{/str}}</h2>
             <p class="ldg-landing-lead">{{#str}}ctalead, local_partners{{/str}}</p>
