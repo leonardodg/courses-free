@@ -57,6 +57,14 @@
                 var m = localStorage.getItem('local_partners-colormode');
                 if (m === 'light' || m === 'dark') {
                     document.currentScript.parentElement.setAttribute('data-bs-theme', m);
+
+                    // O chrome do tema acompanha, mas SO se ele ja for dono do
+                    // atributo. Sob theme_ldg isso evita a pagina clara com a
+                    // navbar escura depois de recarregar; sob Boost e Moove, que
+                    // nao tem desenho escuro para o cabecalho, nao mexemos.
+                    if (document.body && document.body.hasAttribute('data-bs-theme')) {
+                        document.body.setAttribute('data-bs-theme', m);
+                    }
                 }
             } catch (e) {
                 // Sem armazenamento local, vale o que o servidor decidiu.
