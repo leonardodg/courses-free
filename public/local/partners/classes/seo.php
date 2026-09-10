@@ -61,23 +61,42 @@ class seo {
      */
     protected static function brand(): array {
         return [
-            // Razao social, quando diferente do nome do site.
-            'legalname' => '',
-            // Identificador fiscal (CNPJ, VAT, EIN...).
-            'taxid' => '',
-            // Endereco. Preencha o conjunto todo ou deixe tudo vazio: endereco
-            // pela metade e recusado pelos validadores.
+            // Razao social. Vem do contrato social, e nao do nome de fantasia:
+            // e o nome que aparece na nota fiscal que o comprador recebe.
+            'legalname' => 'LDG Tecnologia Ltda',
+
+            // CNPJ. E dado publico da PESSOA JURIDICA - sai na nota e no
+            // cadastro da Receita -, e por isso pode ser publicado.
+            //
+            // O CPF do socio NAO entra aqui, nem em lugar nenhum deste arquivo.
+            // Identificador de pessoa natural em dado estruturado publico e
+            // exposicao permanente, indexada e fora do nosso controle.
+            'taxid' => '68.976.131/0001-42',
+
+            // ENDERECO INTENCIONALMENTE VAZIO.
+            //
+            // O do contrato social e residencial - apartamento do socio. Endereco
+            // de casa em schema.org publico e indexado por buscador e nao sai
+            // mais de la. Preencher so quando houver endereco comercial, e o
+            // conjunto TODO de uma vez: pela metade os validadores recusam.
             'street' => '',
             'city' => '',
             'region' => '',
             'postalcode' => '',
             'countrycode' => '',
-            // Contato.
+
+            // Contato. Vazio ate existir telefone e e-mail de empresa; o
+            // pessoal do socio nao serve para pagina publica.
             'telephone' => '',
             'email' => '',
-            // Perfis oficiais, um por linha. Sao o sinal de identidade que o
-            // schema chama de sameAs.
-            'sameas' => [],
+
+            // Perfis oficiais - o sinal de identidade que o schema chama de
+            // sameAs. O site profissional do responsavel entra porque e ele que
+            // liga esta plataforma a uma pessoa que existe, e e o unico endereco
+            // publico que temos hoje alem do proprio site.
+            'sameas' => [
+                'https://leodg.dev',
+            ],
         ];
     }
 

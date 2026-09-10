@@ -72,6 +72,18 @@ outra oferta cobrindo o mesmo curso segura o acesso, e o sync suspende zero.
 | Aplicação Asaas | `/admin/settings.php?section=paymentgatewayasaas` | Ambiente, carteira da plataforma, token do webhook, forma de cobrança e campo do CPF. |
 | Vínculo do vendedor Asaas | `/payment/manage_gateway.php?accountid=N&gateway=asaas` | Colar a chave do vendedor. A chave declara o ambiente pelo prefixo. |
 
+## Captação de parceiros
+
+| Tela | Caminho | O que verificar |
+|---|---|---|
+| Landing | `/local/partners/index.php` | Página **pública**, sem login. Escura por padrão, com alternador de modo na barra de seções. Preço e comissão saem do banco, não do template. |
+| Cadastro | `/local/partners/apply.php` | Duas colunas no desktop, empilhado no celular. Aceite dos termos é obrigatório **no servidor**. |
+| Fila de candidaturas | `/local/partners/admin/applications.php` | Ordem de chegada, situação em badge. |
+| Detalhe e decisão | `/local/partners/admin/application_view.php?id=N` | País, faixa de alunos e **momento** do aceite. Aprovar cria a empresa. |
+
+A conferência visual — três temas, cinco larguras, comparação com o mockup —
+está em [`local-partners-layout.md`](local-partners-layout.md).
+
 ## Administração
 
 | Tela | Caminho | O que verificar |
@@ -81,7 +93,7 @@ outra oferta cobrindo o mesmo curso segura o acesso, e o sync suspende zero.
 | Métodos de inscrição | `/admin/settings.php?section=manageenrols` | `enrol_marketplace` precisa estar habilitado, senão a compra não vira matrícula. |
 | Papéis | `/admin/roles/manage.php` | O papel **Seller** e os `PROHIBIT` de upload. |
 | Tarefas agendadas | `/admin/tool/task/scheduledtasks.php` | Renovação de tokens, sincronização de matrículas e aviso de vencimento. |
-| Limpar caches | `/admin/purgecaches.php` | Necessário depois de mexer em AMD ou strings de idioma. |
+| Limpar caches | `/admin/purgecaches.php` | Necessário depois de mexer em AMD ou strings de idioma. **Não invalida `styles.css` de plugin** — para isso, suba o `version.php`. |
 | Logs | `/report/log/index.php` | Primeiro lugar a olhar quando o webhook não entregar acesso. |
 
 ## Linha de comando

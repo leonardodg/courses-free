@@ -233,20 +233,44 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 | Behat `@javascript` morre em `localhost:4444` | Falta `--profile=chrome`, e o Selenium só sobe com `moodev up --full` |
 | Mudança em papel não chega à produção | `db/install.php` só roda em instalação nova. Sem passo no `db/upgrade.php`, nada muda no que está no ar |
 | `assign_capability()` não tira nada | Ele só acrescenta. Papel que já existe guarda as capabilities do desenho antigo — reconcilie, apagando o que saiu da lista |
+| Editou `styles.css` de plugin e nada mudou | O `purge_caches` **não** invalida CSS de plugin. Suba o `version.php` |
+| Docblock do mustache aparecendo na tela | Comentário `{{! }}` termina no **primeiro** `}}`. Não cite tag dentro dele |
+| Grade declarada por cima de `.d-flex` é ignorada | Utilitário do Bootstrap é `!important`. Trabalhe com o flex, ou use `flex-basis` |
+| Módulo AMD novo não roda, e sem erro | Com `cachejs` ligado o Moodle serve `amd/build/`. Rode `npx grunt amd` |
+| `npx grunt` recusa dentro do container | O node de lá é v20 e o Moodle 5.2 exige v22. Rode no **host** |
+| Cenário behat de celular passa dizendo o que não é | O Moodle **escala** o viewport. Use `without runtime scaling` |
+| `'choices'` do persistent reprova campo anulável | A lista é conferida antes da validação customizada, e `in_array(null, [...])` é falso. Use `validate_<campo>()` |
+| `Could not open input file` num script de CLI | CLI do **core** fica na raiz (`admin/cli/`); de **plugin**, sob `public/` |
 
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **335 testes** (114 no núcleo, 48 no Asaas, 47 no
-`format_ldg`, **37 no `mod_ldgvideo`**, 31 no `local_partners`, **24 no MP**, e
-34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
+webhook, matrícula. **360 testes** (114 no núcleo, 48 no Asaas, 47 no
+`format_ldg`, **37 no `mod_ldgvideo`**, **56 no `local_partners`**, **24 no MP**,
+e 34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
 `theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
 
-O behat cobre 14 cenários de três plugins, e **três deles medem o vídeo na
-tela** — é a única prova de que o `aspect-ratio` do `mod_ldgvideo` continua
+O behat cobre **34 cenários** de quatro plugins, e **doze deles medem a tela** —
+três no vídeo e nove na captação de parceiros — é a única prova de que o `aspect-ratio` do `mod_ldgvideo` continua
 vencendo o `width` fixo que o `core_media_manager` escreve no iframe. Os quatro
 do `paygw_mercadopago` cobrem a configuração e a trava que impede habilitar o
 gateway sem token.
+
+**A captação de parceiros ganhou cara nova** em 10/09/2026. O estilo da landing
+e do cadastro saiu do `theme_ldg` e virou `local/partners/styles.css`: o
+`theme_config` injeta `styles.css` de plugin na CSS compilada de **qualquer**
+tema, e as duas páginas passaram a renderizar igual sob `boost`, `moove` e `ldg`
+— medido, com o mesmo número nos três. É exceção deliberada à regra de que o
+tema pinta; ela continua valendo para o `format_ldg`.
+
+Junto vieram três campos na candidatura (país, faixa de alunos e o **momento**
+do aceite dos termos), um alternador claro/escuro que o Boost não tem, e SEO com
+JSON-LD cujo preço sai do banco. Nove cenários behat **medem a tela**, e o
+roteiro de conferência está em `docs/data-validation/local-partners-layout.md`.
+
+Sete defeitos daquela rodada só apareceram no navegador, e nenhum quebrou um
+teste — inclusive o docblock do mustache virando parágrafo na página pública.
+O método está em `docs/dev/padrao-de-implementacao.md`.
 
 **O plano Free ganhou a peça dele** em 04/09/2026: o `mod_ldgvideo` e a
 separação dos papéis de empresa. A fronteira "vídeo fica fora da plataforma"

@@ -174,12 +174,41 @@ final class seo_test extends \advanced_testcase {
 
         $org = $this->no('Organization');
 
-        $this->assertArrayNotHasKey('legalName', $org);
-        $this->assertArrayNotHasKey('taxID', $org);
+        // Vazios em seo::brand(): endereco (o do contrato social e residencial),
+        // telefone e e-mail (ainda nao ha os de empresa).
         $this->assertArrayNotHasKey('address', $org);
-        // O que o site SABE continua saindo.
+        $this->assertArrayNotHasKey('telephone', $org);
+        $this->assertArrayNotHasKey('email', $org);
+
+        // O que esta preenchido sai.
         $this->assertNotEmpty($org['name']);
         $this->assertNotEmpty($org['url']);
+        $this->assertNotEmpty($org['legalName']);
+        $this->assertNotEmpty($org['taxID']);
+    }
+
+    /**
+     * O CPF do socio nao e publicado, em lugar nenhum.
+     *
+     * O CNPJ e dado da pessoa JURIDICA - sai na nota fiscal e no cadastro da
+     * Receita. O CPF e de pessoa natural, e uma vez num dado estruturado
+     * publico ele fica indexado, permanente e fora do nosso controle. Este
+     * teste existe para o dia em que alguem colar "os dados da empresa" inteiros
+     * dentro do brand().
+     *
+     * @return void
+     */
+    public function test_o_cpf_do_socio_nunca_e_publicado(): void {
+        $this->resetAfterTest();
+
+        $html = seo::head_html();
+
+        // Um CPF em qualquer das grafias usuais.
+        $this->assertDoesNotMatchRegularExpression(
+            '~\b\d{3}\.\d{3}\.\d{3}-\d{2}\b~',
+            $html,
+            'ha algo com formato de CPF na saida publica'
+        );
     }
 
     /**
