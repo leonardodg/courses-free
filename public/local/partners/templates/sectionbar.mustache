@@ -1,0 +1,70 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_partners/sectionbar
+
+    Barra fina de secoes da landing, pegajosa ao rolar.
+
+    NAO substitui a navegacao do tema. O mockup trazia navbar propria com
+    hamburguer; portar aquilo seria dois menus fazendo um trabalho so, e o
+    cabecalho do Moodle carrega login, idioma e acessibilidade. Aqui ficam
+    apenas as ancoras da propria pagina, o botao de acao e o alternador de modo
+    de cor - que existe porque o theme_boost do 5.2 nao tem nenhum.
+
+    Os links saem do export "sections", a mesma lista de onde saem os id= das
+    secoes no template da landing.
+
+    NAO escreva chave dupla de mustache dentro deste comentario: ele termina no
+    primeiro fecha-chaves, e o resto do texto vai parar na tela.
+
+    Context variables required for this template:
+    * sections - array de { id, label }
+    * applyurl - URL do formulario de candidatura
+
+    Example context (json):
+    {
+        "applyurl": "/local/partners/apply.php",
+        "sections": [
+            {"id": "ldgp-features", "label": "Features"},
+            {"id": "ldgp-pricing", "label": "Plans"}
+        ]
+    }
+}}
+<div class="ldgp-bar">
+    <div class="ldgp-bar-inner">
+        <nav class="ldgp-bar-nav" aria-label="{{#str}}sectionnavlabel, local_partners{{/str}}">
+            <ul class="ldgp-bar-list">
+                {{#sections}}
+                    <li><a class="ldgp-bar-link" href="#{{id}}">{{label}}</a></li>
+                {{/sections}}
+            </ul>
+        </nav>
+
+        <div class="ldgp-bar-actions">
+            <button type="button" class="ldgp-modetoggle" data-ldgp="colormode"
+                    aria-pressed="false" title="{{#str}}colormodetoggle, local_partners{{/str}}">
+                <span class="visually-hidden">{{#str}}colormodetoggle, local_partners{{/str}}</span>
+                {{> local_partners/icons/sun }}
+                {{> local_partners/icons/moon }}
+            </button>
+
+            <a href="{{applyurl}}" class="ldgp-btn ldgp-btn--primary">
+                {{#str}}sectionapply, local_partners{{/str}}
+            </a>
+        </div>
+    </div>
+</div>

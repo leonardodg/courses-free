@@ -189,7 +189,10 @@ final class landing_page_test extends \advanced_testcase {
 
         foreach ($secoes as $secao) {
             $this->assertStringNotContainsString('[[', $secao['label']);
+            // Os dois lados: a secao existe na pagina...
             $this->assertStringContainsString('id="' . $secao['id'] . '"', $html);
+            // ...e a barra tem um link que aponta para ela.
+            $this->assertStringContainsString('href="#' . $secao['id'] . '"', $html);
         }
     }
 

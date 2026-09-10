@@ -96,6 +96,8 @@
         }());
     </script>
 
+    {{> local_partners/sectionbar }}
+
     <section class="ldgp-hero">
         <div class="ldgp-inner">
             <p class="ldgp-pill">
@@ -319,3 +321,9 @@
     </section>
 
 </div>
+{{#js}}
+    require(['local_partners/sectionbar', 'local_partners/colormode'], function(Bar, ColorMode) {
+        Bar.init();
+        ColorMode.init({{#isloggedin}}true{{/isloggedin}}{{^isloggedin}}false{{/isloggedin}});
+    });
+{{/js}}

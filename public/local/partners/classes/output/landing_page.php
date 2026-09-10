@@ -52,6 +52,11 @@ class landing_page implements renderable, templatable {
             'faq' => $this->faq(),
             'sections' => self::sections(),
             'colormode' => self::color_mode(),
+            // Decide ONDE o alternador guarda a escolha: quem esta autenticado
+            // grava a preferencia do perfil, que vale no site inteiro; o
+            // visitante anonimo grava no navegador, porque setUserPreference
+            // exige sessao - e o publico desta pagina e justamente ele.
+            'isloggedin' => isloggedin() && !isguestuser(),
         ];
     }
 

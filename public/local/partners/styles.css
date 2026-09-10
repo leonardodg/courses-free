@@ -1431,50 +1431,45 @@
 
 /*
  * A landing ocupa a largura toda.
-
- * MEDIDO: sem isto o miolo sai com 720px dentro de um viewport de 1440. Nao e o
- * `limitedwidth` do body - e o proprio `.pagelayout-standard` do Boost, que
- * limita a .main-inner ao `$course-content-maxwidth`. Faz sentido para pagina
- * de leitura; numa pagina de marketing corta o hero pela metade.
  *
- * A classe vem do PHP (`$PAGE->add_body_class`), e nao de um `:has()`: e
- * explicita, funciona em qualquer tema e nao depende de suporte do navegador.
+ * MEDIDO, e em duas rodadas. Primeiro o miolo saia com 720px dentro de um
+ * viewport de 1440 - nao e o `limitedwidth` do body, e o proprio
+ * `.pagelayout-standard` do Boost, que limita a .main-inner a largura de
+ * leitura. Depois, ja com a .main-inner solta, sobravam 70px de fundo do TEMA
+ * de cada lado, porque o padding restante estava no `#page.drawers` e num div
+ * sem classe dentro do `#region-main`. Numa landing escura sob um tema claro,
+ * essa moldura clara parece defeito.
+ *
+ * A cadeia inteira e zerada de uma vez. A classe vem do PHP
+ * (`$PAGE->add_body_class`), e nao de um `:has()`: e explicita, funciona em
+ * qualquer tema e nao depende de suporte do navegador.
+ *
+ * `ldg-has-landing` e a mesma coisa pela home do theme_ldg, que serve a landing
+ * no lugar da frontpage.
  */
+body.ldgp-page #page.drawers,
 body.ldgp-page #page.drawers .main-inner,
+body.ldgp-page #page-content,
 body.ldgp-page #region-main-box,
-body.ldgp-page #region-main {
-    max-width: none;
-    padding-left: 0;
-    padding-right: 0;
-    width: 100%;
-}
-
-body.ldgp-page #region-main {
-    border: 0;
-    margin: 0;
-}
-
-/*
- * A home com a landing ocupa a largura toda.
- *
- * O index.php do Moodle poe `limitedwidth` no body, que estreita o #page para
- * largura de leitura. Faz sentido para a home de cursos; numa pagina de
- * marketing deixa uma faixa vazia a direita e corta o hero.
- *
- * Fica AQUI, e nao no tema, porque o requisito e valer nos tres temas - e os
- * seletores sao os do casco do Boost, que o ldg e o moove herdam.
- */
+body.ldgp-page #region-main,
+body.ldgp-page #page.drawers div[role="main"],
+body.ldgp-page #region-main > div,
 body.ldg-has-landing #page.drawers,
 body.ldg-has-landing #page.drawers .main-inner,
+body.ldg-has-landing #page-content,
 body.ldg-has-landing #region-main-box,
-body.ldg-has-landing #region-main {
+body.ldg-has-landing #region-main,
+body.ldg-has-landing #page.drawers div[role="main"],
+body.ldg-has-landing #region-main > div {
+    margin-left: 0;
+    margin-right: 0;
     max-width: none;
     padding-left: 0;
     padding-right: 0;
     width: 100%;
 }
 
+body.ldgp-page #region-main,
 body.ldg-has-landing #region-main {
     border: 0;
-    margin: 0;
 }
