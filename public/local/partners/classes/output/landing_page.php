@@ -56,6 +56,7 @@ class landing_page implements renderable, templatable {
             'languages' => self::languages(),
             'haslanguages' => count(self::languages()) > 1,
             'footer' => self::footer(),
+            'brand' => self::brand($output),
             'loginurl' => (new moodle_url('/login/index.php'))->out(false),
             // Decide ONDE o alternador guarda a escolha: quem esta autenticado
             // grava a preferencia do perfil, que vale no site inteiro; o
@@ -86,6 +87,50 @@ class landing_page implements renderable, templatable {
         }
 
         return $out;
+    }
+
+    /**
+     * A marca, para a barra e para o rodape.
+     *
+     * Ela sumiu quando a navbar do tema saiu destas paginas, e nao pode sumir:
+     * pagina de captacao sem marca e pagina de ninguem.
+     *
+     * A busca vai do mais especifico para o mais geral, e cada degrau tem uma
+     * razao:
+     *
+     *  1. o logo do TEMA em uso, quando o renderer dele expuser um. E soft, por
+     *     method_exists - o plugin nao pode declarar dependencia de tema nenhum,
+     *     e sob Boost ou Moove o metodo simplesmente nao existe;
+     *  2. o logo do SITE, que e do core e vale em qualquer tema;
+     *  3. o nome curto do site, desenhado como marca-palavra. Sem imagem
+     *     nenhuma, ainda ha marca - e nao um buraco.
+     *
+     * @param renderer_base|null $output
+     * @return array
+     */
+    public static function brand(?renderer_base $output = null): array {
+        global $SITE, $OUTPUT;
+
+        $renderer = $output ?? $OUTPUT;
+        $claro = false;
+        $escuro = false;
+
+        if (method_exists($renderer, 'get_logo')) {
+            $claro = $renderer->get_logo();
+            $escuro = method_exists($renderer, 'get_logo_dark') ? $renderer->get_logo_dark() : $claro;
+        } else if (method_exists($renderer, 'get_logo_url')) {
+            $url = $renderer->get_logo_url();
+            $claro = $url ? $url->out(false) : false;
+            $escuro = $claro;
+        }
+
+        return [
+            'name' => format_string($SITE->shortname),
+            'homeurl' => (new moodle_url('/local/partners/index.php'))->out(false),
+            'logolight' => $claro ?: false,
+            'logodark' => $escuro ?: false,
+            'haslogo' => (bool) $claro,
+        ];
     }
 
     /**

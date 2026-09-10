@@ -32,6 +32,7 @@
     * landingurl - URL da landing, para o link de voltar
     * colormode - 'dark' ou 'light', ja resolvido no servidor
     * isloggedin - onde o alternador guarda a escolha
+    * brand - { name, homeurl, logolight, logodark, haslogo }
     * loginurl - URL da tela de login; o botao some para quem ja entrou
     * languages / haslanguages - o seletor de idioma, como na barra da landing
     * trust - array de { title, text, iscoin, isserver, isshield }
@@ -43,6 +44,8 @@
         "colormode": "dark",
         "isloggedin": false,
         "loginurl": "/login/index.php",
+        "brand": {"name": "LeoDG", "homeurl": "/local/partners/index.php",
+                  "logolight": "/logo.svg", "logodark": "/logo-dark.svg", "haslogo": true},
         "haslanguages": true,
         "languages": [
             {"code": "en", "hreflang": "en", "label": "English", "short": "EN",
@@ -84,6 +87,18 @@
         <div class="ldgp-split">
 
             <section class="ldgp-splitside">
+                {{#brand}}
+                    <a class="ldgp-brand ldgp-brand--apply" href="{{homeurl}}">
+                        {{#haslogo}}
+                            <img src="{{logolight}}" alt="{{name}}" class="ldgp-brand-logo ldgp-brand-logo--light">
+                            <img src="{{logodark}}" alt="{{name}}" class="ldgp-brand-logo ldgp-brand-logo--dark">
+                        {{/haslogo}}
+                        {{^haslogo}}
+                            <span class="ldgp-brand-word">{{name}}</span>
+                        {{/haslogo}}
+                    </a>
+                {{/brand}}
+
                 <div class="ldgp-applytop">
                     <a href="{{landingurl}}" class="ldgp-back">
                         {{> local_partners/icons/arrowleft }}

@@ -34,6 +34,7 @@
     Context variables required for this template:
     * sections - array de { id, label }
     * applyurl - URL do formulario de candidatura
+    * brand - { name, homeurl, logolight, logodark, haslogo }
     * loginurl - URL da tela de login; o botao some para quem ja entrou
     * isloggedin - boolean
     * languages - array de { code, hreflang, label, short, url, iscurrent }
@@ -45,6 +46,8 @@
         "applyurl": "/local/partners/apply.php",
         "loginurl": "/login/index.php",
         "isloggedin": false,
+        "brand": {"name": "LeoDG", "homeurl": "/local/partners/index.php",
+                  "logolight": "/logo.svg", "logodark": "/logo-dark.svg", "haslogo": true},
         "haslanguages": true,
         "languages": [
             {"code": "en", "hreflang": "en", "label": "English", "short": "EN",
@@ -63,6 +66,19 @@
 <a class="ldgp-skip" href="#ldgp-main">{{#str}}skiptomain, local_partners{{/str}}</a>
 <div class="ldgp-bar">
     <div class="ldgp-bar-inner">
+        {{#brand}}
+            <a class="ldgp-brand" href="{{homeurl}}">
+                {{#haslogo}}
+                    <img src="{{logolight}}" alt="{{name}}" class="ldgp-brand-logo ldgp-brand-logo--light">
+                    <img src="{{logodark}}" alt="{{name}}" class="ldgp-brand-logo ldgp-brand-logo--dark">
+                {{/haslogo}}
+                {{^haslogo}}
+                    {{! Sem imagem, a marca continua existindo como palavra. }}
+                    <span class="ldgp-brand-word">{{name}}</span>
+                {{/haslogo}}
+            </a>
+        {{/brand}}
+
         <nav class="ldgp-bar-nav" aria-label="{{#str}}sectionnavlabel, local_partners{{/str}}">
             <ul class="ldgp-bar-list">
                 {{#sections}}

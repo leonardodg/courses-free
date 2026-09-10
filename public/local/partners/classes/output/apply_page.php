@@ -65,6 +65,7 @@ class apply_page implements renderable, templatable {
             'isloggedin' => isloggedin() && !isguestuser(),
             'loginurl' => (new moodle_url('/login/index.php'))->out(false),
             'footer' => landing_page::footer(),
+            'brand' => landing_page::brand($output),
             'languages' => landing_page::languages(),
             'haslanguages' => count(landing_page::languages()) > 1,
             'trust' => $this->trust(),

@@ -444,6 +444,45 @@
     padding: 0 1rem;
 }
 
+/* A marca. Voltou para ca quando a navbar do tema saiu destas paginas. */
+.ldgp-brand {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 auto;
+    margin-right: 1rem;
+    text-decoration: none;
+}
+
+.ldgp-brand-logo {
+    display: block;
+    height: auto;
+    max-height: 1.75rem;
+    width: auto;
+}
+
+/* Uma variante por modo: a marca em fundo claro nao e a mesma que em escuro. */
+.ldgp[data-bs-theme="dark"] .ldgp-brand-logo--light,
+.ldgp[data-bs-theme="light"] .ldgp-brand-logo--dark {
+    display: none;
+}
+
+/* Sem imagem, a marca vira palavra - com a moldura do desenho. */
+.ldgp-brand-word {
+    border: 1px solid var(--ldgp-text);
+    border-radius: var(--ldgp-radius);
+    color: var(--ldgp-text);
+    font-family: var(--ldgp-mono);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding: 0.25rem 0.5rem;
+}
+
+.ldgp-brand--apply {
+    margin-bottom: 1.25rem;
+    margin-right: 0;
+}
+
 .ldgp-bar-nav {
     flex: 1 1 auto;
     min-width: 0;
