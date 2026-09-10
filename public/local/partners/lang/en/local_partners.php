@@ -52,6 +52,7 @@ $string['approvedsubject'] = 'Your application for {$a} was approved';
 $string['backtohome'] = 'Back to the home page';
 $string['backtolanding'] = 'Back to the partner page';
 $string['brandname'] = 'LDG Technology';
+$string['catalogmetadescription'] = 'Browse the courses published on the platform. Each course is sold by the person or company that created it.';
 $string['checklandingreachable'] = 'Partner landing reachable by visitors';
 $string['checklandingreachableaction'] = 'Navigation settings';
 $string['checklandingreachablefail'] = 'The landing page is the site home, but visitors who are not logged in are sent to the login page';

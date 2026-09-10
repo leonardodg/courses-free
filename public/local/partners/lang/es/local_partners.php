@@ -52,6 +52,7 @@ $string['approvedsubject'] = 'Su candidatura para {$a} fue aprobada';
 $string['backtohome'] = 'Volver a la página de inicio';
 $string['backtolanding'] = 'Volver a la página de asociación';
 $string['brandname'] = 'LDG Tecnología';
+$string['catalogmetadescription'] = 'Vea los cursos publicados en la plataforma. Cada curso lo vende quien lo creó, persona o empresa.';
 $string['checklandingreachable'] = 'Página de asociación alcanzable por el visitante';
 $string['checklandingreachableaction'] = 'Configuración de navegación';
 $string['checklandingreachablefail'] = 'La página de asociación es la portada del sitio, pero quien no ha entrado es enviado a la pantalla de acceso';

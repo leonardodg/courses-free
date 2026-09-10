@@ -52,6 +52,7 @@ $string['approvedsubject'] = 'Sua candidatura para {$a} foi aprovada';
 $string['backtohome'] = 'Voltar para a página inicial';
 $string['backtolanding'] = 'Voltar para a página de parceria';
 $string['brandname'] = 'LDG Tecnologia';
+$string['catalogmetadescription'] = 'Veja os cursos publicados na plataforma. Cada curso é vendido por quem o criou, pessoa ou empresa.';
 $string['checklandingreachable'] = 'Página de parceria alcançável pelo visitante';
 $string['checklandingreachableaction'] = 'Configurações de navegação';
 $string['checklandingreachablefail'] = 'A página de parceria é a home do site, mas quem não entrou é mandado para a tela de login';

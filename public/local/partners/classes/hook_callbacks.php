@@ -63,11 +63,46 @@ class hook_callbacks {
         // parecer a mesma coisa.
         $superficie = self::surface_for($PAGE->url->get_path());
 
-        if ($superficie === null) {
+        if ($superficie !== null) {
+            $hook->add_html(landing::head_html($superficie));
+
             return;
         }
 
-        $hook->add_html(landing::head_html($superficie));
+        // O catalogo do LMS leva SO a description, e nada mais.
+        //
+        // Nao leva canonical: a pagina aceita categoryid e paginacao, e
+        // canonical montada sem olhar para os parametros consolidaria
+        // categorias distintas numa URL so. Nao leva og:*: o catalogo nao e
+        // uma pagina de campanha, e o og:type=website da landing faria todo
+        // link compartilhado parecer a mesma coisa.
+        if (self::is_course_index($PAGE->url->get_path()) && landing::replaces_frontpage()) {
+            $hook->add_html(
+                '<meta name="description" content="'
+                . s(get_string('catalogmetadescription', 'local_partners')) . '">' . "\n"
+            );
+        }
+    }
+
+    /**
+     * O caminho e a listagem de cursos do core?
+     *
+     * @param string $path
+     * @return bool
+     */
+    protected static function is_course_index(string $path): bool {
+        // SO a raiz do catalogo. As paginas de categoria compartilham o mesmo
+        // caminho, e uma description generica repetida em todas elas e pior que
+        // nenhuma: o buscador reporta description duplicada, e o trecho que ele
+        // escreveria a partir do conteudo da categoria seria mais util.
+        if (optional_param('categoryid', 0, PARAM_INT) !== 0) {
+            return false;
+        }
+
+        $path = rtrim($path, '/') ?: '';
+        $catalogo = rtrim((new moodle_url('/course/index.php'))->get_path(), '/');
+
+        return $path === $catalogo || $path === dirname($catalogo);
     }
 
     /**
