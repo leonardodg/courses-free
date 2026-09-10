@@ -15,6 +15,7 @@ reúne o fluxo de worktrees, o devcontainer e o ferramental de desenvolvimento
 | [`guia-worktrees.md`](guia-worktrees.md) | o fluxo: portas, `.env`, VS Code, a VPS, armadilhas |
 | [`guia-desenvolvedor.md`](guia-desenvolvedor.md) | plugins, configuração, testes, domínio por vendedor |
 | [`fluxo-de-contribuicao.md`](fluxo-de-contribuicao.md) | da worktree ao deploy: PR, CI, merge em `dev` |
+| [`padrao-de-implementacao.md`](padrao-de-implementacao.md) | **como uma feature nasce, se prova e entra aqui** — o ciclo, e as armadilhas que só existiam em comentário de código |
 | [`behat.md`](behat.md) | inicializar e rodar behat, e o que ele encontra que o phpunit não pega |
 | [`portal-conferencia-visual.md`](portal-conferencia-visual.md) | medir o portal no Chrome contra o design system, e o que nem behat nem phpunit pegam |
 

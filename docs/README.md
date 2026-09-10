@@ -9,6 +9,7 @@ split de pagamento. Gateways: Mercado Pago e Asaas.
 |---|---|
 | entender a estrutura de worktrees | [`dev/estrutura-worktrees.md`](dev/estrutura-worktrees.md) |
 | montar o ambiente e começar a codar | [`dev/moodev.md`](dev/moodev.md) e [`dev/guia-worktrees.md`](dev/guia-worktrees.md) |
+| **saber como uma feature se faz aqui** | [`dev/padrao-de-implementacao.md`](dev/padrao-de-implementacao.md) |
 | mandar a mudança para produção | [`dev/fluxo-de-contribuicao.md`](dev/fluxo-de-contribuicao.md) |
 | entender **por que** o sistema é assim | [`architecture/decisoes-marketplace.md`](architecture/decisoes-marketplace.md) |
 | saber o que existe e o que falta | [`architecture/estado-e-proximas-fases.md`](architecture/estado-e-proximas-fases.md) |
