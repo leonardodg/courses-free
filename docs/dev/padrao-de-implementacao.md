@@ -257,8 +257,18 @@ a navegação por setas, que é como um leitor de tela escolhe entre rádios.
 `pt_br` e `es`, e os três precisam do **mesmo conjunto de chaves**.
 
 **`db/install.xml` e `db/upgrade.php` precisam concordar**, inclusive na ordem
-das colunas — o terceiro argumento de `xmldb_field` é o campo anterior. Prove com
+das colunas — o último argumento de `xmldb_field` é o campo anterior. Prove com
 `php admin/cli/check_database_schema.php`, não no olho.
+
+> Os scripts de CLI ficam na **raiz**, em `admin/cli/`, e não em
+> `public/admin/cli/`. No layout `public/` do Moodle 5.x eles vivem de propósito
+> fora do webroot. Já custou um "Could not open input file" que parece ambiente
+> quebrado.
+
+**Não use `'choices'` em propriedade anulável do persistent.** A checagem da lista
+roda antes da validação customizada e reprova o próprio `null`, porque
+`in_array(null, ['a', 'b'])` é falso. Lista fechada em campo anulável se valida
+num método `validate_<campo>()`, com saída antecipada no vazio.
 
 **`db/install.php` só roda em instalação nova.** Sem passo no `db/upgrade.php`,
 nada muda no que já está no ar. O mesmo vale para `assign_capability()`, que só

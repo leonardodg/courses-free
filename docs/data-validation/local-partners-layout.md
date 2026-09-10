@@ -46,9 +46,11 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 ```
 
 ```bash
-# A landing precisa estar ligada.
+# A landing precisa estar ligada. Os scripts de CLI ficam na RAIZ, em
+# admin/cli/, e nao em public/admin/cli/ - no layout public/ do Moodle 5.x eles
+# vivem de proposito fora do webroot.
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
-  php public/admin/cli/cfg.php --component=local_partners --name=enablelanding --set=1
+  php admin/cli/cfg.php --component=local_partners --name=enablelanding --set=1
 ```
 
 **Editou o `styles.css`? Suba o `version.php` do plugin.** O `purge_caches` não
