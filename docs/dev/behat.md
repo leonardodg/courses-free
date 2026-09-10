@@ -55,8 +55,13 @@ resolve, e não conflita com o Apache do ambiente de trabalho:
 
 ```bash
 docker exec -d -u 1000:33 courses-free-moodle-1 \
-  sh -c 'cd /var/www/html/public && php -S 127.0.0.1:8000 >/tmp/behatweb.log 2>&1'
+  sh -c 'cd /var/www/html/public && php -S 0.0.0.0:8000 >/tmp/behatweb.log 2>&1'
 ```
+
+> **`0.0.0.0`, e não `127.0.0.1`.** O `behat_wwwroot` deste projeto é
+> `http://moodle:8000`, e o Chrome roda em **outro container**: um servidor preso
+> ao loopback do container do Moodle é invisível para ele. O `config.php` explica
+> no comentário ao lado da constante.
 
 ```bash
 # Todas as nossas features

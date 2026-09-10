@@ -11,9 +11,11 @@ Feature: Decisao sobre uma candidatura de parceria
       | enablerecaptcha          | 0 | local_partners |
     And I visit "/local/partners/apply.php"
     And I set the following fields to these values:
-      | Company name | Editora Candidata     |
-      | Contact name | Paulo Reis            |
-      | Email        | paulo@exemplo.com     |
+      | Company name                   | Editora Candidata |
+      | Contact name                   | Paulo Reis        |
+      | Email                          | paulo@exemplo.com |
+      | Country or region of operation | Brazil            |
+    And I set the field "I accept the partnership terms and the privacy policy." to "1"
     And I press "Send application"
     And I should see "Application received"
     And I log in as "admin"

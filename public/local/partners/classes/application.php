@@ -226,6 +226,33 @@ class application extends persistent {
     }
 
     /**
+     * O rotulo de uma faixa, traduzido.
+     *
+     * A chave de idioma NAO e derivada do valor da faixa. Derivar produziria
+     * 'learnersband100to1000' e 'learnersband1000to5000', que em ordem
+     * alfabetica de verdade ficam ao contrario do que qualquer pessoa espera -
+     * e o phpcs cobra a ordem do arquivo de idioma. Nomes por tamanho resolvem,
+     * e o numero fica no texto, que e onde o leitor procura.
+     *
+     * @param string $band Uma das LEARNER_BANDS.
+     * @return string
+     */
+    public static function band_label(string $band): string {
+        $keys = [
+            self::BAND_UPTO_100 => 'learnersbandsmall',
+            self::BAND_100_TO_1000 => 'learnersbandmedium',
+            self::BAND_1000_TO_5000 => 'learnersbandlarge',
+            self::BAND_OVER_5000 => 'learnersbandxlarge',
+        ];
+
+        if (!isset($keys[$band])) {
+            return '';
+        }
+
+        return get_string($keys[$band], 'local_partners');
+    }
+
+    /**
      * O pais, quando informado, precisa ser um que o site ofereca.
      *
      * NAO usa 'choices' na definicao da propriedade: o persistent confere a

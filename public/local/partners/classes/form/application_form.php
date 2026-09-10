@@ -138,11 +138,37 @@ class application_form extends \moodleform {
         $mform->addElement('select', 'planid', get_string('planofinterest', 'local_partners'), $plans);
         $mform->setType('planid', PARAM_INT);
 
+        // A lista de paises e a do Moodle: ja vem traduzida nos tres idiomas, e
+        // respeita a restricao do administrador em $CFG->allcountrycodes. Uma
+        // lista escrita aqui divergiria dela na primeira mudanca.
+        $countries = ['' => get_string('choosedots')] + get_string_manager()->get_list_of_countries();
+        $mform->addElement('select', 'country', get_string('country', 'local_partners'), $countries);
+        $mform->setType('country', PARAM_ALPHA);
+        $mform->addRule('country', null, 'required', null, 'client');
+
+        if (!empty($GLOBALS['CFG']->country)) {
+            $mform->setDefault('country', $GLOBALS['CFG']->country);
+        }
+
+        $bands = ['' => get_string('learnersbandundecided', 'local_partners')];
+        foreach (application::LEARNER_BANDS as $band) {
+            $bands[$band] = application::band_label($band);
+        }
+        $mform->addElement('select', 'learnersband', get_string('learnersband', 'local_partners'), $bands);
+        $mform->setType('learnersband', PARAM_ALPHANUM);
+
         $mform->addElement('textarea', 'message', get_string('applicationmessage', 'local_partners'), [
             'rows' => 4,
             'cols' => 50,
         ]);
         $mform->setType('message', PARAM_TEXT);
+
+        // O advcheckbox posta valor tambem quando DESMARCADO, e o checkbox
+        // comum nao posta nada. Com o comum, o servidor nao distingue "nao
+        // aceitou" de "campo nao veio", e a checagem do aceite ficaria sujeita
+        // a como o navegador montou o POST.
+        $mform->addElement('advcheckbox', 'termsaccepted', '', $this->terms_label());
+        $mform->setType('termsaccepted', PARAM_INT);
 
         // Honeypot. Escondido por CSS, nunca por type="hidden": um robo ignora
         // display:none e preenche tudo que parece campo, mas tambem preenche
@@ -193,6 +219,29 @@ class application_form extends \moodleform {
             $errors['contactemail'] = get_string('erroremailinvalid', 'local_partners');
         }
 
+        // O aceite se confere AQUI, e nao so no navegador. O required do
+        // moodleform vira atributo HTML, e atributo HTML some com um curl - uma
+        // candidatura sem consentimento entraria na fila em silencio, e o
+        // carimbo de tempo perderia o valor de prova que e a razao de ele
+        // existir.
+        if (empty($data['termsaccepted'])) {
+            $errors['termsaccepted'] = get_string('errortermsrequired', 'local_partners');
+        }
+
+        if (
+            !empty($data['country'])
+            && !array_key_exists($data['country'], get_string_manager()->get_list_of_countries())
+        ) {
+            $errors['country'] = get_string('errorcountryinvalid', 'local_partners');
+        }
+
+        if (
+            !empty($data['learnersband'])
+            && !in_array($data['learnersband'], application::LEARNER_BANDS, true)
+        ) {
+            $errors['learnersband'] = get_string('errorlearnersbandinvalid', 'local_partners');
+        }
+
         $digits = !empty($data['cnpj']) ? cnpj::normalise($data['cnpj']) : '';
 
         if ($digits !== '' && !cnpj::is_valid($digits)) {
@@ -226,6 +275,32 @@ class application_form extends \moodleform {
         }
 
         return $errors;
+    }
+
+    /**
+     * O rotulo do aceite, com link para a politica do site quando houver uma.
+     *
+     * O endereco sai de $CFG->sitepolicy, que e onde o Moodle ja guarda esse
+     * documento - o mockup usava href="#", e um link que nao leva a lugar
+     * nenhum ao lado de "eu concordo" e pior que nao ter link.
+     *
+     * @return string
+     */
+    protected function terms_label(): string {
+        global $CFG;
+
+        $url = !empty($CFG->sitepolicy) ? $CFG->sitepolicy : ($CFG->sitepolicyguest ?? '');
+
+        if (empty($url)) {
+            return get_string('termsacceptplain', 'local_partners');
+        }
+
+        $link = \html_writer::link($url, get_string('termslinktext', 'local_partners'), [
+            'target' => '_blank',
+            'rel' => 'noopener noreferrer',
+        ]);
+
+        return get_string('termsaccept', 'local_partners', $link);
     }
 
     /**

@@ -260,10 +260,13 @@ a navegação por setas, que é como um leitor de tela escolhe entre rádios.
 das colunas — o último argumento de `xmldb_field` é o campo anterior. Prove com
 `php admin/cli/check_database_schema.php`, não no olho.
 
-> Os scripts de CLI ficam na **raiz**, em `admin/cli/`, e não em
-> `public/admin/cli/`. No layout `public/` do Moodle 5.x eles vivem de propósito
-> fora do webroot. Já custou um "Could not open input file" que parece ambiente
-> quebrado.
+> **Os scripts de CLI estão em dois lugares, e a distinção não é arbitrária.** O
+> CLI do **core** fica na raiz, fora do webroot: `admin/cli/upgrade.php`,
+> `admin/cli/check_database_schema.php`, `admin/cli/purge_caches.php`,
+> `admin/cli/cfg.php`. O CLI de **plugin** fica sob `public/`, junto do plugin:
+> `public/admin/tool/behat/cli/init.php`,
+> `public/admin/tool/phpunit/cli/init.php`. Errar o caminho dá
+> "Could not open input file", que parece ambiente quebrado e não é.
 
 **Não use `'choices'` em propriedade anulável do persistent.** A checagem da lista
 roda antes da validação customizada e reprova o próprio `null`, porque

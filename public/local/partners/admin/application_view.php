@@ -114,8 +114,18 @@ $rows = [
         ? html_writer::link($app->get('website'), s($app->get('website')), ['target' => '_blank', 'rel' => 'noopener'])
         : '-',
     'planofinterest' => $plan ? format_string($plan->get('name')) : get_string('planundecided', 'local_partners'),
+    'country' => $app->get('country')
+        ? (get_string_manager()->get_list_of_countries()[$app->get('country')] ?? s($app->get('country')))
+        : '-',
+    'learnersband' => $app->get('learnersband')
+        ? application::band_label($app->get('learnersband'))
+        : '-',
     'applicationmessage' => $app->get('message') ? nl2br(s($app->get('message'))) : '-',
     'submittedon' => userdate($app->get('timecreated')),
+    // Mostra QUANDO aceitou, e nao "sim": e a informacao que tem valor se
+    // alguem perguntar o que foi consentido e em que momento. Candidatura
+    // anterior ao campo mostra o traco, que e a verdade sobre ela.
+    'termsacceptedon' => $app->get('termsaccepted') ? userdate($app->get('termsaccepted')) : '-',
     'applicationstatus' => get_string('status' . $app->get('status'), 'local_partners'),
 ];
 
