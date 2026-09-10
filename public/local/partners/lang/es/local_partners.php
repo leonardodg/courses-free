@@ -31,7 +31,11 @@ $string['alreadydecided'] = 'Esta candidatura ya fue decidida.';
 $string['applicationmessage'] = 'Algo más que debamos saber';
 $string['applications'] = 'Candidaturas de socios';
 $string['applicationstatus'] = 'Estado';
+$string['applybadge'] = 'Una persona lee cada candidatura';
+$string['applyformlead'] = 'Cuéntenos sobre su operación. Nada de esto se publica, y respondemos por correo.';
 $string['applylead'] = 'Cuéntenos sobre su operación. Respondemos todas las candidaturas.';
+$string['applyreviewed'] = 'Revisado por una persona';
+$string['applysecure'] = 'Conexión cifrada';
 $string['applytitle'] = 'Postule para vender en la plataforma';
 $string['approvalpending'] = 'Aprobar una candidatura crea una empresa y una categoría de cursos. Ese paso todavía no está construido: por ahora, contacte al candidato directamente.';
 $string['approvedbody'] = 'Su candidatura para {$a->company} fue aprobada.
@@ -43,6 +47,7 @@ Ya puede iniciar sesion y preparar sus cursos:
 $string['approvedmessage'] = 'Candidatura aprobada. La empresa {$a} fue creada.';
 $string['approvedsubject'] = 'Su candidatura para {$a} fue aprobada';
 $string['backtohome'] = 'Volver a la página de inicio';
+$string['backtolanding'] = 'Volver a la página de asociación';
 $string['cnpj'] = 'CNPJ';
 $string['cnpj_help'] = 'Opcional. Una persona física vende sin CNPJ. Si lo indica, debe ser un número válido.';
 $string['colormodetoggle'] = 'Alternar entre claro y oscuro';
@@ -176,6 +181,7 @@ $string['rejectedbody'] = 'Su candidatura para {$a->company} no fue aprobada est
 {$a->note}';
 $string['rejectedmessage'] = 'Candidatura de {$a} rechazada.';
 $string['rejectedsubject'] = 'Sobre su candidatura para {$a}';
+$string['requiredfields'] = 'Campos obligatorios';
 $string['requireemailconfirmation'] = 'Exigir confirmación de correo al visitante anónimo';
 $string['requireemailconfirmation_desc'] = 'La candidatura solo llega a la cola después de que la persona abra un enlace enviado a la dirección que escribió. Es la capa antirrobot que las otras no sustituyen: el límite de frecuencia y el captcha le cuestan tiempo al robot, esta le cuesta un buzón real y funcional por candidatura. Depende de que el sitio pueda enviar correo: con el SMTP roto, activarlo bloquea la cola. Nunca se aplica al usuario autenticado: el sitio ya confirmó su dirección.';
 $string['reviewnote'] = 'Observación';

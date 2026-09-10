@@ -654,7 +654,7 @@
 .ldgp-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 /* -------------------------------------------------------------------------
@@ -1019,7 +1019,7 @@
 .ldgp-split {
     display: grid;
     gap: 2rem;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding-top: 2rem;
 }
 
@@ -1091,6 +1091,12 @@
     margin-bottom: 0;
 }
 
+/*
+ * O titulo do cartao e h2 na marcacao - a hierarquia da pagina e h1 do hero
+ * seguido de h2 por cartao, e nao ha nivel intermediario para gastar. O TAMANHO
+ * e que e de cartao; sem esta regra o h2 sai com a escala de titulo de secao.
+ */
+.ldgp-trustitem h2,
 .ldgp-trustitem h3 {
     font-size: 0.9375rem;
     font-weight: 600;
@@ -1100,6 +1106,18 @@
 .ldgp-trustitem p {
     font-size: 0.8125rem;
     margin: 0;
+}
+
+.ldgp-applytop {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+
+.ldgp-applytop .ldgp-back {
+    margin-bottom: 0;
 }
 
 .ldgp-formcard {
@@ -1162,10 +1180,30 @@
     padding: 0;
 }
 
+/*
+ * A grade e o PROPRIO .mform. Sem addElement('header', ...) o Moodle nao
+ * envolve os campos num fieldset .fcontainer, e os .fitem sao filhos diretos do
+ * <form> - descoberto lendo a marcacao servida, depois de a medicao acusar oito
+ * campos numa coluna so.
+ */
+.ldgp-formcard .mform,
 .ldgp-formcard .mform .fcontainer {
     display: grid;
     gap: 1rem;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/*
+ * O campo obedece a COLUNA, e nao ao size="50" do moodleform. Sem isto a grade
+ * nao encolhe no celular: medido em 644px de largura dentro de um viewport de
+ * 390.
+ */
+.ldgp-formcard .form-control,
+.ldgp-formcard .form-select,
+.ldgp-formcard .custom-select,
+.ldgp-formcard textarea {
+    max-width: 100%;
+    width: 100%;
 }
 
 .ldgp-formcard .mform .fitem {
@@ -1303,6 +1341,84 @@
 }
 
 /*
+ * Os cartoes de plano do cadastro.
+ *
+ * Sao radios de verdade, com o cartao inteiro dentro do <label>. O input fica
+ * FORA DA TELA por opacidade, e nunca com display:none: o segundo tira o radio
+ * da ordem de foco e mata a navegacao por setas, que e como um leitor de tela
+ * escolhe entre opcoes de um grupo.
+ */
+.ldgp-formcard #fgroup_id_plangroup .felement {
+    /* O Moodle entrega este container com d-flex flex-wrap; a grade precisa
+       vencer, senao os cartoes se distribuem por largura de conteudo e a ultima
+       linha fica com um cartao solto. */
+    display: grid;
+    gap: 0.625rem;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* O <label> que envolve cada radio. */
+.ldgp-formcard .ldgp-plancard__wrap {
+    display: block;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+.ldgp-formcard .ldgp-plancard__wrap input {
+    height: 0;
+    opacity: 0;
+    position: absolute;
+    width: 0;
+}
+
+.ldgp-formcard .ldgp-plancard {
+    background-color: var(--ldgp-canvas);
+    border: 1px solid var(--ldgp-border);
+    border-radius: var(--ldgp-radius);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-height: 2.75rem;
+    padding: 0.75rem;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ldgp-formcard .ldgp-plancard__wrap input:checked + .ldgp-plancard {
+    background-color: var(--ldgp-primary-soft);
+    border-color: var(--ldgp-primary);
+}
+
+.ldgp-formcard .ldgp-plancard__wrap input:focus-visible + .ldgp-plancard {
+    outline: 2px solid var(--ldgp-primary);
+    outline-offset: 2px;
+}
+
+.ldgp-formcard .ldgp-plancard__name {
+    color: var(--ldgp-text);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.ldgp-formcard .ldgp-plancard__price {
+    color: var(--ldgp-primary-text);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.ldgp-formcard .ldgp-plancard__note {
+    color: var(--ldgp-text-muted);
+    font-size: 0.75rem;
+}
+
+.ldgp-formcard .ldgp-plancard--undecided {
+    align-items: center;
+    color: var(--ldgp-text-muted);
+    flex-direction: row;
+}
+
+/*
  * O honeypot.
  *
  * ESTA REGRA MUDOU DE CASA, e a mudanca conserta um defeito: ela morava no
@@ -1368,7 +1484,12 @@
         padding: 2rem;
     }
 
+    .ldgp-formcard .mform,
     .ldgp-formcard .mform .fcontainer {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ldgp-formcard #fgroup_id_plangroup .felement {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

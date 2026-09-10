@@ -69,8 +69,11 @@ if ($data = $form->get_data()) {
     redirect($thanksurl);
 }
 
+// O formulario e renderizado DENTRO do template, e nao por display(): a pagina
+// e um split de duas colunas, e o cartao do formulario e uma delas. Quem desenha
+// o formulario continua sendo o Moodle - ver o docblock do apply_page.
+$renderer = $PAGE->get_renderer('local_partners');
+
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('applytitle', 'local_partners'));
-echo html_writer::tag('p', get_string('applylead', 'local_partners'), ['class' => 'lead']);
-$form->display();
+echo $renderer->render(new \local_partners\output\apply_page($form));
 echo $OUTPUT->footer();

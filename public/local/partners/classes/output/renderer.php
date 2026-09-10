@@ -26,4 +26,13 @@ use core\output\plugin_renderer_base;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class renderer extends plugin_renderer_base {
+    /**
+     * A pagina de cadastro.
+     *
+     * @param apply_page $page
+     * @return string
+     */
+    protected function render_apply_page(apply_page $page): string {
+        return $this->render_from_template('local_partners/apply', $page->export_for_template($this));
+    }
 }

@@ -31,7 +31,11 @@ $string['alreadydecided'] = 'This application was already decided.';
 $string['applicationmessage'] = 'Anything else we should know';
 $string['applications'] = 'Partner applications';
 $string['applicationstatus'] = 'Status';
+$string['applybadge'] = 'A person reads every application';
+$string['applyformlead'] = 'Tell us about your operation. Nothing here is published, and we answer by email.';
 $string['applylead'] = 'Tell us about your operation. We answer every application.';
+$string['applyreviewed'] = 'Reviewed by a human';
+$string['applysecure'] = 'Encrypted connection';
 $string['applytitle'] = 'Apply to sell on the platform';
 $string['approvalpending'] = 'Approving an application provisions a company and a course category. That step is not built yet: for now, get in touch with the applicant directly.';
 $string['approvedbody'] = 'Your application for {$a->company} was approved.
@@ -43,6 +47,7 @@ You can now sign in and set up your courses:
 $string['approvedmessage'] = 'Application approved. The company {$a} was created.';
 $string['approvedsubject'] = 'Your application for {$a} was approved';
 $string['backtohome'] = 'Back to the home page';
+$string['backtolanding'] = 'Back to the partner page';
 $string['cnpj'] = 'Company tax ID (CNPJ)';
 $string['cnpj_help'] = 'Optional. Individuals sell without one. If you enter it, it must be a valid number.';
 $string['colormodetoggle'] = 'Switch between light and dark';
@@ -176,6 +181,7 @@ $string['rejectedbody'] = 'Your application for {$a->company} was not approved t
 {$a->note}';
 $string['rejectedmessage'] = 'Application from {$a} rejected.';
 $string['rejectedsubject'] = 'About your application for {$a}';
+$string['requiredfields'] = 'Required fields';
 $string['requireemailconfirmation'] = 'Require email confirmation from anonymous visitors';
 $string['requireemailconfirmation_desc'] = 'The application only reaches the queue after the person opens a link sent to the address they typed. This is the anti-bot layer the others do not replace: rate limiting and a captcha cost a bot time, this one costs a real, working mailbox per application. It needs working outgoing email — with SMTP broken, turning this on stalls the queue. It never applies to logged in users: the site already confirmed their address.';
 $string['reviewnote'] = 'Note';

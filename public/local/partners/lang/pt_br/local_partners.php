@@ -31,7 +31,11 @@ $string['alreadydecided'] = 'Esta candidatura já foi decidida.';
 $string['applicationmessage'] = 'Algo mais que devemos saber';
 $string['applications'] = 'Candidaturas de parceiros';
 $string['applicationstatus'] = 'Situação';
+$string['applybadge'] = 'Uma pessoa lê cada candidatura';
+$string['applyformlead'] = 'Conte sobre a sua operação. Nada aqui é publicado, e respondemos por e-mail.';
 $string['applylead'] = 'Conte sobre a sua operação. Respondemos todas as candidaturas.';
+$string['applyreviewed'] = 'Revisado por uma pessoa';
+$string['applysecure'] = 'Conexão cifrada';
 $string['applytitle'] = 'Candidate-se para vender na plataforma';
 $string['approvalpending'] = 'Aprovar uma candidatura provisiona uma empresa e uma categoria de curso. Esse passo ainda não foi construído: por enquanto, entre em contato com o candidato diretamente.';
 $string['approvedbody'] = 'Sua candidatura para {$a->company} foi aprovada.
@@ -43,6 +47,7 @@ Voce ja pode entrar e preparar seus cursos:
 $string['approvedmessage'] = 'Candidatura aprovada. A empresa {$a} foi criada.';
 $string['approvedsubject'] = 'Sua candidatura para {$a} foi aprovada';
 $string['backtohome'] = 'Voltar para a página inicial';
+$string['backtolanding'] = 'Voltar para a página de parceria';
 $string['cnpj'] = 'CNPJ';
 $string['cnpj_help'] = 'Opcional. Pessoa física vende sem CNPJ. Se informar, precisa ser um número válido.';
 $string['colormodetoggle'] = 'Alternar entre claro e escuro';
@@ -176,6 +181,7 @@ $string['rejectedbody'] = 'Sua candidatura para {$a->company} nao foi aprovada d
 {$a->note}';
 $string['rejectedmessage'] = 'Candidatura de {$a} recusada.';
 $string['rejectedsubject'] = 'Sobre a sua candidatura para {$a}';
+$string['requiredfields'] = 'Campos obrigatórios';
 $string['requireemailconfirmation'] = 'Exigir confirmação de e-mail de visitante anônimo';
 $string['requireemailconfirmation_desc'] = 'A candidatura só chega à fila depois de a pessoa abrir um link enviado para o endereço que ela digitou. É a camada anti-robô que as outras não substituem: limite de taxa e captcha custam tempo ao robô, esta custa uma caixa de e-mail real e funcional por candidatura. Depende de o site conseguir enviar e-mail — com o SMTP quebrado, ligar isto trava a fila. Nunca vale para usuário autenticado: o site já confirmou o endereço dele.';
 $string['reviewnote'] = 'Observação';
