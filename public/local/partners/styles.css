@@ -162,7 +162,9 @@
     --ldgp-radius-lg: 0.75rem;
     --ldgp-radius-xl: 1rem;
     --ldgp-gutter: 1.5rem;
-    --ldgp-container: 75rem;
+    /* 80rem = 1280px, que e o max-w-7xl do mockup. Com 75rem a coluna do
+       cadastro saia 26px mais estreita que a referencia em 1440. */
+    --ldgp-container: 80rem;
     /* stylelint-disable-next-line length-zero-no-unit -- e operando de
        calc() e fallback de `top`, e nos dois o zero sem unidade e invalido. */
     --ldgp-sticky-top: 0px;
@@ -1348,19 +1350,36 @@
  * da ordem de foco e mata a navegacao por setas, que e como um leitor de tela
  * escolhe entre opcoes de um grupo.
  */
-.ldgp-formcard #fgroup_id_plangroup .felement {
-    /* O Moodle entrega este container com d-flex flex-wrap; a grade precisa
-       vencer, senao os cartoes se distribuem por largura de conteudo e a ultima
-       linha fica com um cartao solto. */
-    display: grid;
+/*
+ * Os cartoes de plano se organizam COM o flex do Moodle, e nao contra ele.
+ *
+ * O grupo sai como .felement > fieldset > div.d-flex.flex-wrap, e `.d-flex` e
+ * utilitario do Bootstrap: `display: flex !important`. Uma grade declarada por
+ * cima e ignorada - o computed style mostrava grid-template-columns definido e
+ * display:flex ao mesmo tempo, com os cartoes distribuidos por largura de
+ * conteudo (tres numa linha e um sobrando, medido em 768px).
+ *
+ * Entao a largura vem da BASE de cada cartao. Os <span> de mensagem de erro que
+ * o Moodle intercala sao zerados: com largura propria quebrariam a linha em
+ * lugar errado, e continuam no DOM para o leitor de tela.
+ */
+.ldgp-formcard #fgroup_id_plangroup .felement > fieldset > div {
     gap: 0.625rem;
-    grid-template-columns: minmax(0, 1fr);
 }
 
-/* O <label> que envolve cada radio. */
-.ldgp-formcard .ldgp-plancard__wrap {
-    display: block;
+.ldgp-formcard #fgroup_id_plangroup .invalid-feedback,
+.ldgp-formcard #fgroup_id_plangroup .form-control-feedback {
+    flex: 0 0 0;
     margin: 0;
+    min-width: 0;
+    padding: 0;
+}
+
+/* O <label> que envolve cada radio, e que e o item flexivel da linha. */
+.ldgp-formcard .ldgp-plancard__wrap {
+    flex: 0 0 100%;
+    margin: 0;
+    max-width: 100%;
     padding: 0;
     position: relative;
 }
@@ -1489,8 +1508,11 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .ldgp-formcard #fgroup_id_plangroup .felement {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Dois cartoes por linha. O desconto de 0.9375rem cobre metade da lacuna
+       de cada lado mais a folga dos <span> zerados no meio. */
+    .ldgp-formcard .ldgp-plancard__wrap {
+        flex: 0 0 calc(50% - 0.9375rem);
+        max-width: calc(50% - 0.9375rem);
     }
 
     /* Os pares que o formulario marca como meia largura. O resto ocupa a linha

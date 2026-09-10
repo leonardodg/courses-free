@@ -92,26 +92,170 @@ julgamento de tipografia, respiro e hierarquia, que número não decide.
 
 ```bash
 moodev up --full
+# 0.0.0.0, e nao 127.0.0.1: o Chrome roda em OUTRO container.
 docker exec -d -u 1000:33 courses-free-moodle-1 \
-  sh -c 'cd /var/www/html/public && php -S 127.0.0.1:8000 >/tmp/behatweb.log 2>&1'
+  sh -c 'cd /var/www/html/public && php -S 0.0.0.0:8000 >/tmp/behatweb.log 2>&1'
 docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   --profile=chrome --tags "@local_partners&&@javascript"
 ```
 
-## Resultado
+Nove cenários, e o último é um `Scenario Outline` que repete a conferência sob
+`boost`, `moove` e `ldg`.
 
-<!-- Preenchido na etapa 10, com medidas reais e data. Roteiro com resultado
-     inventado e pior que roteiro sem resultado. -->
+## Resultado — 10/09/2026
 
-*Ainda não executado.*
+Chrome 152 headless, medindo o DOM depois do JavaScript, com o mockup renderizado
+no mesmo navegador e no mesmo viewport.
+
+### Os três temas dão o mesmo número
+
+Landing em 1440, com o tema do site trocado entre uma medição e a seguinte:
+
+| Tema | Pilares | Planos | Fundo | Fonte | Rolagem horizontal |
+|---|---|---|---|---|---|
+| `boost` | 4 col, 272px | 3 col, 365px | `rgb(18,18,18)` | Inter | não |
+| `moove` | 4 col, 272px | 3 col, 365px | `rgb(18,18,18)` | Inter | não |
+| `ldg` | 4 col, 272px | 3 col, 365px | `rgb(18,18,18)` | Inter | não |
+
+Idênticos. É a prova de que o estilo saiu do tema — antes desta reforma, as duas
+primeiras linhas sairiam sem estilo nenhum.
+
+### Landing contra o mockup
+
+`Image 6.html` é a variante **de celular** do desenho: não tem uma classe `lg:`
+sequer, e por isso continua em uma coluna em qualquer largura. Ele só vale como
+referência **até 767px**; de 768 para cima a referência é o `Image 3.png`, que
+mostra 4 pilares e 3 planos lado a lado.
+
+| Largura | Fonte | Fundo | h1 | Peso do h1 | Planos | Rolagem |
+|---|---|---|---|---|---|---|
+| 360 nosso | Inter | `rgb(18,18,18)` | 32px | 800 | 1 coluna | não |
+| 360 mockup | Inter | `rgb(18,18,18)` | 30px | 800 | 1 coluna | não |
+| 390 nosso | Inter | `rgb(18,18,18)` | 33px | 800 | 1 coluna | não |
+| 390 mockup | Inter | `rgb(18,18,18)` | 30px | 800 | 1 coluna | não |
+| 768 nosso | Inter | `rgb(18,18,18)` | 47px | 800 | 2 colunas | não |
+| 1024 nosso | Inter | `rgb(18,18,18)` | 56px | 800 | 3 colunas | não |
+| 1440 nosso | Inter | `rgb(18,18,18)` | 60px | 800 | 3 colunas | não |
+
+Fonte, fundo e peso batem exatamente. O h1 fica 2–3px acima do mockup no celular
+porque o nosso é fluido (`clamp`) e o do desenho é fixo em `text-3xl`; a diferença
+some a olho e evita o degrau de tamanho que um valor fixo cria entre 767 e 768px.
+
+### Cadastro contra o mockup
+
+`Image 2.html` é a variante **de desktop**, com `lg:col-span-5` e `lg:col-span-7`.
+
+| Largura | Coluna de valor | Formulário | Proporção da esquerda | Empilhado |
+|---|---|---|---|---|
+| 390 nosso | 343px | 343px | 0,50 | sim |
+| 390 mockup | 343px | 343px | 0,50 | sim |
+| 1024 nosso | 374px | 523px | 0,42 | não |
+| 1024 mockup | 366px | 531px | 0,41 | não |
+| 1440 nosso | 487px | 681px | 0,42 | não |
+| 1440 mockup | 479px | 689px | 0,41 | não |
+
+A proporção bate. As larguras absolutas ficavam 26px estreitas até a medição
+mostrar que o contêiner do desenho é `max-w-7xl`, ou seja **1280px**, e não os
+1200 que eu havia escolhido — corrigido, e a diferença caiu para 8px, que é a
+sobra da aritmética entre um grid de `5fr 7fr` e um de 12 colunas.
+
+### Contrastes calculados
+
+| Modo | Par | Medido | AA |
+|---|---|---|---|
+| escuro | texto branco sobre card | 16,67:1 | passa |
+| escuro | texto médio `#b0b3b8` | 7,93:1 | passa |
+| escuro | texto baixo `#868b93` | 4,86:1 | passa |
+| escuro | link `#3d97ff` | 5,61:1 | passa |
+| claro | texto `#101214` | 18,77:1 | passa |
+| claro | médio `#4a5057` | 8,15:1 | passa |
+| claro | link `#0062cc` | 5,80:1 | passa |
+| ambos | branco sobre `#0062cc` | 5,80:1 | passa |
+
+Três cores do mockup **reprovaram** e foram trocadas: `#71767b` dava 3,64:1,
+`#007aff` como texto dava 4,15:1, e branco sobre `#007aff` dá 4,02:1 — que só
+passa em texto grande, e o botão do desenho é de 14px.
+
+## O que a medição encontrou
+
+Sete defeitos, e nenhum quebrou um teste de servidor:
+
+**O docblock do template virou parágrafo na página pública.** Um comentário de
+mustache termina no **primeiro** `}}`, e o docblock citava uma tag para explicar
+de onde vinham os `id=` das seções. Todo o texto seguinte, incluindo o *Example
+context*, saiu na tela do visitante.
+
+**O miolo com 720px dentro de um viewport de 1440.** Não é o `limitedwidth` do
+body: é o `.pagelayout-standard` do Boost.
+
+**Sobravam 70px de fundo do tema em volta.** O padding estava no
+`#page.drawers div[role="main"]`, encontrado percorrendo a cadeia de ancestrais.
+
+**O texto do botão primário saía azul.** `.ldgp a` (0,1,1) vencia
+`.ldgp-btn--primary` (0,1,0).
+
+**Botão com 110px de altura**, porque o SVG sem tamanho declarado assume a caixa
+do `viewBox`.
+
+**Oito campos numa coluna só.** Sem `addElement('header', …)` o Moodle não
+envolve os campos em fieldset, e os `.fitem` são filhos diretos do `<form>`.
+
+**A coluna com 644px num viewport de 390.** `1fr` é `minmax(auto, 1fr)` e não
+encolhe abaixo do conteúdo; um input com `size="50"` tem largura intrínseca
+grande.
+
+E um oitavo que o `stylelint` pegou antes do navegador: `clamp()` com soma
+precisa de `calc()` dentro — os quatro títulos fluidos estavam inválidos.
+
+## O que continua sem prova
+
+**Tipografia, respiro e hierarquia.** Número resolve "3 colunas de 365px";
+"chegou perto do desenho" é julgamento humano, com as capturas lado a lado.
+
+**A paleta clara contra uma referência.** Ela foi derivada e medida, mas não
+existe mockup claro para comparar.
+
+**Navegador que não seja Chromium.** Toda a medição saiu do Chrome.
 
 ## Armadilhas
 
-<!-- Preenchido conforme aparecerem. As conhecidas antes de comecar: -->
-
 **`purge_caches` não invalida CSS de plugin.** Suba o `version.php`. Sem isso, a
-medição descreve o estilo anterior.
+medição descreve o estilo anterior — aconteceu três vezes nesta rodada, sempre
+com a mesma cara: a correção "não funcionou".
+
+**A primeira medição depois de um purge mede a página errada.** O primeiro
+acesso recompila a CSS de todos os temas, e a sonda encontra a página a meio
+caminho. Descarte a primeira leitura, ou espere mais.
+
+**Revisão de CSS em cache engana entre temas.** Pedir
+`styles.php/boost/<revisão do ldg>/all` devolve um artefato antigo, e a conclusão
+foi "a regra não chegou ao Boost" quando ela tinha chegado. Use `-1` para forçar
+a compilação.
+
+**O `.d-flex` do Bootstrap é `display: flex !important`.** Uma grade declarada
+por cima é ignorada, e o `getComputedStyle` mostra as duas coisas ao mesmo
+tempo — `grid-template-columns` definido e `display: flex`. Ou se trabalha com o
+flex, ou se usa `!important`.
+
+**O Moodle ESCALA o viewport ao redimensionar.** `I change viewport size to
+"mobile"` sem `without runtime scaling` faz os 425px se comportarem como uns
+600. Uma asserção sobre celular medida assim afirma outra coisa.
+
+**O `grunt` não roda dentro do container.** O node de lá é v20 e o Moodle 5.2
+exige v22. Rode no host, de dentro do diretório do plugin.
+
+**Com `cachejs` ligado o Moodle serve o AMD compilado.** Sem `amd/build/`, o
+módulo simplesmente não roda — botão que não faz nada, sem erro no console.
+`npx grunt amd` gera, e os arquivos vão versionados.
+
+**Sem sessão, a sonda mede a tela de login** e conclui que está tudo bem.
+
+**`evaluate_script` avalia expressão, não bloco.** Envolva numa IIFE, senão o
+Chrome devolve `Unexpected token 'const'` longe da causa.
+
+**Feature nova não é coletada sozinha.** Depois de criar um `.feature`, rode
+`php public/admin/tool/behat/cli/util.php --enable`.
 
 **Feature nova não é coletada sozinha.** Depois de criar um `.feature`, rode
 `php public/admin/tool/behat/cli/util.php --enable`, senão o behat responde
