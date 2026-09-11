@@ -15,7 +15,7 @@ services:
         - ENVIRONMENT=development
         - TZ=America/Sao_Paulo
       cache_from:
-        - leodg/courses-free:development
+        - leodg/ldg-courses:development
     environment:
       # MOODLE_URL nao vai aqui: vem do dev.env, senao sobrescreve o dominio real.
       PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
@@ -38,4 +38,4 @@ volumes:
   # arquivo declarasse sem nome, o merge do compose poderia resolver para o nome
   # prefixado pelo projeto e cada stack acabaria com um cache separado.
   composer_cache:
-    name: courses-free_composer_cache
+    name: ldg-courses_composer_cache

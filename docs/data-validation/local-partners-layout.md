@@ -41,7 +41,7 @@ de preços não aparece e a medição não tem o que medir.
 
 ```bash
 # Confere que existem planos publicos; o seed do marketplace cria tres.
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php public/local/marketplace/cli/status.php < /dev/null
 ```
 
@@ -49,7 +49,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
 # A landing precisa estar ligada. Os scripts de CLI ficam na RAIZ, em
 # admin/cli/, e nao em public/admin/cli/ - no layout public/ do Moodle 5.x eles
 # vivem de proposito fora do webroot.
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php admin/cli/cfg.php --component=local_partners --name=enablelanding --set=1
 ```
 
@@ -93,9 +93,9 @@ julgamento de tipografia, respiro e hierarquia, que número não decide.
 ```bash
 moodev up --full
 # 0.0.0.0, e nao 127.0.0.1: o Chrome roda em OUTRO container.
-docker exec -d -u 1000:33 courses-free-moodle-1 \
+docker exec -d -u 1000:33 ldg-courses-moodle-1 \
   sh -c 'cd /var/www/html/public && php -S 0.0.0.0:8000 >/tmp/behatweb.log 2>&1'
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   --profile=chrome --tags "@local_partners&&@javascript"
 ```

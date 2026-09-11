@@ -239,7 +239,7 @@ gera, e os arquivos vão versionados.
 ## Testes
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite local_partners_testsuite
 ```
 
@@ -253,7 +253,7 @@ da tela sob `boost`, `moove` e `ldg`:
 
 ```bash
 moodev up --full
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   --profile=chrome --tags "@local_partners"
 ```

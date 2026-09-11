@@ -9,7 +9,7 @@ Folder: /home/leodg/localhost/gitworktree-bare-moodle
 ```
 $ git remote -v
 origin  https://github.com/moodle/moodle.git (fetch)
-origin  git@github.com:leonardodg/courses-free.git (push)
+origin  git@github.com:leonardodg/ldg-courses.git (push)
 
 $ git worktree add main
 $ git worktree remove main
@@ -137,7 +137,7 @@ git pull origin main
 
 ```
 # 1. Clonar na VPS (apenas na primeira vez)
-git clone -b main git@github.com:leonardodg/courses-free.git /var/www/html/moodle
+git clone -b main git@github.com:leonardodg/ldg-courses.git /var/www/html/moodle
 
 # 2. Em atualizações futuras na VPS:
 cd /var/www/html/moodle
@@ -177,13 +177,17 @@ Cada worktree recebe um **offset**, e dele saem o nome do stack e as portas:
 
 | Offset | Stack | HTTP | HTTPS | Banco | Xdebug |
 |---|---|---|---|---|---|
-| 0 | `courses-free` | 8080 | 8443 | 3307 | 9004 |
-| 1 | `courses-free-<nome>` | 8090 | 8453 | 3317 | 9014 |
-| 2 | `courses-free-<nome>` | 8100 | 8463 | 3327 | 9024 |
+| 0 | `ldg-courses` | 8080 | 8443 | 3307 | 9004 |
+| 1 | `ldg-courses-<nome>` | 8090 | 8453 | 3317 | 9014 |
+| 2 | `ldg-courses-<nome>` | 8100 | 8463 | 3327 | 9024 |
 
-O offset 0 é o ambiente que já existia: `base.yml` usa
-`name: ${STACK_NAME:-courses-free}`, então sem `STACK_NAME` nada muda — é assim
-que o stack principal e a VPS continuam iguais.
+O offset 0 é o ambiente principal: `base.yml` usa
+`name: ${STACK_NAME:-ldg-courses}`, então quem não define `STACK_NAME` cai nesse
+default — é assim que o principal e a VPS sobem sem precisar do `moodev`.
+
+Em compensação, **trocar esse default renomeia o stack de todo mundo**, VPS
+inclusive, e stack antigo tem que ser derrubado antes: para o compose é um
+projeto novo, e as portas continuam ocupadas pelo velho.
 
 **Guia completo** (comandos, `.env`, VS Code, duas worktrees em paralelo,
 armadilhas): `docs/dev/guia-worktrees.md`, dentro de qualquer worktree que tenha

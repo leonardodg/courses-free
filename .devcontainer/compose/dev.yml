@@ -7,7 +7,7 @@
 
 services:
   moodle:
-    image: ${MOODLE_IMAGE:-leodg/courses-free:development}
+    image: ${MOODLE_IMAGE:-leodg/ldg-courses:development}
     restart: unless-stopped
     env_file:
       - ../env/dev.env

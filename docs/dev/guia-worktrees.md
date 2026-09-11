@@ -32,8 +32,8 @@ ambiente subir está no `.gitignore`, e antes era copiado à mão:
 | `.devcontainer/certs/develop-local.{crt,key}` | par do mkcert |
 | `.devcontainer/env/db.env`, `env/dev.env` | credenciais e URL do site |
 
-Além disso o ambiente era **único por construção**: `base.yml` fixava
-`name: courses-free` e o `.env` fixava as portas. Subir o compose de outra
+Além disso o ambiente era **único por construção**: `base.yml` fixava um
+`name:` só e o `.env` fixava as portas. Subir o compose de outra
 worktree não criava um segundo ambiente — **recriava o mesmo container**
 apontando para outro código.
 
@@ -104,9 +104,9 @@ dentro de `paygw-pix/`, `moodev up` sobe aquele ambiente; de fora, seria
 
 ```
 WORKTREE               OFFSET STACK                      STATUS  URL
-paygw-pix              0      courses-free               up      https://localhost:8443
+paygw-pix              0      ldg-courses               up      https://localhost:8443
   feature/paygw-pix
-relatorios             1      courses-free-relatorios    up      https://localhost:8453
+relatorios             1      ldg-courses-relatorios    up      https://localhost:8453
   feature/relatorios
 fix-tls                -      -                          sem stack   -
   fix/tls
@@ -252,7 +252,7 @@ rápida.
 
 Desfazer é igual nos três: `moodev rm fix-tls-porta` — worktree, branch, dados e
 stack. Note a pasta com hífen, mesmo tendo criado com barra. E o `moodev rm` só apaga
-dados sob `cf-data/`, então um `--seed share` não leva o banco principal junto.
+dados sob `ldg-data/`, então um `--seed share` não leva o banco principal junto.
 
 ---
 
@@ -263,13 +263,18 @@ quatro portas, por soma:
 
 | Offset | Stack | HTTP | HTTPS | Banco | Xdebug |
 |---|---|---|---|---|---|
-| 0 | `courses-free` | 8080 | 8443 | 3307 | 9004 |
-| 1 | `courses-free-<nome>` | 8090 | 8453 | 3317 | 9014 |
-| 2 | `courses-free-<nome>` | 8100 | 8463 | 3327 | 9024 |
+| 0 | `ldg-courses` | 8080 | 8443 | 3307 | 9004 |
+| 1 | `ldg-courses-<nome>` | 8090 | 8453 | 3317 | 9014 |
+| 2 | `ldg-courses-<nome>` | 8100 | 8463 | 3327 | 9024 |
 
-O offset 0 é o ambiente que já existia. `base.yml` usa
-`name: ${STACK_NAME:-courses-free}`, então **sem `STACK_NAME` definido nada
-muda** — é assim que o principal e a VPS continuam funcionando sem alteração.
+O offset 0 é o ambiente principal. `base.yml` usa
+`name: ${STACK_NAME:-ldg-courses}`, então **quem não define `STACK_NAME` cai
+nesse default** — é assim que o principal e a VPS sobem sem precisar do `moodev`.
+
+A contrapartida: o default nomeia o stack de todo mundo que não define
+`STACK_NAME`. Trocá-lo renomeia containers, rede e volumes da VPS junto, e o
+stack antigo precisa ser derrubado à mão antes — para o compose é outro projeto,
+e as portas seguem ocupadas pelo que está no ar.
 
 O `moodev` só entrega um offset depois de conferir com `ss -ltn` que as quatro
 portas estão livres. Se alguma estiver ocupada por outro serviço da máquina, ele
@@ -278,10 +283,10 @@ pula para o offset seguinte.
 ### O `.env` gerado
 
 ```bash
-STACK_NAME=courses-free-paygw-pix          # separa este stack dos demais
+STACK_NAME=ldg-courses-paygw-pix          # separa este stack dos demais
 MOODLE_HOST_WWWROOT=/home/leodg/localhost/gitworktree-bare-moodle/paygw-pix
-MOODLE_HOST_DATA=/home/leodg/localhost/cf-data/paygw-pix/moodledata
-DB_HOST_DATA=/home/leodg/localhost/cf-data/paygw-pix/dbdata
+MOODLE_HOST_DATA=/home/leodg/localhost/ldg-data/paygw-pix/moodledata
+DB_HOST_DATA=/home/leodg/localhost/ldg-data/paygw-pix/dbdata
 MOODLE_HTTP_PORT=8090
 MOODLE_HTTPS_PORT=8453
 DB_PORT=3317
@@ -321,9 +326,9 @@ moodev ls
 
 ```
 WORKTREE               OFFSET STACK                      STATUS  URL
-feature-marketplace    0      courses-free               up      https://localhost:8443
+feature-marketplace    0      ldg-courses               up      https://localhost:8443
   feature/paygw-mercadopago
-paygw-pix              1      courses-free-paygw-pix     up      https://localhost:8453
+paygw-pix              1      ldg-courses-paygw-pix     up      https://localhost:8453
   feature/paygw-pix
 ```
 
@@ -334,16 +339,16 @@ Quatro containers no ar. O que fica **separado**:
 | Containers e rede | prefixo do projeto compose (`STACK_NAME`) |
 | Portas | offset |
 | Código | bind mount da worktree (`MOODLE_HOST_WWWROOT`) |
-| Banco | `dbdata` próprio em `~/localhost/cf-data/<nome>/` |
+| Banco | `dbdata` próprio em `~/localhost/ldg-data/<nome>/` |
 | `moodledata` | idem |
 | Dataroot do PHPUnit | `phpu_moodledata` dentro da worktree |
 | Histórico de shell | volume nomeado por worktree |
 
 O que é **compartilhado de propósito**:
 
-- **A imagem** `leodg/courses-free:development` — é a mesma para todos, e é
+- **A imagem** `leodg/ldg-courses:development` — é a mesma para todos, e é
   justamente por isso que subir a segunda worktree não custa build.
-- **O cache do Composer** (volume `courses-free_composer_cache`) — conteúdo
+- **O cache do Composer** (volume `ldg-courses_composer_cache`) — conteúdo
   imutável endereçado por hash; dividir evita rebaixar tudo a cada worktree.
 - **O certificado** do mkcert — cobre `localhost`, então vale em qualquer porta.
 
@@ -611,11 +616,11 @@ COMPOSE_ENV_FILE=.env docker compose config
 
 A VPS Oracle é Ampere (aarch64); quem desenvolve está em x86_64.
 
-`leodg/courses-free:development` é **multi-arquitetura**: o `docker compose pull`
+`leodg/ldg-courses:development` é **multi-arquitetura**: o `docker compose pull`
 funciona nas duas pontas, e cada uma recebe a sua imagem. Confira com:
 
 ```bash
-docker buildx imagetools inspect leodg/courses-free:development
+docker buildx imagetools inspect leodg/ldg-courses:development
 #   Platform: linux/amd64
 #   Platform: linux/arm64
 ```
@@ -646,7 +651,7 @@ Antes de reconstruir, vale marcar a imagem que funciona, para ter para onde
 voltar:
 
 ```bash
-docker tag leodg/courses-free:development leodg/courses-free:backup-$(date +%F)
+docker tag leodg/ldg-courses:development leodg/ldg-courses:backup-$(date +%F)
 ```
 
 > É por isso que o CRLF da §11 passou tanto tempo escondido: enquanto o `pull`
@@ -741,7 +746,7 @@ O resto depende do estado da worktree, que o `moodev ls` mostra na coluna `OFFSE
 | | Stack próprio (`≥ 1`) | Servida agora (`0`) | Sem stack (`-`) |
 |---|---|---|---|
 | Containers e volumes | derrubados | — | **intocados** |
-| `~/localhost/cf-data/<nome>/` | apagado | não existe | não existe |
+| `~/localhost/ldg-data/<nome>/` | apagado | não existe | não existe |
 | Dados do stack principal | — | **preservados** | **preservados** |
 | Stack principal | **intocado** | movido para `dev` | **intocado** |
 
@@ -753,7 +758,7 @@ outra.
 A distinção de dados não é cosmética. A linha de registro de uma worktree sem
 stack aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a
 serviu. Apagar por ali destruiria o banco principal a partir de um comando que
-parece local. O `moodev rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba
+parece local. O `moodev rm` só apaga dados sob `~/localhost/ldg-data/`, e só derruba
 stack quando existe um próprio.
 
 Antes de remover, avisa se houver alteração não commitada ou commit da **própria

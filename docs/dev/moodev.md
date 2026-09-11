@@ -33,8 +33,8 @@ código versionado; tudo que faz o ambiente subir está no `.gitignore`:
 | `.devcontainer/certs/develop-local.{crt,key}` | par do mkcert |
 | `.devcontainer/env/{db,dev}.env` | credenciais e URL do site |
 
-Pior: o ambiente era **único por construção**. `base.yml` fixava
-`name: courses-free` e o `.env` fixava as portas, então subir o compose de outra
+Pior: o ambiente era **único por construção**. `base.yml` fixava um
+`name:` só e o `.env` fixava as portas, então subir o compose de outra
 worktree não criava um segundo ambiente — **recriava o mesmo container**
 apontando para outro código.
 
@@ -81,9 +81,15 @@ Cada worktree registrada tem um **offset**, que define seu estado e suas portas:
 Offset `-` não é erro: é só uma worktree que não é a atual. `moodev use` a coloca no
 ar.
 
-O offset 0 é o ambiente que sempre existiu. `base.yml` usa
-`name: ${STACK_NAME:-courses-free}`, então **sem `STACK_NAME` nada muda** — é
-assim que a VPS continua idêntica.
+O offset 0 é o ambiente principal. `base.yml` usa
+`name: ${STACK_NAME:-ldg-courses}`, então quem não define `STACK_NAME` cai nesse
+default — é assim que a VPS sobe sem precisar deste script.
+
+Como o default é quem nomeia o stack de todo mundo que não define `STACK_NAME`,
+**trocá-lo renomeia containers, rede e volumes da VPS junto**. Foi o que
+aconteceu no rename de `courses-free` para `ldg-courses`: o stack antigo teve que
+ser derrubado à mão antes, senão o compose enxerga projeto novo e esbarra nas
+portas que o velho ainda segura.
 
 ---
 
@@ -220,7 +226,7 @@ moodev new fix/tls-porta --new-stack --seed share --from <branch do offset 0>
   rápida.
 
 > Remover a worktree depois é seguro nos três: o `moodev rm` só apaga dados sob
-> `cf-data/`, então um `--seed share` não leva o banco principal junto.
+> `ldg-data/`, então um `--seed share` não leva o banco principal junto.
 
 ### `--no-code`
 
@@ -277,7 +283,7 @@ O resto depende do offset:
 | | Stack próprio (`≥ 1`) | Servida agora (`0`) | Sem stack (`-`) |
 |---|---|---|---|
 | Containers e volumes | derrubados | — | **intocados** |
-| `~/localhost/cf-data/<nome>/` | apagado | não existe | não existe |
+| `~/localhost/ldg-data/<nome>/` | apagado | não existe | não existe |
 | Dados do stack principal | — | **preservados** | **preservados** |
 | Stack principal | **intocado** | movido para `dev` | **intocado** |
 
@@ -288,7 +294,7 @@ remover uma worktree não é motivo para interromper o trabalho em outra.
 A distinção de dados não é cosmética. A linha de registro de uma worktree sem
 stack aponta para o `moodledata` e o `dbdata` **do principal** — foi ele que a
 serviu. Apagar por ali destruiria o banco principal a partir de um comando que
-parece local. O `moodev rm` só apaga dados sob `~/localhost/cf-data/`, e só derruba
+parece local. O `moodev rm` só apaga dados sob `~/localhost/ldg-data/`, e só derruba
 stack quando existe um próprio.
 
 Antes de remover, avisa se houver alteração não commitada ou commit da **própria

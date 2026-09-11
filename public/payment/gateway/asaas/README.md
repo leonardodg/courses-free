@@ -120,7 +120,7 @@ Credenciais em `.devcontainer/secrets/asaas-sandbox.env`, que o `.gitignore`
 cobre — **nunca** neste arquivo, que vai para um repositório público.
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite paygw_asaas_testsuite
 ```
 

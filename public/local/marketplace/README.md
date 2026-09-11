@@ -245,7 +245,7 @@ O `db/install.php` garante; num ambiente que veio de antes, confira.
 ## Testes
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite local_marketplace_testsuite
 ```
 

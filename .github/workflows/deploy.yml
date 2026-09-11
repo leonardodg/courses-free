@@ -44,13 +44,13 @@ concurrency:
   #   os dois rodarem em paralelo na MESMA VPS, com a mesma tag de imagem e o
   #   mesmo banco. Dois upgrade.php concorrentes e exatamente o que esta linha
   #   existe para impedir.
-  group: deploy-courses-free-${{ github.event_name == 'pull_request' && github.ref || 'vps' }}
+  group: deploy-ldg-courses-${{ github.event_name == 'pull_request' && github.ref || 'vps' }}
   # Em PR pode cancelar a execucao anterior; no main nunca, para nao
   # interromper um upgrade.php no meio.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # IMAGE NAO pode ser definido aqui: vars.* do environment "development" nao sao
-# visiveis no nivel do workflow, e sairia "/courses-free:development".
+# visiveis no nivel do workflow, e sairia "/ldg-courses:development".
 # Cada job que precisa dele declara environment + env proprio.
 
 jobs:
@@ -107,6 +107,45 @@ jobs:
             fi
           done <<< "$(grep -vE '^\s*(#|$)' .github/moodle-plugins.txt)"
           exit $FAIL
+
+      # O projeto foi renomeado em 11/09/2026. O modo de falha que este passo
+      # cobre nao e alguem reverter o rename - e alguem copiar de um documento
+      # antigo um "docker exec" com o nome de container que nao existe mais, ou
+      # uma referencia de imagem que a VPS nao vai achar no Docker Hub.
+      #
+      # A busca e por IDENTIFICADOR, e nao pela palavra solta: nome de container,
+      # prefixo de volume, caminho de imagem, caminho de dado no host. O nome
+      # antigo segue escrito de proposito em prosa historica (a etimologia do
+      # "cf"), na nota do CF_DATA_ROOT e no registro do sandbox do Asaas, onde e
+      # o nome REAL da conta de la. Casar a palavra solta reprovaria essas linhas,
+      # o passo viraria ruido, e ruido acaba silenciado - que e como guarda morre.
+      #
+      # O padrao e montado a partir de $ANTIGO em vez de escrito por extenso para
+      # que este arquivo nao case consigo mesmo. A alternativa seria excluir o
+      # proprio workflow da varredura, mas e justamente aqui que a referencia da
+      # imagem mora: a guarda ficaria cega onde mais importa.
+      #
+      # docs/ai-plans/ e docs/private/ ficam de fora: sao historico, e plano
+      # antigo cita com razao os identificadores da epoca.
+      - name: Conferir que o nome antigo do projeto nao voltou
+        working-directory: plugins-src
+        run: |
+          set -uo pipefail
+          ANTIGO='courses-free'
+          PADRAO="${ANTIGO}-(moodle|db|selenium)|${ANTIGO}_|/${ANTIGO}([:/.]|\$)"
+          PADRAO="$PADRAO|(moodledata|dbdata|backups)-${ANTIGO}|STACK_NAME:-${ANTIGO}"
+          PADRAO="$PADRAO|localhost/cf[-]data"
+          HITS=$(grep -rInE "$PADRAO" . \
+                   --exclude-dir=.git \
+                   --exclude-dir=node_modules \
+                   --exclude-dir=ai-plans \
+                   --exclude-dir=private || true)
+          if [ -n "$HITS" ]; then
+            echo "$HITS"
+            echo "::error::identificador do nome antigo voltou ao repositorio - veja as linhas acima"
+            exit 1
+          fi
+          echo "nenhum identificador do nome antigo no repositorio"
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -403,7 +442,7 @@ jobs:
             runner: ubuntu-24.04-arm
     env:
       # Sem tag: o push-by-digest publica no repositorio, nao numa tag.
-      REPO: ${{ vars.DOCKER_USERNAME }}/courses-free
+      REPO: ${{ vars.DOCKER_USERNAME }}/ldg-courses
     steps:
       - uses: actions/checkout@v4
 
@@ -471,7 +510,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     env:
-      REPO: ${{ vars.DOCKER_USERNAME }}/courses-free
+      REPO: ${{ vars.DOCKER_USERNAME }}/ldg-courses
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -502,7 +541,7 @@ jobs:
           # MB, o repositorio acumulou dezenas delas em poucos dias, sem que
           # nada as consumisse: o deploy usa :development, e para voltar a uma
           # versao anterior o digest continua acessivel
-          # (docker pull leodg/courses-free@sha256:...), que e o identificador
+          # (docker pull leodg/ldg-courses@sha256:...), que e o identificador
           # imutavel de verdade.
           # shellcheck disable=SC2086
           docker buildx imagetools create --tag "${REPO}:development" $referencias
@@ -532,7 +571,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     env:
-      IMAGE: ${{ vars.DOCKER_USERNAME }}/courses-free:development
+      IMAGE: ${{ vars.DOCKER_USERNAME }}/ldg-courses:development
     steps:
       - uses: actions/checkout@v4
 
@@ -745,8 +784,8 @@ jobs:
                 --adminuser=admin \
                 --adminpass='${{ secrets.MOODLE_ADMIN_PASS }}' \
                 --adminemail='leonardodg@msn.com' \
-                --fullname="Courses Free" \
-                --shortname="courses-free" </dev/null
+                --fullname="LDG Technology & Courses" \
+                --shortname="LDG-Courses" </dev/null
             fi
 
             docker compose exec -T moodle php admin/cli/purge_caches.php </dev/null

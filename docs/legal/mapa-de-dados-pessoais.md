@@ -181,7 +181,7 @@ pessoal; o que fica — razão social, CNPJ, empresa criada — é da pessoa jur
 Verificar antes de confiar:
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --filter privacy_test
 ```
 

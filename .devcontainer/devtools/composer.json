@@ -1,5 +1,5 @@
 {
-    "name": "leodg/courses-free-devtools",
+    "name": "leodg/ldg-courses-devtools",
     "description": "Ferramentas de desenvolvimento do projeto. NAO e o composer.json do Moodle.",
     "type": "project",
     "license": "GPL-3.0-or-later",

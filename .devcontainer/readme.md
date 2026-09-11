@@ -1,7 +1,7 @@
-# Courses Free — infraestrutura
+# LDG Courses  — Infraestrutura
 
-Ambiente Docker do projeto. **Um único ambiente** (`development`), rodando na VPS Oracle
-atrás de nginx. Não há stack de produção separada — o projeto está em fase de teste.
+Ambiente Docker do projeto. **Um único ambiente** (`development`), rodando na VPS
+atrás de nginx.
 
 ---
 
@@ -131,7 +131,7 @@ remover secret por override** (o merge é aditivo). Daí o arquivo à parte.
 ```bash
 docker compose exec moodle php admin/cli/install_database.php \
     --agree-license --adminuser=admin --adminpass='...' \
-    --adminemail='...' --fullname="Courses Free" --shortname="courses-free"
+    --adminemail='...' --fullname="LDG Technology & Courses" --shortname="LDG-Courses"
 ```
 
 Os CLI ficam em `admin/cli/` na **raiz**, não em `public/admin/cli/`.
@@ -175,9 +175,9 @@ pasta conhecida do host, para o backup ser um `tar` da pasta:
 
 | O quê | Variável | Sugestão na VPS |
 |---|---|---|
-| Código | `MOODLE_HOST_WWWROOT` | `/home/ubuntu/courses-free/repo` |
-| moodledata | `MOODLE_HOST_DATA` | `/home/ubuntu/courses-free/moodledata` |
-| Banco | `DB_HOST_DATA` | `/home/ubuntu/courses-free/dbdata` |
+| Código | `MOODLE_HOST_WWWROOT` | `/home/ubuntu/ldg-courses/repo` |
+| moodledata | `MOODLE_HOST_DATA` | `/home/ubuntu/ldg-courses/moodledata` |
+| Banco | `DB_HOST_DATA` | `/home/ubuntu/ldg-courses/dbdata` |
 
 ---
 

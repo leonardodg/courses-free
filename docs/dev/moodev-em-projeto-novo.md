@@ -98,8 +98,8 @@ Nada disso é opcional — são os pontos onde o nome deste projeto está gravad
 |---|---|
 | `.devcontainer/bin/moodev` | `MOODEV_BASE_WT` se a worktree de repouso não se chamar `dev` |
 | `.devcontainer/bin/moodev` | as portas base do offset 0 (`8080`, `8443`, `3307`, `9004`) |
-| `.devcontainer/compose/base.yml` | `STACK_NAME` padrão — hoje `courses-free` |
-| `.devcontainer/build/moodle.Dockerfile` | a tag da imagem (`leodg/courses-free:development`) |
+| `.devcontainer/compose/base.yml` | `STACK_NAME` padrão — hoje `ldg-courses` |
+| `.devcontainer/build/moodle.Dockerfile` | a tag da imagem (`leodg/ldg-courses:development`) |
 | `.devcontainer/config/config-docker.php` | `$CFG->wwwroot`, banco, e o bloco de domínio por vendedor, que é específico deste projeto |
 
 **As portas importam mais do que parecem.** Dois projetos com a mesma porta base
@@ -207,7 +207,7 @@ O caminho completo de execução está em [`behat.md`](behat.md).
 
 ## Passo 7 — Adaptar a documentação
 
-Estes documentos citam `courses-free`, `local_marketplace` e as portas daqui.
+Estes documentos citam `ldg-courses`, `local_marketplace` e as portas daqui.
 Copie e ajuste:
 
 | Documento | O que ajustar |

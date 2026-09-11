@@ -270,13 +270,13 @@ script.
 
 ```bash
 # Ambiente
-docker exec -u 1000:33 courses-free-moodle-1 \
+docker exec -u 1000:33 ldg-courses-moodle-1 \
   php /var/www/html/public/admin/tool/phpunit/cli/init.php
 
 # Testes
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite local_marketplace_testsuite
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite paygw_mercadopago_testsuite
 
 # phpcs (instalado em /tmp/cs no container)

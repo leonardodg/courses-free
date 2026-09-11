@@ -72,7 +72,7 @@ mkdir -p ~/localhost/gitworktree-bare-moodle
 cd ~/localhost/gitworktree-bare-moodle
 
 # 1. o repositorio, sem working tree
-git clone --bare git@github.com:leonardodg/courses-free.git .bare
+git clone --bare git@github.com:leonardodg/ldg-courses.git .bare
 echo "gitdir: ./.bare" > .git
 
 # 2. o clone --bare so traz refs/heads; sem isto, nenhum remote-tracking

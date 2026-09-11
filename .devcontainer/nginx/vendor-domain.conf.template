@@ -58,7 +58,7 @@ server {
     error_log  /var/log/nginx/__DOMINIO__.error.log;
 
     location / {
-        proxy_pass http://courses_free;
+        proxy_pass http://ldg_courses;
         proxy_http_version 1.1;
 
         # Host e X-Forwarded-Proto sao OBRIGATORIOS.

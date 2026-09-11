@@ -1,4 +1,4 @@
-# Documentação do courses-free
+# Documentação do ldg-courses
 
 Plataforma Moodle 5.2 onde qualquer pessoa publica curso gratuito ou pago, com
 split de pagamento. Gateways: Mercado Pago e Asaas.
