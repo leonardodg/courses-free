@@ -1010,7 +1010,15 @@ EOF
 
     echo
     ok "'$name' pronta em https://localhost:$https"
-    [ "$open_code" -eq 1 ] && cmd_code "$name"
+
+    # "if" e nao "[ ... ] && ...": esta e a ULTIMA linha da funcao, entao o
+    # retorno dela e o retorno de cmd_new. Com --no-code o teste da falso, a
+    # lista && devolve 1, e o comando reportava falha depois de ter funcionado -
+    # a mensagem acima dizia "pronta" e o $? dizia erro. Quem chama moodev em
+    # script confia no codigo de saida.
+    if [ "$open_code" -eq 1 ]; then
+        cmd_code "$name"
+    fi
 }
 
 # Lista os plugins que a ref do BANCO tem em versao maior que a ref do CODIGO.
