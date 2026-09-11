@@ -197,6 +197,20 @@ Política de hospedagem e comissão, por curso.
 | `commissionpct` | Percentual retido. Só se aplica em oferta de **curso único**. |
 | `commissionbase` | `gross` ou `net`. Nulo herda a base do site. |
 
+> **Esta coluna faltou em produção entre 01/09 e 11/09/2026.** O passo de upgrade
+> `2026090110` a acrescentou a `local_marketplace_course_policy` — nome tirado da
+> classe (`course_policy`), e não da constante `TABLE` dela. O `table_exists()`
+> do próprio passo devolveu falso e nada foi criado, em silêncio.
+>
+> O sintoma não era erro: o `insert_record` do Moodle descarta campo ausente da
+> tabela, então a política salvava **sem** a base e a leitura devolvia nulo — que
+> significa "herda a do site". Base líquida negociada saía cobrada sobre o bruto.
+> Instalação nova nunca foi atingida: o `install.xml` sempre declarou a coluna.
+>
+> Corrigido pelo passo `2026091110`. O `check_database_schema.php` do core é o
+> instrumento que enxerga esse tipo de divergência, e `db_schema_test.php` é o
+> teste que impede a volta.
+
 ### `local_marketplace_plan`
 
 O plano comercial. Nasce de um seed e é **editável por tela** — preço muda por

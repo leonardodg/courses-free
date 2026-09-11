@@ -366,6 +366,74 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 npx grunt
 … --profile=chrome --tags "@<componente>&&@javascript"
 ```
 
+**Mexeu no `db/`? Rode o conferidor de esquema do core.**
+
+```bash
+docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+  php admin/cli/check_database_schema.php
+```
+
+Ele compara o banco VIVO com o `install.xml` e e o unico instrumento que enxerga
+migracao que "rodou" sem fazer nada. Saida esperada: `Database structure is ok.`
+
+Isso nao e zelo — em 11/09/2026 ele achou, em um segundo, um defeito que estava
+em producao havia dez dias: um passo de upgrade acrescentava uma coluna a uma
+tabela cujo nome veio da CLASSE (`course_policy`) e nao da constante `TABLE` dela
+(`local_marketplace_course`). A guarda `table_exists()` do proprio passo devolveu
+falso, nada foi criado, e o upgrade terminou com sucesso.
+
+**O que torna essa familia de defeito perigosa e o silencio dos dois lados.** O
+`insert_record` do Moodle DESCARTA campo que a tabela nao tem, em vez de recusar.
+Entao o valor sumia na gravacao, a leitura devolvia nulo, e nulo tinha um
+significado legitimo — "herda a base do site". Comissao negociada sobre o liquido
+saia cobrada sobre o bruto, e nenhuma tela dizia nada.
+
+**PHPUnit nao pega isso, e vale saber por que:** o ambiente de teste instala do
+ZERO, e a instalacao nova le o `install.xml`, onde a coluna sempre esteve. O
+esquema de teste sempre bate. Quem diverge e o site ATUALIZADO — e ele nao existe
+no CI. Por isso o teste que pega e o que le o TEXTO da migracao
+(`local_marketplace/tests/db_schema_test.php`), e nao o que consulta o banco.
+
+### A regra que saiu dali
+
+**Uma instrucao de migracao nao pode rodar sem fazer nada e ainda assim passar.**
+
+Quando a tabela e do proprio plugin — declarada no `install.xml` —, ela existe.
+Perguntar se existe antes de acrescentar campo nao protege de nada, e transforma
+nome errado em silencio:
+
+```php
+// NAO. O table_exists() engole o nome errado, e o upgrade termina com sucesso.
+if ($dbman->table_exists($table) && !$dbman->field_exists($table, $field)) {
+    $dbman->add_field($table, $field);
+}
+
+// SIM. Nome errado estoura na hora, com o nome da tabela na mensagem.
+if (!$dbman->field_exists($table, $field)) {
+    $dbman->add_field($table, $field);
+}
+```
+
+Tres guardas continuam CERTAS, e nao casam com o padrao proibido:
+
+| Forma | Por que e legitima |
+|---|---|
+| `if (table_exists(...))` antes de `drop_table` | so se apaga o que existe, e a tabela pode ja ter sido apagada |
+| `if (!table_exists(...))` antes de criar | criacao idempotente; a negacao e outra forma |
+| `table_exists('<plugin de terceiro>')` | ele pode nao estar instalado, e ai a guarda **e** a regra de negocio |
+
+`db_schema_test` cobra isto nos **dez** plugins do projeto, e nao so no
+marketplace: o defeito nao era do plugin, era da forma, e a forma cabe em
+qualquer `db/upgrade.php` escrito amanha. Plugin ausente da arvore e pulado, e
+nao reprovado.
+
+**Passo que ja rodou nao se conserta.** Um passo de upgrade roda uma vez por
+site: onde ele ja passou, mudar o texto nao tem efeito nenhum, e onde ainda nao
+passou o passo corretivo resolve do mesmo jeito. Escreva o passo novo, deixe o
+antigo como esta com um comentario explicando, e registre o engano em
+`ERRADAS_JA_CORRIGIDAS` ou `GUARDAS_JA_CORRIGIDAS` — listas que exigem, elas
+proprias, que o passo corretivo exista.
+
 **`tail -3` no phpcs esconde o relatório.** Já se reportou "zero violações" com 16
 erros presentes, e o CI reprovou. Leia o total.
 

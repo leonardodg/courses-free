@@ -248,11 +248,15 @@ vezes. Avise antes de o usuário merjear, ou segure o commit.
 | Metade branca na tela de entrar | O `#page` do layout de login sai `#fff` do Boost, e vence tudo dentro dele. Pintar a coluna nao resolve |
 | A raiz redireciona anonimo para o login, e mexer no `forcelogin` nao resolve | `enablemyhome` desligado. O `index.php:79` do core manda o anonimo para o login porque o destino calculado esta desabilitado - o comentario do proprio core diz "forcelogin may be off". Derruba canonica, hreflang e sitemap juntos |
 | Titulo da pagina ignora o `set_title()` do plugin | O `head.mustache` resolve `page_title` ANTES de `standard_head_html`. O hook de `<head>` e tarde: use o `before_http_headers` |
+| Passo de upgrade "roda" e nao cria a coluna | Nome de tabela errado mais a guarda `table_exists()` da silencio. O nome sai da constante `TABLE` da classe, **nao** do nome da classe |
+| `table_exists(...) &&` antes de `add_field` | **Proibido** em tabela do proprio plugin: ela existe, e a guarda so faz nome errado passar calado. Sem ela o engano estoura. O `db_schema_test` cobra isso nos dez plugins |
+| Campo gravado somindo sem erro | `insert_record` do Moodle **descarta** campo que a tabela nao tem. E perda silenciosa, nao excecao |
+| `admin/cli/upgrade.php` diz "no upgrade needed" com passo pendente | Cache `allversionshash`. `unset_config('allversionshash')` e rode de novo |
 
 ## Estado atual
 
 **Funciona em produção:** compra completa validada — preferência, checkout,
-webhook, matrícula. **386 testes** (114 no núcleo, 48 no Asaas, 47 no
+webhook, matrícula. **395 testes** (123 no núcleo, 48 no Asaas, 47 no
 `format_ldg`, **37 no `mod_ldgvideo`**, **82 no `local_partners`**, **24 no MP**,
 e 34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
 `theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
