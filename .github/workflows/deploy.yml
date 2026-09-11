@@ -108,6 +108,45 @@ jobs:
           done <<< "$(grep -vE '^\s*(#|$)' .github/moodle-plugins.txt)"
           exit $FAIL
 
+      # O projeto foi renomeado em 11/09/2026. O modo de falha que este passo
+      # cobre nao e alguem reverter o rename - e alguem copiar de um documento
+      # antigo um "docker exec" com o nome de container que nao existe mais, ou
+      # uma referencia de imagem que a VPS nao vai achar no Docker Hub.
+      #
+      # A busca e por IDENTIFICADOR, e nao pela palavra solta: nome de container,
+      # prefixo de volume, caminho de imagem, caminho de dado no host. O nome
+      # antigo segue escrito de proposito em prosa historica (a etimologia do
+      # "cf"), na nota do CF_DATA_ROOT e no registro do sandbox do Asaas, onde e
+      # o nome REAL da conta de la. Casar a palavra solta reprovaria essas linhas,
+      # o passo viraria ruido, e ruido acaba silenciado - que e como guarda morre.
+      #
+      # O padrao e montado a partir de $ANTIGO em vez de escrito por extenso para
+      # que este arquivo nao case consigo mesmo. A alternativa seria excluir o
+      # proprio workflow da varredura, mas e justamente aqui que a referencia da
+      # imagem mora: a guarda ficaria cega onde mais importa.
+      #
+      # docs/ai-plans/ e docs/private/ ficam de fora: sao historico, e plano
+      # antigo cita com razao os identificadores da epoca.
+      - name: Conferir que o nome antigo do projeto nao voltou
+        working-directory: plugins-src
+        run: |
+          set -uo pipefail
+          ANTIGO='courses-free'
+          PADRAO="${ANTIGO}-(moodle|db|selenium)|${ANTIGO}_|/${ANTIGO}([:/.]|\$)"
+          PADRAO="$PADRAO|(moodledata|dbdata|backups)-${ANTIGO}|STACK_NAME:-${ANTIGO}"
+          PADRAO="$PADRAO|localhost/cf[-]data"
+          HITS=$(grep -rInE "$PADRAO" . \
+                   --exclude-dir=.git \
+                   --exclude-dir=node_modules \
+                   --exclude-dir=ai-plans \
+                   --exclude-dir=private || true)
+          if [ -n "$HITS" ]; then
+            echo "$HITS"
+            echo "::error::identificador do nome antigo voltou ao repositorio - veja as linhas acima"
+            exit 1
+          fi
+          echo "nenhum identificador do nome antigo no repositorio"
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
