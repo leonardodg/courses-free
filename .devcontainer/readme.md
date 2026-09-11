@@ -1,7 +1,7 @@
-# Courses Free — infraestrutura
+# LDG Courses  — Infraestrutura
 
-Ambiente Docker do projeto. **Um único ambiente** (`development`), rodando na VPS Oracle
-atrás de nginx. Não há stack de produção separada — o projeto está em fase de teste.
+Ambiente Docker do projeto. **Um único ambiente** (`development`), rodando na VPS
+atrás de nginx.
 
 ---
 
@@ -131,7 +131,7 @@ remover secret por override** (o merge é aditivo). Daí o arquivo à parte.
 ```bash
 docker compose exec moodle php admin/cli/install_database.php \
     --agree-license --adminuser=admin --adminpass='...' \
-    --adminemail='...' --fullname="Courses Free" --shortname="courses-free"
+    --adminemail='...' --fullname="LDG Technology & Courses" --shortname="LDG-Courses"
 ```
 
 Os CLI ficam em `admin/cli/` na **raiz**, não em `public/admin/cli/`.

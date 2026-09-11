@@ -745,8 +745,8 @@ jobs:
                 --adminuser=admin \
                 --adminpass='${{ secrets.MOODLE_ADMIN_PASS }}' \
                 --adminemail='leonardodg@msn.com' \
-                --fullname="Courses Free" \
-                --shortname="courses-free" </dev/null
+                --fullname="LDG Technology & Courses" \
+                --shortname="LDG-Courses" </dev/null
             fi
 
             docker compose exec -T moodle php admin/cli/purge_caches.php </dev/null
