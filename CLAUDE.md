@@ -109,7 +109,7 @@ Para levá-lo a outro fork do Moodle: `docs/dev/moodev-em-projeto-novo.md`.
 comando é o `moodev` (`.devcontainer/bin/moodev`): `moodev ls` mostra worktrees, offsets,
 portas e status; `moodev new <nome>` cria worktree, ambiente, dados e stack, e
 ramifica de `origin/dev` por padrão. Cada worktree recebe um offset, e dele saem
-o nome do stack e as portas — offset 0 é o principal (`courses-free`,
+o nome do stack e as portas — offset 0 é o principal (`ldg-courses`,
 8080/8443/3307/9004), offset 1 soma 10 a cada uma.
 Guia completo em `docs/dev/guia-worktrees.md`.
 
@@ -153,7 +153,7 @@ Só então `moodev new`. Procedimento completo e as armadilhas em
 `docs/dev/estrutura-worktrees.md`, seção 5 — inclusive a de **não editar o
 `.gitattributes` da raiz**, que é do upstream e conflita a cada sincronização.
 
-Container local: `courses-free-moodle-1` (Apache + PHP 8.4) e `courses-free-db-1`
+Container local: `ldg-courses-moodle-1` (Apache + PHP 8.4) e `ldg-courses-db-1`
 (MariaDB 11.4).
 
 ## Comandos que funcionam
@@ -163,21 +163,21 @@ escreve no dataroot.
 
 ```bash
 # Testes
-docker exec -u 1000:33 -e COMPOSER_HOME=/tmp/composer courses-free-moodle-1 \
+docker exec -u 1000:33 -e COMPOSER_HOME=/tmp/composer ldg-courses-moodle-1 \
   php /var/www/html/public/admin/tool/phpunit/cli/init.php
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite local_marketplace_testsuite
 
 # phpcs — LEIA O TOTAL, não corte a saída. O CI roda com --max-warnings 0,
 # então aviso também reprova. Saída vazia = limpo; use -p para ver o que ele varreu.
-docker exec -u 1000:33 courses-free-moodle-1 \
+docker exec -u 1000:33 ldg-courses-moodle-1 \
   phpcs --standard=moodle -p --report=summary <caminho>
 
 # behat com navegador (cenários @javascript, e os que MEDEM a tela)
 moodev up --full
-docker exec -d -u 1000:33 courses-free-moodle-1 \
+docker exec -d -u 1000:33 ldg-courses-moodle-1 \
   sh -c 'cd /var/www/html/public && php -S 0.0.0.0:8000 >/tmp/behatweb.log 2>&1'
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   --profile=chrome --tags "@mod_ldgvideo"
 

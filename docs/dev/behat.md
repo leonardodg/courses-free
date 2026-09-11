@@ -41,7 +41,7 @@ $CFG->behat_prefix = 'bht_';
 Depois, instalar o ambiente:
 
 ```bash
-docker exec -u 1000:33 -e COMPOSER_HOME=/tmp/composer courses-free-moodle-1 \
+docker exec -u 1000:33 -e COMPOSER_HOME=/tmp/composer ldg-courses-moodle-1 \
   php /var/www/html/public/admin/tool/behat/cli/init.php
 ```
 
@@ -54,7 +54,7 @@ O `behat_wwwroot` precisa estar sendo servido. Um `php -S` dentro do container
 resolve, e não conflita com o Apache do ambiente de trabalho:
 
 ```bash
-docker exec -d -u 1000:33 courses-free-moodle-1 \
+docker exec -d -u 1000:33 ldg-courses-moodle-1 \
   sh -c 'cd /var/www/html/public && php -S 0.0.0.0:8000 >/tmp/behatweb.log 2>&1'
 ```
 
@@ -65,12 +65,12 @@ docker exec -d -u 1000:33 courses-free-moodle-1 \
 
 ```bash
 # Todas as nossas features
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   --tags "@local_partners,@local_marketplace"
 
 # Um arquivo só
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   public/local/partners/tests/behat/approval.feature
 ```

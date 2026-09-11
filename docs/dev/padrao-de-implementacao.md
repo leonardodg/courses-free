@@ -351,15 +351,15 @@ meses depois.
 
 ```bash
 # PHPUnit da suite inteira do plugin
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite <componente>_testsuite
 
 # phpcs - LEIA O TOTAL. O CI roda com --max-warnings 0: aviso tambem reprova.
-docker exec -u 1000:33 courses-free-moodle-1 \
+docker exec -u 1000:33 ldg-courses-moodle-1 \
   phpcs --standard=moodle -p --report=summary public/<caminho>
 
 # mustache-lint, eslint e stylelint
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 npx grunt
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 npx grunt
 
 # behat: primeiro sem JS, depois com
 … --tags "@<componente>"
@@ -369,7 +369,7 @@ docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 npx grunt
 **Mexeu no `db/`? Rode o conferidor de esquema do core.**
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php admin/cli/check_database_schema.php
 ```
 

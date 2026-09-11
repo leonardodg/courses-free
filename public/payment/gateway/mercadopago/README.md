@@ -106,7 +106,7 @@ que o script da prova aborta sozinho quando os dois coincidem.
 ## Testes
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite paygw_mercadopago_testsuite
 ```
 

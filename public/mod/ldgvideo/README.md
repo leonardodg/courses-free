@@ -135,7 +135,7 @@ styles.css             O TAMANHO - a unica coisa que o core erra
 ## Testes
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite mod_ldgvideo_testsuite
 ```
 
@@ -145,9 +145,9 @@ core:
 
 ```bash
 moodev up --full          # sobe o Selenium
-docker exec -d -u 1000:33 courses-free-moodle-1 \
+docker exec -d -u 1000:33 ldg-courses-moodle-1 \
   sh -c 'cd /var/www/html/public && php -S 0.0.0.0:8000 >/tmp/behatweb.log 2>&1'
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   --profile=chrome --tags "@mod_ldgvideo"
 ```

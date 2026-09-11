@@ -28,7 +28,7 @@ Os viewports são **1280** e **390** — os PNGs de referência a 2×.
 
 ```bash
 # Curso de demonstracao com os quatro destinos e os estados que o desenho mostra.
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php public/course/format/ldg/cli/make_testdata.php --run --reset < /dev/null
 ```
 

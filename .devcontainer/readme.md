@@ -175,9 +175,9 @@ pasta conhecida do host, para o backup ser um `tar` da pasta:
 
 | O quê | Variável | Sugestão na VPS |
 |---|---|---|
-| Código | `MOODLE_HOST_WWWROOT` | `/home/ubuntu/courses-free/repo` |
-| moodledata | `MOODLE_HOST_DATA` | `/home/ubuntu/courses-free/moodledata` |
-| Banco | `DB_HOST_DATA` | `/home/ubuntu/courses-free/dbdata` |
+| Código | `MOODLE_HOST_WWWROOT` | `/home/ubuntu/ldg-courses/repo` |
+| moodledata | `MOODLE_HOST_DATA` | `/home/ubuntu/ldg-courses/moodledata` |
+| Banco | `DB_HOST_DATA` | `/home/ubuntu/ldg-courses/dbdata` |
 
 ---
 

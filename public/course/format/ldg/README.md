@@ -221,10 +221,10 @@ e as laterais ficam visíveis, que é o estado útil.
 ## Testes
 
 ```bash
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   php vendor/bin/phpunit --testsuite format_ldg_testsuite
 
-docker exec -u 1000:33 -w /var/www/html courses-free-moodle-1 \
+docker exec -u 1000:33 -w /var/www/html ldg-courses-moodle-1 \
   vendor/bin/behat --config /var/www/behatdata/behatrun/behat/behat.yml \
   --tags "@format_ldg"
 ```
@@ -236,7 +236,7 @@ servidor. O que depende de navegador — a altura do quadro e a gravação da du
 ## Dados de demonstração
 
 ```bash
-docker exec -u 1000:33 courses-free-moodle-1 \
+docker exec -u 1000:33 ldg-courses-moodle-1 \
   php /var/www/html/public/course/format/ldg/cli/make_testdata.php --run --reset
 ```
 
