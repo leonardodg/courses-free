@@ -18,12 +18,12 @@
 # Cada worktree recebe um OFFSET inteiro. Dele saem o nome do stack e as quatro
 # portas, por soma:
 #
-#   offset 0 -> courses-free              8080 8443 3307 9004  (principal)
-#   offset 1 -> courses-free-<worktree>   8090 8453 3317 9014
-#   offset 2 -> courses-free-<worktree>   8100 8463 3327 9024
+#   offset 0 -> ldg-courses              8080 8443 3307 9004  (principal)
+#   offset 1 -> ldg-courses-<worktree>   8090 8453 3317 9014
+#   offset 2 -> ldg-courses-<worktree>   8100 8463 3327 9024
 #
-# O offset 0 e o stack que ja existia. O default de STACK_NAME em base.yml e
-# "courses-free", entao o principal continua subindo igual mesmo sem este script.
+# O offset 0 e o stack principal. O default de STACK_NAME em base.yml e
+# "ldg-courses", entao ele sobe igual mesmo sem este script.
 #
 # -----------------------------------------------------------------------------
 # O QUE NAO PODE VAZAR PARA A VPS
@@ -46,11 +46,13 @@ MOODEV_ROOT="$(cd "$(dirname "$SELF")/../../.." && pwd)"
 
 MOODEV_STATE="$MOODEV_ROOT/.moodev"
 MOODEV_REGISTRY="$MOODEV_STATE/registry.tsv"
-# O diretorio de DADOS mantem o nome antigo de proposito. Ele guarda banco e
-# moodledata de cada stack - mover isso renomearia caminhos que containers no ar
-# tem montados, e o ganho seria cosmetico. Quem quiser migrar exporta
-# MOODEV_DATA_ROOT e move na mao, com os stacks parados.
-MOODEV_DATA_ROOT="${MOODEV_DATA_ROOT:-${CF_DATA_ROOT:-$HOME/localhost/cf-data}}"
+# Diretorio de DADOS: guarda banco e moodledata de cada stack secundario.
+# Trocar este caminho NAO move dado nenhum - so muda onde o proximo "moodev new"
+# vai procurar. Quem ja tem stack no ar precisa parar tudo e mover na mao, senao
+# o stack sobe com pasta vazia e o Moodle tenta reinstalar por cima.
+# CF_DATA_ROOT continua aceito: e o nome legado, de quando o projeto se chamava
+# courses-free, e quem ja o exporta nao pode quebrar por causa de um rename.
+MOODEV_DATA_ROOT="${MOODEV_DATA_ROOT:-${CF_DATA_ROOT:-$HOME/localhost/ldg-data}}"
 
 # Worktree de repouso: para onde o stack principal volta DEPOIS DE QUALQUER
 # "moodev rm". Precisa ser permanente (nunca removida por moodev rm) e ter
@@ -135,8 +137,8 @@ die()  { printf '%serro%s %s\n' "$C_RED" "$C_OFF" "$*" >&2; exit 1; }
 # Colunas: nome  offset  stack  wwwroot  moodledata  dbdata
 #
 # Os caminhos de dado ficam gravados em vez de derivados porque o principal usa
-# os caminhos historicos (moodledata-courses-free), que nao seguem o padrao das
-# features novas.
+# caminhos proprios (moodledata-ldg-courses, dbdata-ldg-courses), que nao seguem
+# o padrao das features novas.
 # =============================================================================
 
 registry_init() {
@@ -167,7 +169,7 @@ registry_init() {
     # de uma worktree tem .env (leodg-academy tambem tem), entao varrer o disco
     # escolheria por ordem alfabetica - o que acerta por acaso, nao por regra.
     local bound
-    bound="$(docker inspect courses-free-moodle-1 \
+    bound="$(docker inspect ldg-courses-moodle-1 \
                 --format '{{range .Mounts}}{{if eq .Destination "/var/www/html"}}{{.Source}}{{end}}{{end}}' \
                 2>/dev/null || true)"
     if [ -n "$bound" ] && [ -f "$bound/.env" ]; then
@@ -193,7 +195,7 @@ registry_init() {
         local md db
         md="$(grep -E '^MOODLE_HOST_DATA=' "$env_file" | head -1 | cut -d= -f2-)"
         db="$(grep -E '^DB_HOST_DATA='     "$env_file" | head -1 | cut -d= -f2-)"
-        printf '%s\t0\tcourses-free\t%s\t%s\t%s\n' \
+        printf '%s\t0\tldg-courses\t%s\t%s\t%s\n' \
             "$main_wt" "$MOODEV_ROOT/$main_wt" "$md" "$db" >> "$MOODEV_REGISTRY"
         info "registro criado, adotando '$main_wt' como stack principal (offset 0)"
     fi
@@ -278,7 +280,7 @@ dc() {
 # helper o compose simplesmente nao sabe que o servico existe, e o resultado e
 # um Chrome sobrevivendo ao stack que o criou.
 #
-# Medido em 04/09/2026: depois de um "moodev rm" o courses-free-selenium
+# Medido em 04/09/2026: depois de um "moodev rm" o ldg-courses-selenium
 # continuou de pe por 37 minutos, comendo memoria de um ambiente que ja nao
 # existia.
 dc_full() {
@@ -598,7 +600,7 @@ cmd_use() {
     mkdir -p "$alvo_path/phpu_moodledata"
 
     # O .env do destino recebe os valores do principal, sem STACK_NAME: o
-    # default de base.yml resolve para courses-free e o stack continua sendo o
+    # default de base.yml resolve para ldg-courses e o stack continua sendo o
     # mesmo. So o wwwroot aponta para o novo codigo.
     local http https db xdebug
     http="$(port_http 0)"; https="$(port_https 0)"
@@ -609,7 +611,7 @@ cmd_use() {
 # GERADO POR "moodev use $alvo". Este e o stack PRINCIPAL servindo esta worktree.
 #
 # Sem STACK_NAME de proposito: o default de base.yml resolve para
-# "courses-free", entao continua sendo o mesmo stack de sempre - o mesmo
+# "ldg-courses", entao continua sendo o mesmo stack de sempre - o mesmo
 # container, o mesmo banco e as mesmas portas. So o codigo mudou.
 
 MOODLE_HOST_WWWROOT=$alvo_path
@@ -620,7 +622,7 @@ MOODLE_DOCKER_WWWROOT=/var/www/html
 MOODLE_DOCKER_DATA=/var/www/moodledata
 APACHE_DOCUMENT_ROOT=/var/www/html/public
 
-MOODLE_IMAGE=leodg/courses-free:development
+MOODLE_IMAGE=leodg/ldg-courses:development
 
 MOODLE_HTTP_PORT=$http
 MOODLE_HTTPS_PORT=$https
@@ -848,7 +850,7 @@ $atrasados
     local http https db xdebug
     http="$(port_http "$offset")";  https="$(port_https "$offset")"
     db="$(port_db "$offset")";      xdebug="$(port_xdebug "$offset")"
-    local stack="courses-free-$name"
+    local stack="ldg-courses-$name"
     local data_root="$MOODEV_DATA_ROOT/$name"
 
     info "worktree : $name  (offset $offset)"
@@ -920,7 +922,7 @@ MOODLE_DOCKER_DATA=/var/www/moodledata
 APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 # Imagem
-MOODLE_IMAGE=leodg/courses-free:development
+MOODLE_IMAGE=leodg/ldg-courses:development
 
 # Portas: base do offset 0 mais $offset * 10.
 MOODLE_HTTP_PORT=$http
@@ -1281,8 +1283,8 @@ cmd_rm() {
     # o --new-stack cria banco proprio.
     #
     # Uma worktree que apenas foi SERVIDA pelo stack principal tem, na linha do
-    # registro, os caminhos do principal - moodledata-courses-free e
-    # dbdata-courses-free. Apagar por ali destruiria o banco principal a partir
+    # registro, os caminhos do principal - moodledata-ldg-courses e
+    # dbdata-ldg-courses. Apagar por ali destruiria o banco principal a partir
     # de um "moodev rm" numa worktree secundaria. E o pior tipo de bug: o comando
     # parece local e o estrago e global.
     local dados_proprios=0 dados_dir=""
@@ -1472,7 +1474,7 @@ cmd_doctor() {
         # As checagens de stack e porta valem por offset:
         #
         #   0    stack principal. STACK_NAME tem que estar AUSENTE - e o default
-        #        de base.yml que resolve para courses-free - e as portas sao as
+        #        de base.yml que resolve para ldg-courses - e as portas sao as
         #        da base.
         #   N>0  stack proprio. STACK_NAME tem que bater com o registro, e as
         #        portas saem do offset.
@@ -1582,9 +1584,9 @@ coluna WORKTREE que o "moodev ls" mostra - por exemplo: paygw-pix.
 Omitindo o nome, o comando age sobre a worktree do diretorio atual. Dentro de
 paygw-pix/, "moodev up" sobe aquele ambiente; de fora, seria "moodev up paygw-pix".
 
-Offset N -> stack courses-free-<nome>, portas 8080+N*10 (http), 8443+N*10
+Offset N -> stack ldg-courses-<nome>, portas 8080+N*10 (http), 8443+N*10
 (https), 3307+N*10 (banco) e 9004+N*10 (xdebug). O offset 0 e o stack
-principal, que mantem o nome "courses-free" e as portas historicas.
+principal, que se chama "ldg-courses" e usa as portas da base.
 EOF
 }
 

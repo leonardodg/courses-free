@@ -16,7 +16,7 @@
 //   2. "build-dev.yml" na lista abaixo. Aquele arquivo tem uma secao "build:"
 //      com context ../../ - o caminho muda a cada worktree, entao o cache nao
 //      aproveita e a imagem e reconstruida. Aqui usamos a imagem ja publicada
-//      (leodg/courses-free:development). Para reconstruir de proposito, use
+//      (leodg/ldg-courses:development). Para reconstruir de proposito, use
 //      "moodev build", que carrega o build-dev.yml explicitamente.
 //
 // Resultado: abrir uma worktree nova conecta no container em segundos, sem
@@ -25,7 +25,7 @@
 {
     // O basename identifica a worktree na barra de titulo. Com varias janelas
     // abertas ao mesmo tempo, sem isso nao da para saber qual e qual.
-    "name": "courses-free — ${localWorkspaceFolderBasename}",
+    "name": "ldg-courses — ${localWorkspaceFolderBasename}",
 
     // Mesma lista que o "moodev" usa para subir o stack. Precisa bater exatamente:
     // se divergir, a extensao considera a configuracao diferente e RECRIA os
@@ -79,7 +79,7 @@
         // conteudo e o dono que a imagem ja tem em /commandhistory; um bind numa
         // pasta nova do host entraria como root e o www-data nao escreveria.
         {
-            "source": "courses-free-history-${localWorkspaceFolderBasename}",
+            "source": "ldg-courses-history-${localWorkspaceFolderBasename}",
             "target": "/commandhistory",
             "type": "volume"
         }

@@ -1,5 +1,5 @@
 # =============================================================================
-# Ivana Academy - Moodle 4.5
+# LDG Courses - Moodle 5.2
 # Multi-stage build: composer → base → production | development
 #
 # Build production:
@@ -63,9 +63,9 @@ FROM moodlehq/moodle-php-apache:8.4 AS base
 
 # Metadata
 LABEL maintainer="LeoDG <callme@leodg.dev>" \
-      org.opencontainers.image.title="Ivana Academy - Moodle 4.5" \
-      org.opencontainers.image.source="https://github.com/leonardodg/ivana-academy" \
-      org.opencontainers.image.version="4.5"
+      org.opencontainers.image.title="LDG Courses - Moodle 5.2" \
+      org.opencontainers.image.source="https://github.com/leonardodg/ldg-courses" \
+      org.opencontainers.image.version="5.2"
 
 ENV MOODLE_DBTYPE=mariadb \
     MOODLE_DBLIB=native \
