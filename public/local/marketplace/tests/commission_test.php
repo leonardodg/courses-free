@@ -92,14 +92,16 @@ final class commission_test extends \advanced_testcase {
      * Grava uma politica para o curso.
      *
      * @param float $pct
+     * @param string|null $base Base de calculo, ou null para herdar a do site.
      * @return void
      */
-    protected function set_course_policy(float $pct): void {
+    protected function set_course_policy(float $pct, ?string $base = null): void {
         $p = new course_policy();
         $p->set('courseid', (int) $this->course->id);
         $p->set('companyid', (int) $this->company->get('id'));
         $p->set('hostingtype', course_policy::HOSTING_EXTERNAL);
         $p->set('commissionpct', $pct);
+        $p->set('commissionbase', $base);
         $p->create();
     }
 
@@ -159,6 +161,57 @@ final class commission_test extends \advanced_testcase {
         $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
 
         $this->assertEquals(5.0, api::resolve_commission_percent($offer));
+    }
+
+    /**
+     * A politica do curso leva junto a BASE que ela negociou.
+     *
+     * Este teste existe por um defeito de banco, e nao de logica. O passo de
+     * upgrade 2026090110 acrescentou `commissionbase` a uma tabela com nome
+     * errado, entao em site ATUALIZADO a coluna nunca existiu - e o
+     * `insert_record` do Moodle descarta em silencio campo que a tabela nao tem.
+     * A politica gravava sem base, a leitura devolvia nulo, e nulo significa
+     * "herda a do site".
+     *
+     * O resultado era dinheiro: base liquida negociada, comissao cobrada sobre
+     * o BRUTO. Em R$ 100 a 25%, R$ 25,00 no lugar de R$ 24,38 - sempre contra o
+     * vendedor, e sem nada na tela indicando o problema.
+     *
+     * Nenhum teste pegava porque o PHPUnit instala do zero, e a instalacao nova
+     * sempre teve a coluna. O que faltava era exercitar a base pela politica,
+     * que e o degrau que ninguem cobria.
+     *
+     * @return void
+     */
+    public function test_course_policy_carries_its_own_base(): void {
+        set_config('commissionbase', commission::BASE_GROSS, 'local_marketplace');
+        $this->set_course_policy(5.0, commission::BASE_NET);
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+        $resolved = api::resolve_commission($offer);
+
+        $this->assertEquals(5.0, $resolved->percent);
+        $this->assertSame(commission::BASE_NET, $resolved->base);
+        $this->assertSame(commission::SOURCE_POLICY, $resolved->source);
+    }
+
+    /**
+     * Politica sem base declarada herda a do site, e nao inventa uma.
+     *
+     * Nulo na coluna e "este contrato so define a taxa". E diferente de
+     * escolher bruto, e a diferenca precisa sobreviver a ida ao banco.
+     *
+     * @return void
+     */
+    public function test_course_policy_without_base_inherits_the_site(): void {
+        set_config('commissionbase', commission::BASE_NET, 'local_marketplace');
+        $this->set_course_policy(5.0);
+
+        $offer = $this->make_offer(offer::TYPE_SINGLE, [(int) $this->course->id]);
+        $resolved = api::resolve_commission($offer);
+
+        $this->assertSame(commission::BASE_NET, $resolved->base);
+        $this->assertSame(commission::SOURCE_POLICY, $resolved->source);
     }
 
     /**

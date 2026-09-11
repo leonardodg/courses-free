@@ -304,6 +304,18 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         // nao define base, herda a do site". Gravar 'gross' em toda linha
         // existente inventaria uma clausula que ninguem negociou, e depois nao
         // haveria como distinguir quem escolheu bruto de quem so herdou.
+        //
+        // A TERCEIRA TABELA NAO EXISTE, E O NOME FICA COMO ESTA.
+        //
+        // `local_marketplace_course_policy` saiu da classe (`course_policy`) e
+        // nao da constante TABLE dela, que e `local_marketplace_course`. O
+        // `table_exists()` devolveu falso, o campo nunca foi criado, e o passo
+        // terminou com sucesso - o defeito e justamente esse silencio.
+        //
+        // NAO CORRIJA AQUI. Um passo de upgrade roda uma vez por site: onde ele
+        // ja rodou, mudar o texto nao tem efeito nenhum, e onde ainda nao rodou
+        // o passo 2026091110 resolve do mesmo jeito. Consertar uma execucao que
+        // ja passou e trabalho sem destino; o que vale e o passo novo.
         foreach (['local_marketplace_company', 'local_marketplace_plan', 'local_marketplace_course_policy'] as $tablename) {
             $table = new xmldb_table($tablename);
             $field = new xmldb_field('commissionbase', XMLDB_TYPE_CHAR, '10', null, null, null, null, 'commissionpct');
@@ -351,6 +363,46 @@ function xmldb_local_marketplace_upgrade($oldversion) {
         \local_marketplace\roles::migrate_owners();
 
         upgrade_plugin_savepoint(true, 2026090410, 'local', 'marketplace');
+    }
+
+    if ($oldversion < 2026091110) {
+        // A base da comissao POR CURSO, que nunca chegou ao banco.
+        //
+        // O passo 2026090110 acrescentou `commissionbase` a tres tabelas, e uma
+        // delas nao existe: ele pediu `local_marketplace_course_policy`, e a
+        // tabela chama-se `local_marketplace_course`. O nome saiu da classe
+        // (`course_policy`), e nao da constante TABLE dela.
+        //
+        // O erro passou em silencio por causa da guarda do proprio passo: o
+        // `table_exists()` devolveu falso, o `add_field()` nem foi chamado, e o
+        // upgrade terminou com sucesso.
+        //
+        // O SINTOMA NAO E ERRO, E PERDA SILENCIOSA. O `insert_record` do Moodle
+        // descarta campo que nao existe na tabela, entao gravar uma politica com
+        // base "liquido" gravava a linha inteira MENOS a base, e a leitura
+        // seguinte devolvia nulo - que significa "herda a base do site". O
+        // administrador negociava comissao sobre o liquido, a tela salvava sem
+        // reclamar, e a plataforma cobrava sobre o BRUTO. Em R$ 100 a 25%, a
+        // diferenca e R$ 25,00 contra R$ 24,38, sempre contra o vendedor.
+        //
+        // Instalacao nova nunca teve o problema: o install.xml declara a coluna
+        // desde sempre. Quem foi atingido foi quem ATUALIZOU - a producao, entre
+        // 01/09/2026 e 11/09/2026.
+        $dbman = $DB->get_manager();
+
+        $table = new xmldb_table('local_marketplace_course');
+        $field = new xmldb_field('commissionbase', XMLDB_TYPE_CHAR, '10', null, null, null, null, 'commissionpct');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Nasce NULA, como nas outras duas tabelas: nulo e "este contrato nao
+        // define base, herda a do site". Nao ha o que restaurar - o valor que os
+        // administradores tentaram gravar nunca chegou ao banco, e inventar
+        // 'gross' aqui fingiria uma clausula que ninguem negociou.
+
+        upgrade_plugin_savepoint(true, 2026091110, 'local', 'marketplace');
     }
 
     return true;
