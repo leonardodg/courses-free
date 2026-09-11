@@ -257,7 +257,7 @@ webhook, matrícula. **386 testes** (114 no núcleo, 48 no Asaas, 47 no
 e 34 em `enrol_marketplace`, `availability_marketplace`, `block_marketplace` e
 `theme_ldg`). phpcs limpo, e o CI valida **um job por plugin, em paralelo**.
 
-O behat cobre **50 cenários** de quatro plugins, e **vinte e um deles medem a
+O behat cobre **51 cenários** de quatro plugins, e **vinte e um deles medem a
 tela** — três no vídeo, dezessete na captação de parceiros e um no tema. Os do
 vídeo são a única prova de que o `aspect-ratio` do `mod_ldgvideo` continua
 vencendo o `width` fixo que o `core_media_manager` escreve no iframe. Os quatro

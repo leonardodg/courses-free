@@ -271,6 +271,49 @@ class behat_local_partners extends behat_base {
     }
 
     /**
+     * O navegador carregou os componentes JS do Bootstrap?
+     *
+     * NAO e checagem de tag no HTML: pergunta ao RequireJS se o modulo chegou a
+     * ser definido, ou seja, se ele baixou e EXECUTOU nesta pagina.
+     *
+     * Existe porque a landing servida na raiz ficou sem ele. O
+     * theme_boost/loader e carregado por cada TEMPLATE de layout do Boost, e o
+     * theme_ldg/landing - escrito do zero para a raiz nao duplicar o cromo -
+     * nao trouxe o bloco. O data-bs-toggle do seletor de idioma e so um
+     * atributo: sem este modulo ninguem liga comportamento a ele, e o menu nao
+     * abre. A MESMA pagina em /local/partners/index.php funcionava, porque
+     * aquela usa o layout 'embedded', que traz o bloco.
+     *
+     * O clique no proprio seletor seria a prova mais direta, e nao esta ao
+     * alcance: o menu so e renderizado com mais de um idioma instalado, e o
+     * site do behat tem so o ingles.
+     *
+     * @Then the page should have the Bootstrap components loaded
+     * @return void
+     */
+    public function the_page_should_have_the_bootstrap_components_loaded(): void {
+        $carregado = $this->evaluate_script(
+            '(function() {'
+            . 'if (typeof require !== "function" || typeof require.defined !== "function") {'
+            . 'return "sem-requirejs";'
+            . '}'
+            . 'return require.defined("theme_boost/loader") ? "sim" : "nao";'
+            . '})()'
+        );
+
+        if ($carregado !== 'sim') {
+            throw new ExpectationException(
+                sprintf(
+                    'O theme_boost/loader nao esta carregado nesta pagina (%s), '
+                    . 'entao nenhum componente do Bootstrap responde - dropdown de idioma inclusive.',
+                    (string) $carregado
+                ),
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
      * Quantos elementos casam com o seletor.
      *
      * Existe por causa da DUPLICIDADE de cromo: a home servia a landing e o
